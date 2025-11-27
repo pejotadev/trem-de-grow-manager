@@ -10,6 +10,8 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  Switch,
+  Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -22,9 +24,10 @@ import {
   createStage,
   updatePlant,
   getUserEnvironments,
+  getUserPlants,
   clonePlants,
 } from '../../../firebase/firestore';
-import { Plant, Stage, WaterRecord, StageName, Environment } from '../../../types';
+import { Plant, Stage, WaterRecord, StageName, Environment, PlantSourceType, GeneticInfo, Chemotype } from '../../../types';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
@@ -33,6 +36,13 @@ import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 
 const STAGES: StageName[] = ['Seedling', 'Veg', 'Flower', 'Drying', 'Curing'];
+
+const SOURCE_TYPE_LABELS: Record<PlantSourceType, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string }> = {
+  seed: { label: 'Seed', icon: 'ellipse', color: '#8BC34A' },
+  clone: { label: 'Clone', icon: 'git-branch', color: '#4CAF50' },
+  cutting: { label: 'Cutting', icon: 'cut', color: '#009688' },
+  tissue_culture: { label: 'Tissue Culture', icon: 'flask', color: '#00BCD4' },
+};
 
 const ENVIRONMENT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   indoor: 'home',
@@ -49,16 +59,35 @@ const ENVIRONMENT_COLORS: Record<string, string> = {
 export default function PlantDetailScreen() {
   const { id } = useLocalSearchParams();
   const [plant, setPlant] = useState<Plant | null>(null);
+  const [parentPlant, setParentPlant] = useState<Plant | null>(null);
+  const [cloneChildren, setCloneChildren] = useState<Plant[]>([]);
   const [environment, setEnvironment] = useState<Environment | null>(null);
   const [environments, setEnvironments] = useState<Environment[]>([]);
+  const [allPlants, setAllPlants] = useState<Plant[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
   const [waterRecords, setWaterRecords] = useState<WaterRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Edit modal state
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [envModalVisible, setEnvModalVisible] = useState(false);
   const [editName, setEditName] = useState('');
   const [editStrain, setEditStrain] = useState('');
   const [selectedEnvironment, setSelectedEnvironment] = useState<Environment | null>(null);
+  
+  // Edit genetic fields
+  const [editBreeder, setEditBreeder] = useState('');
+  const [editSeedBank, setEditSeedBank] = useState('');
+  const [editGeneticLineage, setEditGeneticLineage] = useState('');
+  const [editIsMotherPlant, setEditIsMotherPlant] = useState(false);
+  
+  // Edit chemotype fields
+  const [editThcPercent, setEditThcPercent] = useState('');
+  const [editCbdPercent, setEditCbdPercent] = useState('');
+  const [editCbgPercent, setEditCbgPercent] = useState('');
+  const [editLabName, setEditLabName] = useState('');
+  const [editAnalysisDate, setEditAnalysisDate] = useState('');
+  
   // Clone state
   const [cloneModalVisible, setCloneModalVisible] = useState(false);
   const [cloneEnvModalVisible, setCloneEnvModalVisible] = useState(false);
@@ -101,6 +130,15 @@ export default function PlantDetailScreen() {
       setEnvironment(envData);
       setStages(stagesData);
       setWaterRecords(waterData);
+
+      // Load parent plant if this is a clone
+      if (plantData.genetics?.parentPlantId || plantData.motherPlantId) {
+        const parentId = plantData.genetics?.parentPlantId || plantData.motherPlantId;
+        if (parentId) {
+          const parent = await getPlant(parentId);
+          setParentPlant(parent);
+        }
+      }
     } catch (error: any) {
       console.error('[PlantDetail] Error loading plant data:', error);
       Alert.alert('Error', 'Failed to load plant data: ' + (error.message || 'Unknown error'));
@@ -119,9 +157,28 @@ export default function PlantDetailScreen() {
     }
   };
 
+  const loadAllPlants = async () => {
+    if (!userData) return;
+    try {
+      const plants = await getUserPlants(userData.uid);
+      setAllPlants(plants);
+      
+      // Find clone children (plants that have this plant as parent)
+      if (id && typeof id === 'string') {
+        const children = plants.filter(p => 
+          p.genetics?.parentPlantId === id || p.motherPlantId === id
+        );
+        setCloneChildren(children);
+      }
+    } catch (error) {
+      console.error('[PlantDetail] Error loading plants:', error);
+    }
+  };
+
   useEffect(() => {
     loadPlantData();
     loadEnvironments();
+    loadAllPlants();
   }, [id, userData]);
 
   const handleDelete = () => {
@@ -183,6 +240,22 @@ export default function PlantDetailScreen() {
       setEditName(plant.name);
       setEditStrain(plant.strain);
       setSelectedEnvironment(environment);
+      
+      // Genetic fields
+      setEditBreeder(plant.genetics?.breeder || '');
+      setEditSeedBank(plant.genetics?.seedBank || '');
+      setEditGeneticLineage(plant.genetics?.geneticLineage || '');
+      setEditIsMotherPlant(plant.isMotherPlant || false);
+      
+      // Chemotype fields
+      setEditThcPercent(plant.chemotype?.thcPercent?.toString() || '');
+      setEditCbdPercent(plant.chemotype?.cbdPercent?.toString() || '');
+      setEditCbgPercent(plant.chemotype?.cbgPercent?.toString() || '');
+      setEditLabName(plant.chemotype?.labName || '');
+      setEditAnalysisDate(plant.chemotype?.analysisDate 
+        ? format(new Date(plant.chemotype.analysisDate), 'yyyy-MM-dd') 
+        : '');
+      
       setEditModalVisible(true);
     }
   };
@@ -198,19 +271,77 @@ export default function PlantDetailScreen() {
       return;
     }
 
-    if (!id || typeof id !== 'string') return;
+    if (!id || typeof id !== 'string' || !plant) return;
 
     try {
-      await updatePlant(id, {
-        name: editName,
-        strain: editStrain,
+      // Build updated genetics - only include fields that have values
+      const updatedGenetics: GeneticInfo = {
+        sourceType: plant.genetics?.sourceType || 'seed',
+      };
+      
+      // Preserve existing fields that shouldn't be changed
+      if (plant.genetics?.parentPlantId) updatedGenetics.parentPlantId = plant.genetics.parentPlantId;
+      if (plant.genetics?.parentControlNumber) updatedGenetics.parentControlNumber = plant.genetics.parentControlNumber;
+      if (plant.genetics?.acquisitionDate) updatedGenetics.acquisitionDate = plant.genetics.acquisitionDate;
+      if (plant.genetics?.acquisitionSource) updatedGenetics.acquisitionSource = plant.genetics.acquisitionSource;
+      if (plant.genetics?.batchId) updatedGenetics.batchId = plant.genetics.batchId;
+      
+      // Update editable fields
+      if (editBreeder.trim()) updatedGenetics.breeder = editBreeder.trim();
+      if (editSeedBank.trim()) updatedGenetics.seedBank = editSeedBank.trim();
+      if (editGeneticLineage.trim()) updatedGenetics.geneticLineage = editGeneticLineage.trim();
+
+      // Build updated chemotype - only include if there's data
+      let updatedChemotype: Chemotype | undefined;
+      const hasChemotypeData = editThcPercent.trim() || editCbdPercent.trim() || editCbgPercent.trim() || editLabName.trim() || editAnalysisDate.trim();
+      
+      if (hasChemotypeData) {
+        updatedChemotype = {
+          ...(plant.chemotype || {}),
+        };
+        
+        if (editThcPercent.trim()) {
+          const thc = parseFloat(editThcPercent);
+          if (!isNaN(thc)) updatedChemotype.thcPercent = thc;
+        }
+        if (editCbdPercent.trim()) {
+          const cbd = parseFloat(editCbdPercent);
+          if (!isNaN(cbd)) updatedChemotype.cbdPercent = cbd;
+        }
+        if (editCbgPercent.trim()) {
+          const cbg = parseFloat(editCbgPercent);
+          if (!isNaN(cbg)) updatedChemotype.cbgPercent = cbg;
+        }
+        if (editLabName.trim()) updatedChemotype.labName = editLabName.trim();
+        if (editAnalysisDate.trim()) {
+          const date = new Date(editAnalysisDate);
+          if (!isNaN(date.getTime())) updatedChemotype.analysisDate = date.getTime();
+        }
+      }
+
+      // Build update object
+      const updateData: any = {
+        name: editName.trim(),
+        strain: editStrain.trim(),
         environmentId: selectedEnvironment.id,
-      });
+        genetics: updatedGenetics,
+      };
+
+      // Only include chemotype if there's data, otherwise keep existing or omit
+      if (updatedChemotype) {
+        updateData.chemotype = updatedChemotype;
+      }
+
+      // Handle isMotherPlant - explicitly set true or false
+      updateData.isMotherPlant = editIsMotherPlant;
+
+      await updatePlant(id, updateData);
       setEditModalVisible(false);
       loadPlantData();
       Alert.alert('Success', 'Plant updated!');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to update plant');
+    } catch (error: any) {
+      console.error('[PlantDetail] Error updating plant:', error);
+      Alert.alert('Error', 'Failed to update plant: ' + (error.message || 'Unknown error'));
     }
   };
 
@@ -245,12 +376,31 @@ export default function PlantDetailScreen() {
 
       setCloneModalVisible(false);
       Alert.alert('Success', `Created ${count} clone(s) successfully!`, [
-        { text: 'OK', onPress: () => loadPlantData() },
+        { text: 'OK', onPress: () => {
+          loadPlantData();
+          loadAllPlants();
+        }},
       ]);
     } catch (error: any) {
       Alert.alert('Error', 'Failed to create clones: ' + (error.message || 'Unknown error'));
     } finally {
       setCloning(false);
+    }
+  };
+
+  const navigateToParent = () => {
+    if (parentPlant) {
+      router.push(`/(tabs)/plants/${parentPlant.id}`);
+    }
+  };
+
+  const navigateToClone = (cloneId: string) => {
+    router.push(`/(tabs)/plants/${cloneId}`);
+  };
+
+  const openLabReport = () => {
+    if (plant?.chemotype?.reportUrl) {
+      Linking.openURL(plant.chemotype.reportUrl);
     }
   };
 
@@ -269,6 +419,10 @@ export default function PlantDetailScreen() {
     );
   }
 
+  const sourceTypeInfo = plant.genetics?.sourceType 
+    ? SOURCE_TYPE_LABELS[plant.genetics.sourceType] 
+    : null;
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -283,11 +437,19 @@ export default function PlantDetailScreen() {
                 </View>
               </View>
               <Text style={styles.plantStrain}>{plant.strain}</Text>
-              {plant.currentStage && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{plant.currentStage}</Text>
-                </View>
-              )}
+              <View style={styles.badgeRow}>
+                {plant.currentStage && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{plant.currentStage}</Text>
+                  </View>
+                )}
+                {plant.isMotherPlant && (
+                  <View style={styles.motherBadge}>
+                    <Ionicons name="star" size={12} color="#fff" />
+                    <Text style={styles.motherBadgeText}>Mother</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.date}>
                 Started: {format(new Date(plant.startDate), 'MMM dd, yyyy')}
               </Text>
@@ -297,6 +459,147 @@ export default function PlantDetailScreen() {
             </TouchableOpacity>
           </View>
         </Card>
+
+        {/* Genetic Info Card */}
+        {(plant.genetics || plant.isMotherPlant) && (
+          <Card>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.geneticIcon}>🧬</Text>
+              <Text style={styles.sectionTitle}>Genetic Info</Text>
+            </View>
+            
+            {/* Source Type */}
+            {sourceTypeInfo && (
+              <View style={styles.geneticRow}>
+                <View style={[styles.sourceTypeBadge, { backgroundColor: sourceTypeInfo.color }]}>
+                  <Ionicons name={sourceTypeInfo.icon} size={14} color="#fff" />
+                  <Text style={styles.sourceTypeBadgeText}>{sourceTypeInfo.label}</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Parent Plant Link (for clones) */}
+            {parentPlant && (
+              <TouchableOpacity style={styles.parentLink} onPress={navigateToParent}>
+                <Ionicons name="git-branch" size={18} color="#4CAF50" />
+                <Text style={styles.parentLinkText}>
+                  Cloned from: <Text style={styles.parentLinkName}>{parentPlant.name}</Text>
+                </Text>
+                <View style={styles.parentControlBadge}>
+                  <Text style={styles.parentControlText}>#{parentPlant.controlNumber}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#999" />
+              </TouchableOpacity>
+            )}
+
+            {/* Breeder & Seed Bank */}
+            {plant.genetics?.breeder && (
+              <View style={styles.geneticInfoRow}>
+                <Text style={styles.geneticInfoLabel}>Breeder:</Text>
+                <Text style={styles.geneticInfoValue}>{plant.genetics.breeder}</Text>
+              </View>
+            )}
+            {plant.genetics?.seedBank && (
+              <View style={styles.geneticInfoRow}>
+                <Text style={styles.geneticInfoLabel}>Seed Bank:</Text>
+                <Text style={styles.geneticInfoValue}>{plant.genetics.seedBank}</Text>
+              </View>
+            )}
+
+            {/* Genetic Lineage */}
+            {plant.genetics?.geneticLineage && (
+              <View style={styles.lineageBox}>
+                <Ionicons name="git-merge-outline" size={16} color="#666" />
+                <Text style={styles.lineageText}>{plant.genetics.geneticLineage}</Text>
+              </View>
+            )}
+          </Card>
+        )}
+
+        {/* Chemotype Card */}
+        {plant.chemotype && (plant.chemotype.thcPercent || plant.chemotype.cbdPercent || plant.chemotype.cbgPercent) && (
+          <Card>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.geneticIcon}>🔬</Text>
+              <Text style={styles.sectionTitle}>Chemotype</Text>
+            </View>
+            
+            {/* Cannabinoid Stats Row */}
+            <View style={styles.chemotypeStatsRow}>
+              {plant.chemotype.thcPercent !== undefined && (
+                <View style={[styles.chemotypeStat, styles.thcStat]}>
+                  <Text style={styles.chemotypeStatLabel}>THC</Text>
+                  <Text style={styles.chemotypeStatValue}>{plant.chemotype.thcPercent}%</Text>
+                </View>
+              )}
+              {plant.chemotype.cbdPercent !== undefined && (
+                <View style={[styles.chemotypeStat, styles.cbdStat]}>
+                  <Text style={styles.chemotypeStatLabel}>CBD</Text>
+                  <Text style={styles.chemotypeStatValue}>{plant.chemotype.cbdPercent}%</Text>
+                </View>
+              )}
+              {plant.chemotype.cbgPercent !== undefined && (
+                <View style={[styles.chemotypeStat, styles.cbgStat]}>
+                  <Text style={styles.chemotypeStatLabel}>CBG</Text>
+                  <Text style={styles.chemotypeStatValue}>{plant.chemotype.cbgPercent}%</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Lab Info */}
+            {(plant.chemotype.labName || plant.chemotype.analysisDate) && (
+              <View style={styles.labInfoRow}>
+                <Ionicons name="business-outline" size={14} color="#666" />
+                <Text style={styles.labInfoText}>
+                  {plant.chemotype.labName && `Lab: ${plant.chemotype.labName}`}
+                  {plant.chemotype.labName && plant.chemotype.analysisDate && ' | '}
+                  {plant.chemotype.analysisDate && `Analyzed: ${format(new Date(plant.chemotype.analysisDate), 'MMM dd, yyyy')}`}
+                </Text>
+              </View>
+            )}
+
+            {/* View Lab Report Button */}
+            {plant.chemotype.reportUrl && (
+              <TouchableOpacity style={styles.viewReportButton} onPress={openLabReport}>
+                <Ionicons name="document-text-outline" size={18} color="#4CAF50" />
+                <Text style={styles.viewReportText}>View Lab Report</Text>
+                <Ionicons name="open-outline" size={16} color="#4CAF50" />
+              </TouchableOpacity>
+            )}
+          </Card>
+        )}
+
+        {/* Clone History Card */}
+        {cloneChildren.length > 0 && (
+          <Card>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.geneticIcon}>🌱</Text>
+              <Text style={styles.sectionTitle}>Clone History ({cloneChildren.length})</Text>
+            </View>
+            <Text style={styles.cloneHistorySubtext}>Plants cloned from this one:</Text>
+            {cloneChildren.map((clone) => (
+              <TouchableOpacity 
+                key={clone.id} 
+                style={styles.cloneChildItem}
+                onPress={() => navigateToClone(clone.id)}
+              >
+                <View style={styles.cloneChildIcon}>
+                  <Ionicons name="leaf" size={18} color="#4CAF50" />
+                </View>
+                <View style={styles.cloneChildInfo}>
+                  <Text style={styles.cloneChildName}>{clone.name}</Text>
+                  <Text style={styles.cloneChildControl}>#{clone.controlNumber}</Text>
+                </View>
+                {clone.currentStage && (
+                  <View style={styles.cloneChildStageBadge}>
+                    <Text style={styles.cloneChildStageText}>{clone.currentStage}</Text>
+                  </View>
+                )}
+                <Ionicons name="chevron-forward" size={18} color="#999" />
+              </TouchableOpacity>
+            ))}
+          </Card>
+        )}
 
         {/* Environment Info */}
         {environment && (
@@ -454,7 +757,7 @@ export default function PlantDetailScreen() {
                 <Text style={styles.controlNumberDisplayHint}>Auto-generated, cannot be changed</Text>
               </View>
             )}
-            <ScrollView>
+            <ScrollView showsVerticalScrollIndicator={false}>
               <Input
                 label="Plant Name"
                 value={editName}
@@ -492,6 +795,93 @@ export default function PlantDetailScreen() {
                 )}
                 <Ionicons name="chevron-down" size={20} color="#666" />
               </TouchableOpacity>
+
+              {/* Genetic Info Section */}
+              <View style={styles.editSectionHeader}>
+                <Text style={styles.editSectionIcon}>🧬</Text>
+                <Text style={styles.editSectionTitle}>Genetic Info</Text>
+              </View>
+              
+              <Input
+                label="Breeder"
+                value={editBreeder}
+                onChangeText={setEditBreeder}
+                placeholder="e.g., Sensi Seeds"
+              />
+              <Input
+                label="Seed Bank / Source"
+                value={editSeedBank}
+                onChangeText={setEditSeedBank}
+                placeholder="e.g., Seedsman"
+              />
+              <Input
+                label="Genetic Lineage"
+                value={editGeneticLineage}
+                onChangeText={setEditGeneticLineage}
+                placeholder="e.g., OG Kush x Purple Punch"
+              />
+
+              {/* Mother Plant Toggle */}
+              <View style={styles.motherToggleRow}>
+                <View style={styles.motherToggleLabel}>
+                  <Ionicons name="star" size={18} color="#4CAF50" />
+                  <Text style={styles.motherToggleText}>Mark as Mother Plant</Text>
+                </View>
+                <Switch
+                  value={editIsMotherPlant}
+                  onValueChange={setEditIsMotherPlant}
+                  trackColor={{ false: '#e0e0e0', true: '#81C784' }}
+                  thumbColor={editIsMotherPlant ? '#4CAF50' : '#f4f3f4'}
+                />
+              </View>
+
+              {/* Chemotype Section */}
+              <View style={styles.editSectionHeader}>
+                <Text style={styles.editSectionIcon}>🔬</Text>
+                <Text style={styles.editSectionTitle}>Chemotype Data</Text>
+              </View>
+              
+              <View style={styles.chemotypeEditRow}>
+                <View style={styles.chemotypeEditInput}>
+                  <Input
+                    label="THC %"
+                    value={editThcPercent}
+                    onChangeText={setEditThcPercent}
+                    placeholder="0.0"
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+                <View style={styles.chemotypeEditInput}>
+                  <Input
+                    label="CBD %"
+                    value={editCbdPercent}
+                    onChangeText={setEditCbdPercent}
+                    placeholder="0.0"
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+                <View style={styles.chemotypeEditInput}>
+                  <Input
+                    label="CBG %"
+                    value={editCbgPercent}
+                    onChangeText={setEditCbgPercent}
+                    placeholder="0.0"
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+              </View>
+              <Input
+                label="Lab Name"
+                value={editLabName}
+                onChangeText={setEditLabName}
+                placeholder="e.g., SC Labs"
+              />
+              <Input
+                label="Analysis Date"
+                value={editAnalysisDate}
+                onChangeText={setEditAnalysisDate}
+                placeholder="YYYY-MM-DD"
+              />
             </ScrollView>
             <View style={styles.modalButtons}>
               <Button title="Save Changes" onPress={handleEditSave} />
@@ -576,6 +966,22 @@ export default function PlantDetailScreen() {
               <Text style={styles.cloneSourceText}>{plant?.name}</Text>
               <View style={styles.controlBadge}>
                 <Text style={styles.controlText}>#{plant?.controlNumber}</Text>
+              </View>
+            </View>
+
+            {/* Genetic Inheritance Notice */}
+            <View style={styles.geneticInheritanceBox}>
+              <Text style={styles.geneticInheritanceIcon}>🧬</Text>
+              <View style={styles.geneticInheritanceContent}>
+                <Text style={styles.geneticInheritanceTitle}>Genetic Lineage Inherited</Text>
+                <Text style={styles.geneticInheritanceText}>
+                  Clones will inherit: {plant?.genetics?.geneticLineage || plant?.strain}
+                </Text>
+                {plant?.genetics?.breeder && (
+                  <Text style={styles.geneticInheritanceText}>
+                    Breeder: {plant.genetics.breeder}
+                  </Text>
+                )}
               </View>
             </View>
 
@@ -667,7 +1073,7 @@ export default function PlantDetailScreen() {
               <View style={styles.cloneHint}>
                 <Ionicons name="information-circle-outline" size={16} color="#666" />
                 <Text style={styles.cloneHintText}>
-                  Clones will have control numbers starting with "CL" and won't include watering logs.
+                  Clones will have control numbers starting with "CL", inherit genetic info, and won't include watering logs.
                 </Text>
               </View>
             </ScrollView>
@@ -797,17 +1203,35 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 8,
   },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
   badge: {
-    alignSelf: 'flex-start',
     backgroundColor: '#4CAF50',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
-    marginBottom: 8,
   },
   badgeText: {
     color: '#fff',
     fontSize: 14,
+    fontWeight: '600',
+  },
+  motherBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FF9800',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  motherBadgeText: {
+    color: '#fff',
+    fontSize: 12,
     fontWeight: '600',
   },
   date: {
@@ -817,6 +1241,194 @@ const styles = StyleSheet.create({
   editButton: {
     padding: 4,
   },
+  // Genetic Info Card styles
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  geneticIcon: {
+    fontSize: 18,
+  },
+  geneticRow: {
+    marginBottom: 12,
+  },
+  sourceTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  sourceTypeBadgeText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  parentLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e8f5e9',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 12,
+    gap: 8,
+  },
+  parentLinkText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+  },
+  parentLinkName: {
+    fontWeight: '600',
+    color: '#2E7D32',
+  },
+  parentControlBadge: {
+    backgroundColor: '#c8e6c9',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  parentControlText: {
+    fontSize: 12,
+    color: '#2E7D32',
+    fontWeight: '500',
+  },
+  geneticInfoRow: {
+    flexDirection: 'row',
+    marginBottom: 6,
+  },
+  geneticInfoLabel: {
+    fontSize: 14,
+    color: '#666',
+    width: 90,
+  },
+  geneticInfoValue: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+    flex: 1,
+  },
+  lineageBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 8,
+    gap: 8,
+  },
+  lineageText: {
+    fontSize: 14,
+    color: '#333',
+    fontStyle: 'italic',
+    flex: 1,
+  },
+  // Chemotype Card styles
+  chemotypeStatsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  chemotypeStat: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  thcStat: {
+    backgroundColor: '#FFEBEE',
+  },
+  cbdStat: {
+    backgroundColor: '#E3F2FD',
+  },
+  cbgStat: {
+    backgroundColor: '#E8F5E9',
+  },
+  chemotypeStatLabel: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '600',
+  },
+  chemotypeStatValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  labInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  labInfoText: {
+    fontSize: 13,
+    color: '#666',
+  },
+  viewReportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#e8f5e9',
+    padding: 12,
+    borderRadius: 10,
+  },
+  viewReportText: {
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: '600',
+  },
+  // Clone History styles
+  cloneHistorySubtext: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 12,
+  },
+  cloneChildItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  cloneChildIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#e8f5e9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  cloneChildInfo: {
+    flex: 1,
+  },
+  cloneChildName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  cloneChildControl: {
+    fontSize: 12,
+    color: '#666',
+  },
+  cloneChildStageBadge: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  cloneChildStageText: {
+    fontSize: 11,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  // Environment Card
   envCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -952,7 +1564,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 24,
-    maxHeight: '80%',
+    maxHeight: '85%',
   },
   modalTitle: {
     fontSize: 20,
@@ -1032,13 +1644,59 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontStyle: 'italic',
   },
+  // Edit Modal Section Headers
+  editSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 20,
+    marginBottom: 12,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  editSectionIcon: {
+    fontSize: 16,
+  },
+  editSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  motherToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#e8f5e9',
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 12,
+  },
+  motherToggleLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  motherToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  chemotypeEditRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  chemotypeEditInput: {
+    flex: 1,
+  },
+  // Clone Modal
   cloneSourceInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#e8f5e9',
     padding: 12,
     borderRadius: 8,
-    marginBottom: 16,
+    marginBottom: 12,
     gap: 8,
   },
   cloneSourceText: {
@@ -1046,6 +1704,30 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     flex: 1,
+  },
+  geneticInheritanceBox: {
+    flexDirection: 'row',
+    backgroundColor: '#FFF8E1',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+    gap: 10,
+  },
+  geneticInheritanceIcon: {
+    fontSize: 20,
+  },
+  geneticInheritanceContent: {
+    flex: 1,
+  },
+  geneticInheritanceTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#F57F17',
+    marginBottom: 4,
+  },
+  geneticInheritanceText: {
+    fontSize: 13,
+    color: '#666',
   },
   cloneHint: {
     flexDirection: 'row',
