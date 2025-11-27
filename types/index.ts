@@ -55,6 +55,32 @@ export interface Environment {
 // Plant Types
 export type StageName = "Seedling" | "Veg" | "Flower" | "Drying" | "Curing";
 
+// Genetic Origin Types
+export type PlantSourceType = "seed" | "clone" | "cutting" | "tissue_culture";
+
+export interface GeneticInfo {
+  sourceType: PlantSourceType;
+  breeder?: string;           // Seed breeder name
+  seedBank?: string;          // Where acquired
+  parentPlantId?: string;     // For clones, reference to mother plant
+  parentControlNumber?: string;
+  batchId?: string;           // For batch identification
+  acquisitionDate?: number;
+  acquisitionSource?: string;
+  geneticLineage?: string;    // e.g., "OG Kush x Purple Punch"
+}
+
+export interface Chemotype {
+  thcPercent?: number;
+  cbdPercent?: number;
+  cbgPercent?: number;
+  cbnPercent?: number;
+  terpeneProfile?: string[];
+  analysisDate?: number;
+  labName?: string;
+  reportUrl?: string;
+}
+
 export interface Plant {
   id: string;
   userId: string;
@@ -65,6 +91,11 @@ export interface Plant {
   startDate: number;
   stageId?: string;
   currentStage?: StageName;
+  // Genetic tracking (optional for backward compatibility)
+  genetics?: GeneticInfo;
+  chemotype?: Chemotype;
+  isMotherPlant?: boolean;    // Mark plants used for cloning
+  motherPlantId?: string;     // Back-reference for clones (same as genetics.parentPlantId)
 }
 
 export interface Stage {

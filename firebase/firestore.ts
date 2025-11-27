@@ -1,7 +1,7 @@
 // Using Firebase Compat SDK for React Native compatibility
 import { db } from './firebaseConfig';
 import firebase from 'firebase/compat/app';
-import { Plant, Stage, WaterRecord, EnvironmentRecord, Environment, StageName, User, FriendRequest, Friendship, FriendRequestStatus } from '../types';
+import { Plant, Stage, WaterRecord, EnvironmentRecord, Environment, StageName, User, FriendRequest, Friendship, FriendRequestStatus, GeneticInfo } from '../types';
 
 // ==================== UTILITIES ====================
 
@@ -226,6 +226,7 @@ export interface ClonePlantParams {
  * Clones a plant to create multiple new plants in a target environment.
  * Clones do NOT include watering logs or stage history.
  * Control numbers start with "CL" instead of "A".
+ * Automatically inherits genetic lineage from source plant.
  */
 export const clonePlants = async (params: ClonePlantParams): Promise<string[]> => {
   const { sourcePlant, targetEnvironmentId, numberOfClones, stage, userId } = params;
@@ -243,6 +244,19 @@ export const clonePlants = async (params: ClonePlantParams): Promise<string[]> =
   console.log('[Firestore] Cloning plant:', sourcePlant.name, 'to environment:', environment.name);
   console.log('[Firestore] Creating', numberOfClones, 'clones');
   
+  // Build genetic info for clones - inherit from source plant
+  const cloneGeneticInfo: GeneticInfo = {
+    sourceType: 'clone',
+    parentPlantId: sourcePlant.id,
+    parentControlNumber: sourcePlant.controlNumber,
+    // Inherit genetic lineage from source (if available) or use strain
+    geneticLineage: sourcePlant.genetics?.geneticLineage || sourcePlant.strain,
+    // Inherit breeder info if available
+    breeder: sourcePlant.genetics?.breeder,
+    acquisitionDate: now,
+    acquisitionSource: `Cloned from ${sourcePlant.name}`,
+  };
+  
   for (let i = 0; i < numberOfClones; i++) {
     // Get next sequence number
     const nextSequence = currentCounter + 1 + i;
@@ -250,7 +264,7 @@ export const clonePlants = async (params: ClonePlantParams): Promise<string[]> =
     // Generate clone control number (CL prefix instead of A)
     const controlNumber = generateCloneControlNumber(environment.name, nextSequence);
     
-    // Create clone (without logs)
+    // Create clone with genetic info
     const docRef = await db.collection('plants').add({
       userId,
       environmentId: targetEnvironmentId,
@@ -259,6 +273,11 @@ export const clonePlants = async (params: ClonePlantParams): Promise<string[]> =
       strain: sourcePlant.strain,
       startDate: now,
       currentStage: stage,
+      // Genetic tracking
+      genetics: cloneGeneticInfo,
+      motherPlantId: sourcePlant.id,
+      // Inherit chemotype if source has it (clones should have same genetics)
+      ...(sourcePlant.chemotype && { chemotype: sourcePlant.chemotype }),
     });
     
     createdPlantIds.push(docRef.id);
@@ -278,7 +297,7 @@ export const clonePlants = async (params: ClonePlantParams): Promise<string[]> =
     plantCounter: firebase.firestore.FieldValue.increment(numberOfClones),
   });
   
-  console.log('[Firestore] Successfully created', createdPlantIds.length, 'clones');
+  console.log('[Firestore] Successfully created', createdPlantIds.length, 'clones with genetic tracking');
   
   return createdPlantIds;
 };
