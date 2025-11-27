@@ -1,0 +1,727 @@
+// Using Firebase Compat SDK for React Native compatibility
+import { db } from './firebaseConfig';
+import firebase from 'firebase/compat/app';
+import { Plant, Stage, WaterRecord, EnvironmentRecord, Environment, StageName, User, FriendRequest, Friendship, FriendRequestStatus } from '../types';
+
+// ==================== UTILITIES ====================
+
+/**
+ * Generates a control number in format: A-{ENV_INITIALS}-{YEAR}-{SEQUENCE}
+ * Example: A-MT-2025-00001 for "Main Tent" environment
+ */
+export const generateControlNumber = (environmentName: string, sequence: number): string => {
+  // Get initials from environment name (first letter of each word)
+  const initials = environmentName
+    .split(/\s+/)
+    .map(word => word.charAt(0).toUpperCase())
+    .join('');
+  
+  // Get current year
+  const year = new Date().getFullYear();
+  
+  // Format sequence with leading zeros (5 digits)
+  const sequenceStr = String(sequence).padStart(5, '0');
+  
+  return `A-${initials}-${year}-${sequenceStr}`;
+};
+
+/**
+ * Generates a control number for clones in format: CL-{ENV_INITIALS}-{YEAR}-{SEQUENCE}
+ * Example: CL-MT-2025-00001 for a clone in "Main Tent" environment
+ */
+export const generateCloneControlNumber = (environmentName: string, sequence: number): string => {
+  // Get initials from environment name (first letter of each word)
+  const initials = environmentName
+    .split(/\s+/)
+    .map(word => word.charAt(0).toUpperCase())
+    .join('');
+  
+  // Get current year
+  const year = new Date().getFullYear();
+  
+  // Format sequence with leading zeros (5 digits)
+  const sequenceStr = String(sequence).padStart(5, '0');
+  
+  return `CL-${initials}-${year}-${sequenceStr}`;
+};
+
+// ==================== ENVIRONMENTS ====================
+
+export const createEnvironment = async (envData: Omit<Environment, 'id'>): Promise<string> => {
+  // Ensure plantCounter is initialized to 0 and isPublic defaults to false
+  const dataWithDefaults = {
+    ...envData,
+    plantCounter: 0,
+    isPublic: envData.isPublic ?? false,
+  };
+  const docRef = await db.collection('environments').add(dataWithDefaults);
+  return docRef.id;
+};
+
+export const getEnvironment = async (environmentId: string): Promise<Environment | null> => {
+  console.log('[Firestore] Getting environment with ID:', environmentId);
+  const docSnap = await db.collection('environments').doc(environmentId).get();
+  
+  if (docSnap.exists) {
+    const environment = { id: docSnap.id, ...docSnap.data() } as Environment;
+    console.log('[Firestore] Environment found:', environment);
+    return environment;
+  }
+  console.log('[Firestore] Environment not found');
+  return null;
+};
+
+export const getUserEnvironments = async (userId: string): Promise<Environment[]> => {
+  const querySnapshot = await db
+    .collection('environments')
+    .where('userId', '==', userId)
+    .orderBy('createdAt', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Environment));
+};
+
+export const updateEnvironment = async (environmentId: string, data: Partial<Environment>): Promise<void> => {
+  await db.collection('environments').doc(environmentId).update(data);
+};
+
+export const deleteEnvironment = async (environmentId: string): Promise<void> => {
+  // Delete the environment
+  await db.collection('environments').doc(environmentId).delete();
+  
+  // Delete all plants in this environment
+  const plantsSnapshot = await db.collection('plants').where('environmentId', '==', environmentId).get();
+  const plantDeletes = plantsSnapshot.docs.map(async (doc) => {
+    // For each plant, delete its related data
+    const plantId = doc.id;
+    
+    // Delete stages
+    const stagesSnapshot = await db.collection('stages').where('plantId', '==', plantId).get();
+    const stageDeletes = stagesSnapshot.docs.map(stageDoc => stageDoc.ref.delete());
+    
+    // Delete watering logs
+    const waterSnapshot = await db.collection('wateringLogs').where('plantId', '==', plantId).get();
+    const waterDeletes = waterSnapshot.docs.map(waterDoc => waterDoc.ref.delete());
+    
+    await Promise.all([...stageDeletes, ...waterDeletes]);
+    
+    // Delete the plant itself
+    return doc.ref.delete();
+  });
+  
+  // Delete all environment logs for this environment
+  const envLogsSnapshot = await db.collection('environmentLogs').where('environmentId', '==', environmentId).get();
+  const envLogDeletes = envLogsSnapshot.docs.map(doc => doc.ref.delete());
+  
+  // Execute all deletes
+  await Promise.all([...plantDeletes, ...envLogDeletes]);
+};
+
+// ==================== PLANTS ====================
+
+export const createPlant = async (plantData: Omit<Plant, 'id' | 'controlNumber'>): Promise<string> => {
+  // Get the environment to get its name and current counter
+  const environment = await getEnvironment(plantData.environmentId);
+  
+  if (!environment) {
+    throw new Error('Environment not found');
+  }
+  
+  // Get the next sequence number (increment counter)
+  const nextSequence = (environment.plantCounter || 0) + 1;
+  
+  // Generate control number
+  const controlNumber = generateControlNumber(environment.name, nextSequence);
+  
+  // Create the plant with generated control number
+  const docRef = await db.collection('plants').add({
+    ...plantData,
+    controlNumber,
+  });
+  
+  // Increment the environment's plant counter
+  await db.collection('environments').doc(plantData.environmentId).update({
+    plantCounter: firebase.firestore.FieldValue.increment(1),
+  });
+  
+  console.log('[Firestore] Created plant with control number:', controlNumber);
+  
+  return docRef.id;
+};
+
+export const getPlant = async (plantId: string): Promise<Plant | null> => {
+  console.log('[Firestore] Getting plant with ID:', plantId);
+  const docSnap = await db.collection('plants').doc(plantId).get();
+  
+  if (docSnap.exists) {
+    const plant = { id: docSnap.id, ...docSnap.data() } as Plant;
+    console.log('[Firestore] Plant found:', plant);
+    return plant;
+  }
+  console.log('[Firestore] Plant not found');
+  return null;
+};
+
+export const getUserPlants = async (userId: string): Promise<Plant[]> => {
+  const querySnapshot = await db
+    .collection('plants')
+    .where('userId', '==', userId)
+    .orderBy('startDate', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Plant));
+};
+
+export const getEnvironmentPlants = async (environmentId: string, userId: string): Promise<Plant[]> => {
+  const querySnapshot = await db
+    .collection('plants')
+    .where('userId', '==', userId)
+    .where('environmentId', '==', environmentId)
+    .orderBy('startDate', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Plant));
+};
+
+export const updatePlant = async (plantId: string, data: Partial<Plant>): Promise<void> => {
+  await db.collection('plants').doc(plantId).update(data);
+};
+
+export const deletePlant = async (plantId: string): Promise<void> => {
+  // Delete the plant
+  await db.collection('plants').doc(plantId).delete();
+  
+  // Delete all related stages
+  const stagesSnapshot = await db.collection('stages').where('plantId', '==', plantId).get();
+  const stageDeletes = stagesSnapshot.docs.map(doc => doc.ref.delete());
+  
+  // Delete all related watering logs
+  const waterSnapshot = await db.collection('wateringLogs').where('plantId', '==', plantId).get();
+  const waterDeletes = waterSnapshot.docs.map(doc => doc.ref.delete());
+  
+  // Execute all deletes in parallel (environment logs are no longer tied to plants)
+  await Promise.all([...stageDeletes, ...waterDeletes]);
+};
+
+// ==================== CLONE PLANTS ====================
+
+export interface ClonePlantParams {
+  sourcePlant: Plant;
+  targetEnvironmentId: string;
+  numberOfClones: number;
+  stage: StageName;
+  userId: string;
+}
+
+/**
+ * Clones a plant to create multiple new plants in a target environment.
+ * Clones do NOT include watering logs or stage history.
+ * Control numbers start with "CL" instead of "A".
+ */
+export const clonePlants = async (params: ClonePlantParams): Promise<string[]> => {
+  const { sourcePlant, targetEnvironmentId, numberOfClones, stage, userId } = params;
+  
+  // Get target environment
+  const environment = await getEnvironment(targetEnvironmentId);
+  if (!environment) {
+    throw new Error('Target environment not found');
+  }
+  
+  const createdPlantIds: string[] = [];
+  const now = Date.now();
+  const currentCounter = environment.plantCounter || 0;
+  
+  console.log('[Firestore] Cloning plant:', sourcePlant.name, 'to environment:', environment.name);
+  console.log('[Firestore] Creating', numberOfClones, 'clones');
+  
+  for (let i = 0; i < numberOfClones; i++) {
+    // Get next sequence number
+    const nextSequence = currentCounter + 1 + i;
+    
+    // Generate clone control number (CL prefix instead of A)
+    const controlNumber = generateCloneControlNumber(environment.name, nextSequence);
+    
+    // Create clone (without logs)
+    const docRef = await db.collection('plants').add({
+      userId,
+      environmentId: targetEnvironmentId,
+      controlNumber,
+      name: `${sourcePlant.name} Clone ${i + 1}`,
+      strain: sourcePlant.strain,
+      startDate: now,
+      currentStage: stage,
+    });
+    
+    createdPlantIds.push(docRef.id);
+    
+    // Create initial stage for clone
+    await db.collection('stages').add({
+      plantId: docRef.id,
+      name: stage,
+      startDate: now,
+    });
+    
+    console.log('[Firestore] Created clone with control number:', controlNumber);
+  }
+  
+  // Update environment plant counter
+  await db.collection('environments').doc(targetEnvironmentId).update({
+    plantCounter: firebase.firestore.FieldValue.increment(numberOfClones),
+  });
+  
+  console.log('[Firestore] Successfully created', createdPlantIds.length, 'clones');
+  
+  return createdPlantIds;
+};
+
+// ==================== STAGES ====================
+
+export const createStage = async (stageData: Omit<Stage, 'id'>): Promise<string> => {
+  const docRef = await db.collection('stages').add(stageData);
+  return docRef.id;
+};
+
+export const getPlantStages = async (plantId: string): Promise<Stage[]> => {
+  const querySnapshot = await db
+    .collection('stages')
+    .where('plantId', '==', plantId)
+    .orderBy('startDate', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Stage));
+};
+
+// ==================== WATERING LOGS ====================
+
+export const createWaterRecord = async (waterData: Omit<WaterRecord, 'id'>): Promise<string> => {
+  const docRef = await db.collection('wateringLogs').add(waterData);
+  return docRef.id;
+};
+
+export const getPlantWaterRecords = async (plantId: string): Promise<WaterRecord[]> => {
+  const querySnapshot = await db
+    .collection('wateringLogs')
+    .where('plantId', '==', plantId)
+    .orderBy('date', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as WaterRecord));
+};
+
+export const deleteWaterRecord = async (recordId: string): Promise<void> => {
+  await db.collection('wateringLogs').doc(recordId).delete();
+};
+
+// ==================== ENVIRONMENT LOGS ====================
+
+export const createEnvironmentRecord = async (envData: Omit<EnvironmentRecord, 'id'>): Promise<string> => {
+  const docRef = await db.collection('environmentLogs').add(envData);
+  return docRef.id;
+};
+
+export const getEnvironmentRecords = async (environmentId: string): Promise<EnvironmentRecord[]> => {
+  const querySnapshot = await db
+    .collection('environmentLogs')
+    .where('environmentId', '==', environmentId)
+    .orderBy('date', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as EnvironmentRecord));
+};
+
+export const deleteEnvironmentRecord = async (recordId: string): Promise<void> => {
+  await db.collection('environmentLogs').doc(recordId).delete();
+};
+
+// ==================== USER MANAGEMENT ====================
+
+export const getUser = async (userId: string): Promise<User | null> => {
+  const docSnap = await db.collection('users').doc(userId).get();
+  if (docSnap.exists) {
+    return docSnap.data() as User;
+  }
+  return null;
+};
+
+export const updateUser = async (userId: string, data: Partial<User>): Promise<void> => {
+  await db.collection('users').doc(userId).update(data);
+};
+
+export const searchUsersByEmail = async (emailQuery: string, currentUserId: string): Promise<User[]> => {
+  // Search for users whose email starts with the query (case-sensitive limitation of Firestore)
+  const querySnapshot = await db
+    .collection('users')
+    .where('email', '>=', emailQuery.toLowerCase())
+    .where('email', '<=', emailQuery.toLowerCase() + '\uf8ff')
+    .limit(10)
+    .get();
+  
+  return querySnapshot.docs
+    .filter(doc => doc.id !== currentUserId) // Exclude current user
+    .map(doc => ({
+      uid: doc.id,
+      ...doc.data()
+    } as User));
+};
+
+// ==================== FRIEND REQUESTS ====================
+
+export const sendFriendRequest = async (
+  fromUser: User,
+  toUser: User
+): Promise<string> => {
+  // Check if a request already exists
+  const existingRequest = await db.collection('friendRequests')
+    .where('fromUserId', '==', fromUser.uid)
+    .where('toUserId', '==', toUser.uid)
+    .where('status', '==', 'pending')
+    .get();
+  
+  if (!existingRequest.empty) {
+    throw new Error('Friend request already sent');
+  }
+
+  // Check if they are already friends
+  const existingFriendship = await db.collection('friendships')
+    .where('users', 'array-contains', fromUser.uid)
+    .get();
+  
+  const alreadyFriends = existingFriendship.docs.some(doc => {
+    const data = doc.data();
+    return data.users.includes(toUser.uid);
+  });
+
+  if (alreadyFriends) {
+    throw new Error('You are already friends');
+  }
+
+  // Check if there's a pending request from the other user
+  const reverseRequest = await db.collection('friendRequests')
+    .where('fromUserId', '==', toUser.uid)
+    .where('toUserId', '==', fromUser.uid)
+    .where('status', '==', 'pending')
+    .get();
+
+  if (!reverseRequest.empty) {
+    // Auto-accept the reverse request instead
+    const requestId = reverseRequest.docs[0].id;
+    await acceptFriendRequest(requestId, fromUser);
+    return requestId;
+  }
+
+  // Build request data, filtering out undefined values (Firestore doesn't accept them)
+  const requestData: Record<string, any> = {
+    fromUserId: fromUser.uid,
+    fromUserEmail: fromUser.email,
+    toUserId: toUser.uid,
+    toUserEmail: toUser.email,
+    status: 'pending',
+    createdAt: Date.now(),
+  };
+
+  // Only add display names if they exist
+  if (fromUser.displayName) {
+    requestData.fromUserDisplayName = fromUser.displayName;
+  }
+  if (toUser.displayName) {
+    requestData.toUserDisplayName = toUser.displayName;
+  }
+
+  const docRef = await db.collection('friendRequests').add(requestData);
+  return docRef.id;
+};
+
+export const getPendingFriendRequests = async (userId: string): Promise<FriendRequest[]> => {
+  // Try with orderBy first, fallback to without if index not ready
+  let querySnapshot;
+  try {
+    querySnapshot = await db.collection('friendRequests')
+      .where('toUserId', '==', userId)
+      .where('status', '==', 'pending')
+      .orderBy('createdAt', 'desc')
+      .get();
+  } catch (error: any) {
+    // If index not ready, query without orderBy and sort in memory
+    if (error.code === 'failed-precondition' && error.message?.includes('index')) {
+      console.log('[Firestore] Index not ready, querying without orderBy');
+      querySnapshot = await db.collection('friendRequests')
+        .where('toUserId', '==', userId)
+        .where('status', '==', 'pending')
+        .get();
+    } else {
+      throw error;
+    }
+  }
+  
+  let requests = querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as FriendRequest));
+  
+  // Sort in memory if we didn't use orderBy
+  if (requests.length > 0 && requests[0].createdAt) {
+    requests = requests.sort((a, b) => b.createdAt - a.createdAt);
+  }
+  
+  return requests;
+};
+
+export const getSentFriendRequests = async (userId: string): Promise<FriendRequest[]> => {
+  // Try with orderBy first, fallback to without if index not ready
+  let querySnapshot;
+  try {
+    querySnapshot = await db.collection('friendRequests')
+      .where('fromUserId', '==', userId)
+      .where('status', '==', 'pending')
+      .orderBy('createdAt', 'desc')
+      .get();
+  } catch (error: any) {
+    // If index not ready, query without orderBy and sort in memory
+    if (error.code === 'failed-precondition' && error.message?.includes('index')) {
+      console.log('[Firestore] Index not ready, querying without orderBy');
+      querySnapshot = await db.collection('friendRequests')
+        .where('fromUserId', '==', userId)
+        .where('status', '==', 'pending')
+        .get();
+    } else {
+      throw error;
+    }
+  }
+  
+  let requests = querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as FriendRequest));
+  
+  // Sort in memory if we didn't use orderBy
+  if (requests.length > 0 && requests[0].createdAt) {
+    requests = requests.sort((a, b) => b.createdAt - a.createdAt);
+  }
+  
+  return requests;
+};
+
+export const acceptFriendRequest = async (requestId: string, currentUser: User): Promise<void> => {
+  const requestDoc = await db.collection('friendRequests').doc(requestId).get();
+  
+  if (!requestDoc.exists) {
+    throw new Error('Friend request not found');
+  }
+
+  const request = requestDoc.data() as FriendRequest;
+  
+  if (request.toUserId !== currentUser.uid && request.fromUserId !== currentUser.uid) {
+    throw new Error('You cannot accept this request');
+  }
+
+  // Update request status
+  await db.collection('friendRequests').doc(requestId).update({
+    status: 'accepted',
+  });
+
+  // Create friendship - only include fields that have values
+  const friendshipData: Record<string, any> = {
+    users: [request.fromUserId, request.toUserId].sort(),
+    userEmails: [request.fromUserEmail, request.toUserEmail].sort(),
+    createdAt: Date.now(),
+  };
+
+  // Only add display names array if at least one exists
+  if (request.fromUserDisplayName || request.toUserDisplayName) {
+    friendshipData.userDisplayNames = [
+      request.fromUserDisplayName || '',
+      request.toUserDisplayName || ''
+    ].sort();
+  }
+
+  await db.collection('friendships').add(friendshipData);
+};
+
+export const rejectFriendRequest = async (requestId: string, userId: string): Promise<void> => {
+  const requestDoc = await db.collection('friendRequests').doc(requestId).get();
+  
+  if (!requestDoc.exists) {
+    throw new Error('Friend request not found');
+  }
+
+  const request = requestDoc.data() as FriendRequest;
+  
+  if (request.toUserId !== userId) {
+    throw new Error('You cannot reject this request');
+  }
+
+  await db.collection('friendRequests').doc(requestId).update({
+    status: 'rejected',
+  });
+};
+
+export const cancelFriendRequest = async (requestId: string, userId: string): Promise<void> => {
+  const requestDoc = await db.collection('friendRequests').doc(requestId).get();
+  
+  if (!requestDoc.exists) {
+    throw new Error('Friend request not found');
+  }
+
+  const request = requestDoc.data() as FriendRequest;
+  
+  if (request.fromUserId !== userId) {
+    throw new Error('You cannot cancel this request');
+  }
+
+  await db.collection('friendRequests').doc(requestId).delete();
+};
+
+// ==================== FRIENDSHIPS ====================
+
+export const getFriends = async (userId: string): Promise<{ friendship: Friendship; friend: User }[]> => {
+  // Try with orderBy first, fallback to without if index not ready
+  let querySnapshot;
+  try {
+    querySnapshot = await db.collection('friendships')
+      .where('users', 'array-contains', userId)
+      .orderBy('createdAt', 'desc')
+      .get();
+  } catch (error: any) {
+    // If index not ready, query without orderBy and sort in memory
+    if (error.code === 'failed-precondition' && error.message?.includes('index')) {
+      console.log('[Firestore] Index not ready, querying without orderBy');
+      querySnapshot = await db.collection('friendships')
+        .where('users', 'array-contains', userId)
+        .get();
+    } else {
+      throw error;
+    }
+  }
+  
+  let friendships = querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Friendship));
+  
+  // Sort in memory if we didn't use orderBy
+  if (friendships.length > 0 && friendships[0].createdAt) {
+    friendships = friendships.sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  // Get friend details for each friendship
+  const friendsWithDetails = await Promise.all(
+    friendships.map(async (friendship) => {
+      const friendId = friendship.users.find(id => id !== userId)!;
+      const friend = await getUser(friendId);
+      return {
+        friendship,
+        friend: friend || { uid: friendId, email: 'Unknown', createdAt: 0 },
+      };
+    })
+  );
+
+  return friendsWithDetails;
+};
+
+export const removeFriend = async (friendshipId: string, userId: string): Promise<void> => {
+  const friendshipDoc = await db.collection('friendships').doc(friendshipId).get();
+  
+  if (!friendshipDoc.exists) {
+    throw new Error('Friendship not found');
+  }
+
+  const friendship = friendshipDoc.data() as Friendship;
+  
+  if (!friendship.users.includes(userId)) {
+    throw new Error('You are not part of this friendship');
+  }
+
+  await db.collection('friendships').doc(friendshipId).delete();
+};
+
+export const isFriend = async (userId1: string, userId2: string): Promise<boolean> => {
+  const querySnapshot = await db.collection('friendships')
+    .where('users', 'array-contains', userId1)
+    .get();
+  
+  return querySnapshot.docs.some(doc => {
+    const data = doc.data();
+    return data.users.includes(userId2);
+  });
+};
+
+// ==================== PUBLIC ENVIRONMENTS (Friend Access) ====================
+
+export const getFriendPublicEnvironments = async (friendId: string, currentUserId: string): Promise<Environment[]> => {
+  // First verify they are friends
+  const areFriends = await isFriend(currentUserId, friendId);
+  
+  if (!areFriends) {
+    throw new Error('You are not friends with this user');
+  }
+
+  const querySnapshot = await db.collection('environments')
+    .where('userId', '==', friendId)
+    .where('isPublic', '==', true)
+    .orderBy('createdAt', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Environment));
+};
+
+export const getFriendEnvironmentPlants = async (
+  environmentId: string,
+  friendId: string,
+  currentUserId: string
+): Promise<Plant[]> => {
+  // First verify they are friends
+  const areFriends = await isFriend(currentUserId, friendId);
+  
+  if (!areFriends) {
+    throw new Error('You are not friends with this user');
+  }
+
+  // Verify the environment belongs to the friend and is public
+  const envDoc = await db.collection('environments').doc(environmentId).get();
+  
+  if (!envDoc.exists) {
+    throw new Error('Environment not found');
+  }
+
+  const env = envDoc.data() as Environment;
+  
+  if (env.userId !== friendId) {
+    throw new Error('Environment does not belong to this user');
+  }
+
+  if (!env.isPublic) {
+    throw new Error('This environment is not public');
+  }
+
+  const querySnapshot = await db.collection('plants')
+    .where('environmentId', '==', environmentId)
+    .where('userId', '==', friendId)
+    .orderBy('startDate', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Plant));
+};

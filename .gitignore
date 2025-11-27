@@ -1,0 +1,24 @@
+node_modules/
+.expo/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+.env
+
+# macOS
+.DS_Store
+
+# Firebase
+firebase-config.json
+*.backup
+firebase/firebaseConfig.ts.backup
+firebase-config-template.txt
+firestore.rules
+firestore.indexes.json
+
