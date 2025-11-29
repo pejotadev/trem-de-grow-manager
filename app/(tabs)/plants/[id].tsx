@@ -28,6 +28,7 @@ import {
   getUserPlants,
   clonePlants,
   getPlantHarvests,
+  updateHarvest,
 } from '../../../firebase/firestore';
 import { Plant, Stage, WaterRecord, StageName, Environment, PlantSourceType, GeneticInfo, Chemotype, Harvest, HarvestStatus, HarvestPurpose } from '../../../types';
 import { Card } from '../../../components/Card';
@@ -117,6 +118,15 @@ export default function PlantDetailScreen() {
   const [cloneEnvironment, setCloneEnvironment] = useState<Environment | null>(null);
   const [cloning, setCloning] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Curing transition modal state
+  const [curingModalVisible, setCuringModalVisible] = useState(false);
+  const [curingDryWeight, setCuringDryWeight] = useState('');
+  const [curingTrimWeight, setCuringTrimWeight] = useState('');
+  const [curingWasteNotes, setCuringWasteNotes] = useState('');
+  const [selectedHarvestForCuring, setSelectedHarvestForCuring] = useState<Harvest | null>(null);
+  const [updatingCuring, setUpdatingCuring] = useState(false);
+  
   const { userData } = useAuth();
   const router = useRouter();
 
@@ -242,6 +252,130 @@ export default function PlantDetailScreen() {
   };
 
   const handleUpdateStage = (newStage: StageName) => {
+    const currentStage = plant?.currentStage;
+    
+    // Special handling for Flower → Drying: Require harvest first
+    if (currentStage === 'Flower' && newStage === 'Drying') {
+      if (harvests.length === 0) {
+        Alert.alert(
+          'Harvest Required',
+          'You need to harvest this plant before moving to the Drying stage. This records the wet weight and other harvest details.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Go to Harvest',
+              onPress: () => navigateToHarvest(),
+            },
+          ]
+        );
+        return;
+      }
+      
+      // Has harvest, proceed with stage update and update harvest status
+      Alert.alert(
+        'Move to Drying',
+        'This plant has been harvested. Update stage to Drying and set harvest status to "drying"?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Update',
+            onPress: async () => {
+              if (!id || typeof id !== 'string') return;
+              try {
+                const now = Date.now();
+                await createStage({
+                  plantId: id,
+                  name: 'Drying',
+                  startDate: now,
+                });
+                await updatePlant(id, { currentStage: 'Drying' });
+                
+                // Update the latest harvest status to 'drying'
+                const latestHarvest = harvests[0]; // harvests are ordered by date desc
+                if (latestHarvest && latestHarvest.status === 'fresh') {
+                  await updateHarvest(latestHarvest.id, { status: 'drying' });
+                }
+                
+                loadPlantData();
+                Alert.alert('Success', 'Stage updated to Drying!');
+              } catch (error) {
+                Alert.alert('Error', 'Failed to update stage');
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+    
+    // Special handling for Drying → Curing: Collect dry weight and waste info
+    if (currentStage === 'Drying' && newStage === 'Curing') {
+      // Find the latest harvest that's in drying status
+      const dryingHarvest = harvests.find(h => h.status === 'drying');
+      
+      if (!dryingHarvest) {
+        // Check if there's any harvest at all
+        if (harvests.length === 0) {
+          Alert.alert(
+            'No Harvest Found',
+            'You need to harvest and dry this plant before moving to the Curing stage.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+        
+        // There are harvests but none in drying status - maybe already curing
+        const alreadyCuringHarvest = harvests.find(h => h.status === 'curing' || h.status === 'processed');
+        if (alreadyCuringHarvest) {
+          // Allow stage update without modal since harvest already processed
+          Alert.alert(
+            'Update Stage',
+            'Change stage to Curing?',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Update',
+                onPress: async () => {
+                  if (!id || typeof id !== 'string') return;
+                  try {
+                    const now = Date.now();
+                    await createStage({
+                      plantId: id,
+                      name: 'Curing',
+                      startDate: now,
+                    });
+                    await updatePlant(id, { currentStage: 'Curing' });
+                    loadPlantData();
+                    Alert.alert('Success', 'Stage updated!');
+                  } catch (error) {
+                    Alert.alert('Error', 'Failed to update stage');
+                  }
+                },
+              },
+            ]
+          );
+          return;
+        }
+        
+        // Has fresh harvest, needs to go through drying first
+        Alert.alert(
+          'Drying Required',
+          'The harvest needs to be in the Drying stage before moving to Curing. Please update the harvest status first.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      
+      // Open the curing modal to collect dry weight
+      setSelectedHarvestForCuring(dryingHarvest);
+      setCuringDryWeight('');
+      setCuringTrimWeight('');
+      setCuringWasteNotes('');
+      setCuringModalVisible(true);
+      return;
+    }
+    
+    // Standard stage update for other transitions
     Alert.alert(
       'Update Stage',
       `Change stage to ${newStage}?`,
@@ -268,6 +402,86 @@ export default function PlantDetailScreen() {
         },
       ]
     );
+  };
+  
+  // Handle curing transition with dry weight data
+  const handleCuringSubmit = async () => {
+    if (!selectedHarvestForCuring || !id || typeof id !== 'string') return;
+    
+    // Validate dry weight
+    const dryWeightNum = parseFloat(curingDryWeight);
+    if (!curingDryWeight.trim() || isNaN(dryWeightNum) || dryWeightNum <= 0) {
+      Alert.alert('Error', 'Please enter a valid dry weight');
+      return;
+    }
+    
+    // Validate dry weight is less than wet weight
+    if (dryWeightNum > selectedHarvestForCuring.wetWeightGrams) {
+      Alert.alert('Error', 'Dry weight cannot be greater than wet weight');
+      return;
+    }
+    
+    const trimWeightNum = curingTrimWeight.trim() ? parseFloat(curingTrimWeight) : undefined;
+    if (curingTrimWeight.trim() && (isNaN(trimWeightNum!) || trimWeightNum! < 0)) {
+      Alert.alert('Error', 'Please enter a valid trim/waste weight');
+      return;
+    }
+    
+    setUpdatingCuring(true);
+    
+    try {
+      const now = Date.now();
+      
+      // Update plant stage to Curing
+      await createStage({
+        plantId: id,
+        name: 'Curing',
+        startDate: now,
+      });
+      await updatePlant(id, { currentStage: 'Curing' });
+      
+      // Update harvest with dry weight and status
+      const harvestUpdate: Partial<Harvest> = {
+        status: 'curing',
+        dryWeightGrams: dryWeightNum,
+      };
+      
+      if (trimWeightNum !== undefined) {
+        harvestUpdate.trimWeightGrams = trimWeightNum;
+      }
+      
+      // Calculate final weight if trim is provided
+      if (trimWeightNum !== undefined) {
+        harvestUpdate.finalWeightGrams = dryWeightNum - trimWeightNum;
+      }
+      
+      if (curingWasteNotes.trim()) {
+        // Append waste notes to existing notes
+        const existingNotes = selectedHarvestForCuring.notes || '';
+        harvestUpdate.notes = existingNotes 
+          ? `${existingNotes}\n\n[Curing] ${curingWasteNotes.trim()}`
+          : `[Curing] ${curingWasteNotes.trim()}`;
+      }
+      
+      await updateHarvest(selectedHarvestForCuring.id, harvestUpdate);
+      
+      // Calculate drying loss percentage
+      const dryingLoss = ((selectedHarvestForCuring.wetWeightGrams - dryWeightNum) / selectedHarvestForCuring.wetWeightGrams * 100).toFixed(1);
+      
+      setCuringModalVisible(false);
+      loadPlantData();
+      
+      Alert.alert(
+        'Moved to Curing! 🎉',
+        `Dry Weight: ${dryWeightNum}g\nDrying Loss: ${dryingLoss}%${trimWeightNum ? `\nTrim/Waste: ${trimWeightNum}g` : ''}`,
+        [{ text: 'OK' }]
+      );
+    } catch (error: any) {
+      console.error('[PlantDetail] Error updating to curing:', error);
+      Alert.alert('Error', 'Failed to update: ' + (error.message || 'Unknown error'));
+    } finally {
+      setUpdatingCuring(false);
+    }
   };
 
   const handleEditPress = () => {
@@ -678,6 +892,25 @@ export default function PlantDetailScreen() {
         {/* Update Stage */}
         <Card>
           <Text style={styles.sectionTitle}>Update Stage</Text>
+          
+          {/* Stage transition hints */}
+          {plant.currentStage === 'Flower' && harvests.length === 0 && (
+            <View style={styles.stageHint}>
+              <Ionicons name="alert-circle" size={16} color="#FF9800" />
+              <Text style={styles.stageHintText}>
+                Harvest required before moving to Drying
+              </Text>
+            </View>
+          )}
+          {plant.currentStage === 'Drying' && (
+            <View style={styles.stageHintCuring}>
+              <Ionicons name="information-circle" size={16} color="#9C27B0" />
+              <Text style={styles.stageHintCuringText}>
+                Moving to Curing will collect dry weight & waste info
+              </Text>
+            </View>
+          )}
+          
           <View style={styles.stageGrid}>
             <View style={styles.stageRow}>
               {STAGES.slice(0, 3).map((stage) => (
@@ -701,25 +934,41 @@ export default function PlantDetailScreen() {
               ))}
             </View>
             <View style={styles.stageRow}>
-              {STAGES.slice(3, 5).map((stage) => (
-                <TouchableOpacity
-                  key={stage}
-                  style={[
-                    styles.stageButtonWide,
-                    plant.currentStage === stage ? styles.stageButtonActive : styles.stageButtonInactive,
-                  ]}
-                  onPress={() => handleUpdateStage(stage)}
-                >
-                  <Text
+              {STAGES.slice(3, 5).map((stage) => {
+                // Check for special indicators
+                const needsHarvest = stage === 'Drying' && plant.currentStage === 'Flower' && harvests.length === 0;
+                const willCollectDryWeight = stage === 'Curing' && plant.currentStage === 'Drying';
+                
+                return (
+                  <TouchableOpacity
+                    key={stage}
                     style={[
-                      styles.stageButtonText,
-                      plant.currentStage === stage ? styles.stageButtonTextActive : styles.stageButtonTextInactive,
+                      styles.stageButtonWide,
+                      plant.currentStage === stage ? styles.stageButtonActive : styles.stageButtonInactive,
+                      needsHarvest && styles.stageButtonNeedsAction,
+                      willCollectDryWeight && styles.stageButtonCuring,
                     ]}
+                    onPress={() => handleUpdateStage(stage)}
                   >
-                    {stage}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <View style={styles.stageButtonContent}>
+                      {needsHarvest && (
+                        <Ionicons name="cut-outline" size={14} color="#fff" style={styles.stageButtonIcon} />
+                      )}
+                      {willCollectDryWeight && (
+                        <Ionicons name="scale-outline" size={14} color="#fff" style={styles.stageButtonIcon} />
+                      )}
+                      <Text
+                        style={[
+                          styles.stageButtonText,
+                          plant.currentStage === stage ? styles.stageButtonTextActive : styles.stageButtonTextInactive,
+                        ]}
+                      >
+                        {stage}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         </Card>
@@ -1254,6 +1503,112 @@ export default function PlantDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Curing Transition Modal - Collect Dry Weight */}
+      <Modal
+        visible={curingModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setCuringModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Move to Curing</Text>
+
+            {/* Harvest Info */}
+            {selectedHarvestForCuring && (
+              <View style={styles.curingHarvestInfo}>
+                <View style={styles.curingHarvestRow}>
+                  <Ionicons name="cut" size={20} color="#FF9800" />
+                  <Text style={styles.curingHarvestControl}>
+                    #{selectedHarvestForCuring.controlNumber}
+                  </Text>
+                  <View style={styles.curingStatusBadge}>
+                    <Text style={styles.curingStatusText}>drying</Text>
+                  </View>
+                </View>
+                <View style={styles.curingWetWeightRow}>
+                  <Ionicons name="water" size={16} color="#2196F3" />
+                  <Text style={styles.curingWetWeightText}>
+                    Wet Weight: {selectedHarvestForCuring.wetWeightGrams}g
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Info Notice */}
+            <View style={styles.curingInfoNotice}>
+              <Ionicons name="information-circle" size={20} color="#9C27B0" />
+              <Text style={styles.curingInfoText}>
+                Enter the dry weight after drying. This will calculate the drying loss and update the harvest record.
+              </Text>
+            </View>
+
+            <ScrollView keyboardShouldPersistTaps="handled">
+              {/* Dry Weight Input */}
+              <Input
+                label="Dry Weight (grams) *"
+                value={curingDryWeight}
+                onChangeText={setCuringDryWeight}
+                placeholder="Enter dry weight"
+                keyboardType="decimal-pad"
+              />
+              {selectedHarvestForCuring && curingDryWeight && (
+                <View style={styles.dryingLossPreview}>
+                  <Text style={styles.dryingLossLabel}>Drying Loss:</Text>
+                  <Text style={styles.dryingLossValue}>
+                    {((selectedHarvestForCuring.wetWeightGrams - parseFloat(curingDryWeight || '0')) / selectedHarvestForCuring.wetWeightGrams * 100).toFixed(1)}%
+                  </Text>
+                </View>
+              )}
+
+              {/* Trim/Waste Weight Input */}
+              <Input
+                label="Trim/Waste Weight (grams)"
+                value={curingTrimWeight}
+                onChangeText={setCuringTrimWeight}
+                placeholder="Optional - weight removed"
+                keyboardType="decimal-pad"
+              />
+              {curingDryWeight && curingTrimWeight && (
+                <View style={styles.finalWeightPreview}>
+                  <Text style={styles.finalWeightLabel}>Final Weight:</Text>
+                  <Text style={styles.finalWeightValue}>
+                    {(parseFloat(curingDryWeight || '0') - parseFloat(curingTrimWeight || '0')).toFixed(1)}g
+                  </Text>
+                </View>
+              )}
+
+              {/* Notes */}
+              <Input
+                label="Waste/Processing Notes"
+                value={curingWasteNotes}
+                onChangeText={setCuringWasteNotes}
+                placeholder="Any notes about the drying process, waste, etc."
+                multiline
+                numberOfLines={3}
+              />
+            </ScrollView>
+
+            <View style={styles.modalButtons}>
+              <Button
+                title={updatingCuring ? 'Updating...' : 'Confirm & Move to Curing'}
+                onPress={handleCuringSubmit}
+                disabled={updatingCuring}
+              />
+              <Button
+                title="Cancel"
+                onPress={() => setCuringModalVisible(false)}
+                variant="secondary"
+                disabled={updatingCuring}
+              />
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1618,6 +1973,20 @@ const styles = StyleSheet.create({
   stageButtonInactive: {
     backgroundColor: '#2196F3',
   },
+  stageButtonNeedsAction: {
+    backgroundColor: '#FF9800',
+  },
+  stageButtonCuring: {
+    backgroundColor: '#9C27B0',
+  },
+  stageButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  stageButtonIcon: {
+    marginRight: 2,
+  },
   stageButtonText: {
     fontSize: 15,
     fontWeight: '600',
@@ -1627,6 +1996,34 @@ const styles = StyleSheet.create({
   },
   stageButtonTextInactive: {
     color: '#fff',
+  },
+  stageHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+    gap: 8,
+  },
+  stageHintText: {
+    fontSize: 13,
+    color: '#E65100',
+    flex: 1,
+  },
+  stageHintCuring: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3E5F5',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+    gap: 8,
+  },
+  stageHintCuringText: {
+    fontSize: 13,
+    color: '#7B1FA2',
+    flex: 1,
   },
   logItem: {
     flexDirection: 'row',
@@ -1931,5 +2328,98 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#666',
     fontWeight: '500',
+  },
+  // Curing Modal Styles
+  curingHarvestInfo: {
+    backgroundColor: '#FFF3E0',
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 16,
+  },
+  curingHarvestRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  curingHarvestControl: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#E65100',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    flex: 1,
+  },
+  curingStatusBadge: {
+    backgroundColor: '#FF9800',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  curingStatusText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  curingWetWeightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  curingWetWeightText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  curingInfoNotice: {
+    flexDirection: 'row',
+    backgroundColor: '#F3E5F5',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+    gap: 10,
+    alignItems: 'flex-start',
+  },
+  curingInfoText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#7B1FA2',
+    lineHeight: 18,
+  },
+  dryingLossPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#E8F5E9',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  dryingLossLabel: {
+    fontSize: 14,
+    color: '#2E7D32',
+    fontWeight: '500',
+  },
+  dryingLossValue: {
+    fontSize: 16,
+    color: '#2E7D32',
+    fontWeight: 'bold',
+  },
+  finalWeightPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#E3F2FD',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  finalWeightLabel: {
+    fontSize: 14,
+    color: '#1565C0',
+    fontWeight: '500',
+  },
+  finalWeightValue: {
+    fontSize: 16,
+    color: '#1565C0',
+    fontWeight: 'bold',
   },
 });

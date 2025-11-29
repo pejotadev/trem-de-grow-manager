@@ -20,6 +20,7 @@ import {
   createHarvest,
   createStage,
   updatePlant,
+  updateHarvest,
 } from '../../../firebase/firestore';
 import { Plant, Environment, StageName, HarvestPurpose, HarvestStatus } from '../../../types';
 import { Card } from '../../../components/Card';
@@ -60,7 +61,7 @@ export default function HarvestScreen() {
   const [qualityGrade, setQualityGrade] = useState<'A' | 'B' | 'C' | null>(null);
   const [storageLocation, setStorageLocation] = useState('');
   const [notes, setNotes] = useState('');
-  const [updateStageToDrying, setUpdateStageToDrying] = useState(false);
+  const [updateStageToDrying, setUpdateStageToDrying] = useState(true); // Default to true for better workflow
 
   // Modals
   const [purposeModalVisible, setPurposeModalVisible] = useState(false);
@@ -129,13 +130,17 @@ export default function HarvestScreen() {
     setSubmitting(true);
 
     try {
+      // Determine initial status based on whether we're updating stage to Drying
+      const willUpdateToDrying = updateStageToDrying && plant.currentStage === 'Flower';
+      const initialStatus: HarvestStatus = willUpdateToDrying ? 'drying' : 'fresh';
+      
       // Create harvest record
       const harvestId = await createHarvest({
         plantId: plant.id,
         userId: userData.uid,
         harvestDate: harvestDateObj.getTime(),
         wetWeightGrams: wetWeightNum,
-        status: 'fresh' as HarvestStatus,
+        status: initialStatus,
         purpose,
         ...(qualityGrade && { qualityGrade }),
         ...(storageLocation.trim() && { storageLocation: storageLocation.trim() }),
@@ -143,8 +148,8 @@ export default function HarvestScreen() {
         createdAt: Date.now(),
       });
 
-      // Optionally update plant stage to Drying
-      if (updateStageToDrying && plant.currentStage === 'Flower') {
+      // Update plant stage to Drying if selected
+      if (willUpdateToDrying) {
         const now = Date.now();
         await createStage({
           plantId: plant.id,
@@ -158,9 +163,10 @@ export default function HarvestScreen() {
       const { getHarvest } = await import('../../../firebase/firestore');
       const createdHarvest = await getHarvest(harvestId);
 
+      const stageMessage = willUpdateToDrying ? '\nStage updated to Drying' : '';
       Alert.alert(
         'Harvest Recorded! 🌿',
-        `Control Number: ${createdHarvest?.controlNumber || 'N/A'}\n\nWet Weight: ${wetWeightNum}g\nPurpose: ${purpose}`,
+        `Control Number: ${createdHarvest?.controlNumber || 'N/A'}\n\nWet Weight: ${wetWeightNum}g\nPurpose: ${purpose}${stageMessage}`,
         [
           {
             text: 'OK',

@@ -23,6 +23,14 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
   {
+    id: 'inventory',
+    title: 'Inventory',
+    subtitle: 'Track harvests and available stock',
+    icon: 'cube',
+    color: '#388E3C',
+    route: '/(tabs)/harvests',
+  },
+  {
     id: 'extracts',
     title: 'Extracts',
     subtitle: 'Manage your cannabis extracts',
