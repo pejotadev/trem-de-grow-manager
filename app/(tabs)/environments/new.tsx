@@ -46,7 +46,7 @@ export default function NewEnvironmentScreen() {
       return;
     }
 
-    if (!userData) {
+    if (!userData || !userData.uid) {
       Alert.alert('Error', 'User not authenticated');
       return;
     }

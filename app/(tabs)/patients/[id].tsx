@@ -25,6 +25,7 @@ import { Patient, PatientStatus, PatientDocumentType, Distribution, ProductType 
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
+import { DatePicker } from '../../../components/DatePicker';
 import { Loading } from '../../../components/Loading';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
@@ -107,6 +108,12 @@ export default function PatientDetailScreen() {
   const [editPrescribingDoctor, setEditPrescribingDoctor] = useState('');
   const [editDoctorCrm, setEditDoctorCrm] = useState('');
   const [editNotes, setEditNotes] = useState('');
+  // Prescription & Consent fields (previously missing from edit)
+  const [editPrescriptionDate, setEditPrescriptionDate] = useState<Date | null>(null);
+  const [editPrescriptionExpiration, setEditPrescriptionExpiration] = useState<Date | null>(null);
+  const [editPrescriptionFileUrl, setEditPrescriptionFileUrl] = useState('');
+  const [editConsentDate, setEditConsentDate] = useState<Date | null>(null);
+  const [editConsentFileUrl, setEditConsentFileUrl] = useState('');
 
   const { userData } = useAuth();
   const router = useRouter();
@@ -151,6 +158,12 @@ export default function PatientDetailScreen() {
     setEditPrescribingDoctor(patient.prescribingDoctor || '');
     setEditDoctorCrm(patient.doctorCrm || '');
     setEditNotes(patient.notes || '');
+    // Initialize prescription & consent fields
+    setEditPrescriptionDate(patient.prescriptionDate ? new Date(patient.prescriptionDate) : null);
+    setEditPrescriptionExpiration(patient.prescriptionExpirationDate ? new Date(patient.prescriptionExpirationDate) : null);
+    setEditPrescriptionFileUrl(patient.prescriptionFileUrl || '');
+    setEditConsentDate(patient.consentSignedDate ? new Date(patient.consentSignedDate) : null);
+    setEditConsentFileUrl(patient.consentFileUrl || '');
     setEditModalVisible(true);
   };
 
@@ -174,6 +187,12 @@ export default function PatientDetailScreen() {
         prescribingDoctor: editPrescribingDoctor.trim() || undefined,
         doctorCrm: editDoctorCrm.trim() || undefined,
         notes: editNotes.trim() || undefined,
+        // Prescription & Consent fields
+        prescriptionDate: editPrescriptionDate?.getTime() || undefined,
+        prescriptionExpirationDate: editPrescriptionExpiration?.getTime() || undefined,
+        prescriptionFileUrl: editPrescriptionFileUrl.trim() || undefined,
+        consentSignedDate: editConsentDate?.getTime() || undefined,
+        consentFileUrl: editConsentFileUrl.trim() || undefined,
       });
 
       setEditModalVisible(false);
@@ -657,6 +676,58 @@ export default function PatientDetailScreen() {
                 onChangeText={setEditDoctorCrm}
               />
 
+              {/* Prescription Section */}
+              <View style={styles.editSectionHeader}>
+                <Ionicons name="document-text" size={18} color="#0288D1" />
+                <Text style={styles.editSectionTitle}>Prescription</Text>
+              </View>
+
+              <DatePicker
+                label="Prescription Date"
+                value={editPrescriptionDate}
+                onChange={setEditPrescriptionDate}
+                placeholder="Select prescription date"
+                maximumDate={new Date()}
+              />
+
+              <DatePicker
+                label="Expiration Date"
+                value={editPrescriptionExpiration}
+                onChange={setEditPrescriptionExpiration}
+                placeholder="Select expiration date"
+                minimumDate={editPrescriptionDate || undefined}
+              />
+
+              <Input
+                label="Prescription File URL"
+                value={editPrescriptionFileUrl}
+                onChangeText={setEditPrescriptionFileUrl}
+                placeholder="https://..."
+                autoCapitalize="none"
+              />
+
+              {/* Consent Section */}
+              <View style={styles.editSectionHeader}>
+                <Ionicons name="checkmark-circle" size={18} color="#0288D1" />
+                <Text style={styles.editSectionTitle}>Consent</Text>
+              </View>
+
+              <DatePicker
+                label="Consent Signed Date"
+                value={editConsentDate}
+                onChange={setEditConsentDate}
+                placeholder="Select consent date"
+                maximumDate={new Date()}
+              />
+
+              <Input
+                label="Consent File URL"
+                value={editConsentFileUrl}
+                onChangeText={setEditConsentFileUrl}
+                placeholder="https://..."
+                autoCapitalize="none"
+              />
+
               <Input
                 label="Notes"
                 value={editNotes}
@@ -936,6 +1007,21 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: '#0288D1',
+  },
+  editSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 16,
+    marginBottom: 8,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  editSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0288D1',
   },
   inputLabel: {
     fontSize: 14,

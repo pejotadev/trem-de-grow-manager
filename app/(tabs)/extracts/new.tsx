@@ -77,7 +77,7 @@ export default function NewExtractScreen() {
   const router = useRouter();
 
   const loadData = async () => {
-    if (!userData) {
+    if (!userData || !userData.uid) {
       setLoading(false);
       return;
     }
@@ -124,7 +124,7 @@ export default function NewExtractScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!userData) return;
+    if (!userData || !userData.uid) return;
 
     // Validation
     if (!name.trim()) {

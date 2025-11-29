@@ -145,7 +145,7 @@ export default function NewPlantScreen() {
       return;
     }
 
-    if (!userData) {
+    if (!userData || !userData.uid) {
       Alert.alert('Error', 'User not authenticated');
       return;
     }

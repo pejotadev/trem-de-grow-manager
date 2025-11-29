@@ -68,6 +68,10 @@ export const generateHarvestControlNumber = (environmentName: string, sequence: 
 // ==================== ENVIRONMENTS ====================
 
 export const createEnvironment = async (envData: Omit<Environment, 'id'>): Promise<string> => {
+  if (!envData.userId) {
+    throw new Error('userId is required to create an environment');
+  }
+  
   // Ensure plantCounter and harvestCounter are initialized to 0 and isPublic defaults to false
   const dataWithDefaults = {
     ...envData,
@@ -93,6 +97,11 @@ export const getEnvironment = async (environmentId: string): Promise<Environment
 };
 
 export const getUserEnvironments = async (userId: string): Promise<Environment[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getUserEnvironments called with undefined/null userId');
+    return [];
+  }
+  
   const querySnapshot = await db
     .collection('environments')
     .where('userId', '==', userId)
@@ -144,6 +153,10 @@ export const deleteEnvironment = async (environmentId: string): Promise<void> =>
 // ==================== PLANTS ====================
 
 export const createPlant = async (plantData: Omit<Plant, 'id' | 'controlNumber'>): Promise<string> => {
+  if (!plantData.userId) {
+    throw new Error('userId is required to create a plant');
+  }
+  
   // Get the environment to get its name and current counter
   const environment = await getEnvironment(plantData.environmentId);
   
@@ -187,6 +200,11 @@ export const getPlant = async (plantId: string): Promise<Plant | null> => {
 };
 
 export const getUserPlants = async (userId: string): Promise<Plant[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getUserPlants called with undefined/null userId');
+    return [];
+  }
+  
   const querySnapshot = await db
     .collection('plants')
     .where('userId', '==', userId)
@@ -200,6 +218,11 @@ export const getUserPlants = async (userId: string): Promise<Plant[]> => {
 };
 
 export const getEnvironmentPlants = async (environmentId: string, userId: string): Promise<Plant[]> => {
+  if (!userId || !environmentId) {
+    console.warn('[Firestore] getEnvironmentPlants called with undefined/null userId or environmentId');
+    return [];
+  }
+  
   const querySnapshot = await db
     .collection('plants')
     .where('userId', '==', userId)
@@ -491,6 +514,11 @@ export const sendFriendRequest = async (
 };
 
 export const getPendingFriendRequests = async (userId: string): Promise<FriendRequest[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getPendingFriendRequests called with undefined/null userId');
+    return [];
+  }
+  
   // Try with orderBy first, fallback to without if index not ready
   let querySnapshot;
   try {
@@ -526,6 +554,11 @@ export const getPendingFriendRequests = async (userId: string): Promise<FriendRe
 };
 
 export const getSentFriendRequests = async (userId: string): Promise<FriendRequest[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getSentFriendRequests called with undefined/null userId');
+    return [];
+  }
+  
   // Try with orderBy first, fallback to without if index not ready
   let querySnapshot;
   try {
@@ -633,6 +666,11 @@ export const cancelFriendRequest = async (requestId: string, userId: string): Pr
 // ==================== FRIENDSHIPS ====================
 
 export const getFriends = async (userId: string): Promise<{ friendship: Friendship; friend: User }[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getFriends called with undefined/null userId');
+    return [];
+  }
+  
   // Try with orderBy first, fallback to without if index not ready
   let querySnapshot;
   try {
@@ -694,6 +732,11 @@ export const removeFriend = async (friendshipId: string, userId: string): Promis
 };
 
 export const isFriend = async (userId1: string, userId2: string): Promise<boolean> => {
+  if (!userId1 || !userId2) {
+    console.warn('[Firestore] isFriend called with undefined/null userId');
+    return false;
+  }
+  
   const querySnapshot = await db.collection('friendships')
     .where('users', 'array-contains', userId1)
     .get();
@@ -707,6 +750,11 @@ export const isFriend = async (userId1: string, userId2: string): Promise<boolea
 // ==================== PUBLIC ENVIRONMENTS (Friend Access) ====================
 
 export const getFriendPublicEnvironments = async (friendId: string, currentUserId: string): Promise<Environment[]> => {
+  if (!friendId || !currentUserId) {
+    console.warn('[Firestore] getFriendPublicEnvironments called with undefined/null friendId or currentUserId');
+    return [];
+  }
+  
   // First verify they are friends
   const areFriends = await isFriend(currentUserId, friendId);
   
@@ -731,6 +779,11 @@ export const getFriendEnvironmentPlants = async (
   friendId: string,
   currentUserId: string
 ): Promise<Plant[]> => {
+  if (!environmentId || !friendId || !currentUserId) {
+    console.warn('[Firestore] getFriendEnvironmentPlants called with undefined/null parameters');
+    return [];
+  }
+  
   // First verify they are friends
   const areFriends = await isFriend(currentUserId, friendId);
   
@@ -770,6 +823,10 @@ export const getFriendEnvironmentPlants = async (
 // ==================== HARVESTS ====================
 
 export const createHarvest = async (harvestData: Omit<Harvest, 'id' | 'controlNumber'>): Promise<string> => {
+  if (!harvestData.userId) {
+    throw new Error('userId is required to create a harvest');
+  }
+  
   // Get the plant to find its environment
   const plant = await getPlant(harvestData.plantId);
   
@@ -833,6 +890,11 @@ export const getPlantHarvests = async (plantId: string): Promise<Harvest[]> => {
 };
 
 export const getUserHarvests = async (userId: string): Promise<Harvest[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getUserHarvests called with undefined/null userId');
+    return [];
+  }
+  
   const querySnapshot = await db
     .collection('harvests')
     .where('userId', '==', userId)
@@ -856,6 +918,10 @@ export const deleteHarvest = async (harvestId: string): Promise<void> => {
 // ==================== PATIENTS ====================
 
 export const createPatient = async (patientData: Omit<Patient, 'id'>): Promise<string> => {
+  if (!patientData.userId) {
+    throw new Error('userId is required to create a patient');
+  }
+  
   const now = Date.now();
   const docRef = await db.collection('patients').add({
     ...patientData,
@@ -880,6 +946,11 @@ export const getPatient = async (patientId: string): Promise<Patient | null> => 
 };
 
 export const getUserPatients = async (userId: string): Promise<Patient[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getUserPatients called with undefined/null userId');
+    return [];
+  }
+  
   const querySnapshot = await db
     .collection('patients')
     .where('userId', '==', userId)
@@ -954,6 +1025,10 @@ export const generateDistributionNumber = (sequence: number): string => {
 };
 
 export const createDistribution = async (distributionData: Omit<Distribution, 'id' | 'distributionNumber'>): Promise<string> => {
+  if (!distributionData.userId) {
+    throw new Error('userId is required to create a distribution');
+  }
+  
   // Get next distribution number
   const sequence = await getNextDistributionNumber(distributionData.userId);
   const distributionNumber = generateDistributionNumber(sequence);
@@ -991,6 +1066,11 @@ export const getDistribution = async (distributionId: string): Promise<Distribut
 };
 
 export const getUserDistributions = async (userId: string): Promise<Distribution[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getUserDistributions called with undefined/null userId');
+    return [];
+  }
+  
   const querySnapshot = await db
     .collection('distributions')
     .where('userId', '==', userId)
@@ -1077,6 +1157,10 @@ export const generateExtractControlNumber = (sequence: number): string => {
 };
 
 export const createExtract = async (extractData: Omit<Extract, 'id' | 'controlNumber'>): Promise<string> => {
+  if (!extractData.userId) {
+    throw new Error('userId is required to create an extract');
+  }
+  
   // Get next extract number
   const sequence = await getNextExtractNumber(extractData.userId);
   const controlNumber = generateExtractControlNumber(sequence);
@@ -1119,6 +1203,11 @@ export const getExtract = async (extractId: string): Promise<Extract | null> => 
 };
 
 export const getUserExtracts = async (userId: string): Promise<Extract[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getUserExtracts called with undefined/null userId');
+    return [];
+  }
+  
   const querySnapshot = await db
     .collection('extracts')
     .where('userId', '==', userId)

@@ -49,8 +49,8 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const loadData = async () => {
-    if (!userData) {
-      console.log('[HomeScreen] No userData, skipping load');
+    if (!userData || !userData.uid) {
+      console.log('[HomeScreen] No userData or userData.uid, skipping load');
       setLoading(false);
       return;
     }

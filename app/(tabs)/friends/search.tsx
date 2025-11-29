@@ -35,7 +35,7 @@ export default function SearchFriendsScreen() {
   const { userData } = useAuth();
 
   const loadExistingConnections = async () => {
-    if (!userData) return;
+    if (!userData || !userData.uid) return;
 
     try {
       const [requests, friends] = await Promise.all([
@@ -56,7 +56,7 @@ export default function SearchFriendsScreen() {
       return;
     }
 
-    if (!userData) return;
+    if (!userData || !userData.uid) return;
 
     setSearching(true);
     setHasSearched(true);

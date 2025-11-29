@@ -73,7 +73,7 @@ export default function NewDistributionScreen() {
   const router = useRouter();
 
   const loadData = async () => {
-    if (!userData) {
+    if (!userData || !userData.uid) {
       setLoading(false);
       return;
     }
@@ -156,7 +156,7 @@ export default function NewDistributionScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!userData) return;
+    if (!userData || !userData.uid) return;
 
     // Validation
     if (!selectedPatient) {

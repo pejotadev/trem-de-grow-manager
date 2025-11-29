@@ -17,6 +17,7 @@ import { PatientStatus, PatientDocumentType } from '../../../types';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
+import { DatePicker } from '../../../components/DatePicker';
 import { Ionicons } from '@expo/vector-icons';
 
 const DOCUMENT_TYPES: { value: PatientDocumentType; label: string }[] = [
@@ -43,12 +44,12 @@ export default function NewPatientScreen() {
   const [doctorCrm, setDoctorCrm] = useState('');
 
   // Prescription
-  const [prescriptionDate, setPrescriptionDate] = useState('');
-  const [prescriptionExpiration, setPrescriptionExpiration] = useState('');
+  const [prescriptionDate, setPrescriptionDate] = useState<Date | null>(null);
+  const [prescriptionExpiration, setPrescriptionExpiration] = useState<Date | null>(null);
   const [prescriptionFileUrl, setPrescriptionFileUrl] = useState('');
 
   // Consent
-  const [consentDate, setConsentDate] = useState('');
+  const [consentDate, setConsentDate] = useState<Date | null>(null);
   const [consentFileUrl, setConsentFileUrl] = useState('');
 
   // Notes
@@ -58,7 +59,7 @@ export default function NewPatientScreen() {
   const router = useRouter();
 
   const handleSubmit = async () => {
-    if (!userData) return;
+    if (!userData || !userData.uid) return;
 
     // Validation
     if (!name.trim()) {
@@ -76,31 +77,10 @@ export default function NewPatientScreen() {
     try {
       const now = Date.now();
 
-      // Parse dates
-      let prescriptionDateNum: number | undefined;
-      let prescriptionExpirationNum: number | undefined;
-      let consentDateNum: number | undefined;
-
-      if (prescriptionDate.trim()) {
-        const parsed = new Date(prescriptionDate);
-        if (!isNaN(parsed.getTime())) {
-          prescriptionDateNum = parsed.getTime();
-        }
-      }
-
-      if (prescriptionExpiration.trim()) {
-        const parsed = new Date(prescriptionExpiration);
-        if (!isNaN(parsed.getTime())) {
-          prescriptionExpirationNum = parsed.getTime();
-        }
-      }
-
-      if (consentDate.trim()) {
-        const parsed = new Date(consentDate);
-        if (!isNaN(parsed.getTime())) {
-          consentDateNum = parsed.getTime();
-        }
-      }
+      // Get date timestamps (dates are already Date objects from DatePicker)
+      const prescriptionDateNum = prescriptionDate?.getTime();
+      const prescriptionExpirationNum = prescriptionExpiration?.getTime();
+      const consentDateNum = consentDate?.getTime();
 
       await createPatient({
         userId: userData.uid,
@@ -264,18 +244,20 @@ export default function NewPatientScreen() {
               <Text style={styles.sectionTitle}>Prescription</Text>
             </View>
 
-            <Input
+            <DatePicker
               label="Prescription Date"
               value={prescriptionDate}
-              onChangeText={setPrescriptionDate}
-              placeholder="YYYY-MM-DD"
+              onChange={setPrescriptionDate}
+              placeholder="Select prescription date"
+              maximumDate={new Date()}
             />
 
-            <Input
+            <DatePicker
               label="Expiration Date"
               value={prescriptionExpiration}
-              onChangeText={setPrescriptionExpiration}
-              placeholder="YYYY-MM-DD"
+              onChange={setPrescriptionExpiration}
+              placeholder="Select expiration date"
+              minimumDate={prescriptionDate || undefined}
             />
 
             <Input
@@ -297,11 +279,12 @@ export default function NewPatientScreen() {
               <Text style={styles.sectionTitle}>Consent</Text>
             </View>
 
-            <Input
+            <DatePicker
               label="Consent Signed Date"
               value={consentDate}
-              onChangeText={setConsentDate}
-              placeholder="YYYY-MM-DD"
+              onChange={setConsentDate}
+              placeholder="Select consent date"
+              maximumDate={new Date()}
             />
 
             <Input

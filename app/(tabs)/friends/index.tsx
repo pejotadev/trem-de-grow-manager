@@ -39,7 +39,8 @@ export default function FriendsScreen() {
   const router = useRouter();
 
   const loadData = async () => {
-    if (!userData) {
+    if (!userData || !userData.uid) {
+      console.log('[FriendsScreen] No userData or userData.uid, skipping load');
       setLoading(false);
       return;
     }

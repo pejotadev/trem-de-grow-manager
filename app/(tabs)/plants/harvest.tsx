@@ -106,7 +106,7 @@ export default function HarvestScreen() {
   const isHarvestableStage = plant?.currentStage && HARVESTABLE_STAGES.includes(plant.currentStage);
 
   const handleSubmit = async () => {
-    if (!plant || !userData) return;
+    if (!plant || !userData || !userData.uid) return;
 
     // Validation
     if (!wetWeight.trim()) {

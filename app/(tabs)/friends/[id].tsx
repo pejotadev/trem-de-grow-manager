@@ -48,7 +48,8 @@ export default function FriendProfileScreen() {
   const router = useRouter();
 
   const loadFriendData = async () => {
-    if (!id || typeof id !== 'string' || !userData) {
+    if (!id || typeof id !== 'string' || !userData || !userData.uid) {
+      console.log('[FriendProfile] Missing required data, skipping load');
       setLoading(false);
       return;
     }
@@ -74,7 +75,7 @@ export default function FriendProfileScreen() {
   };
 
   const loadPlants = async () => {
-    if (!selectedEnvironment || !userData || !id || typeof id !== 'string') return;
+    if (!selectedEnvironment || !userData || !userData.uid || !id || typeof id !== 'string') return;
 
     setLoadingPlants(true);
     try {
