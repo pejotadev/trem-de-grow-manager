@@ -17,6 +17,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { createPlant, createStage, getUserEnvironments, getUserPlants, generateControlNumber } from '../../../firebase/firestore';
 import { StageName, Environment, Plant, PlantSourceType, GeneticInfo, Chemotype } from '../../../types';
 import { Input } from '../../../components/Input';
+import { DatePicker } from '../../../components/DatePicker';
 import { Button } from '../../../components/Button';
 import { Loading } from '../../../components/Loading';
 import { Ionicons } from '@expo/vector-icons';
@@ -69,7 +70,7 @@ export default function NewPlantScreen() {
   const [thcPercent, setThcPercent] = useState('');
   const [cbdPercent, setCbdPercent] = useState('');
   const [labName, setLabName] = useState('');
-  const [analysisDate, setAnalysisDate] = useState('');
+  const [analysisDate, setAnalysisDate] = useState<Date | null>(null);
   
   // Loading states
   const [loading, setLoading] = useState(false);
@@ -181,12 +182,12 @@ export default function NewPlantScreen() {
 
       // Build chemotype if provided
       let chemotype: Chemotype | undefined;
-      if (showChemotype && (thcPercent || cbdPercent || labName)) {
+      if (showChemotype && (thcPercent || cbdPercent || labName || analysisDate)) {
         chemotype = {};
         if (thcPercent) chemotype.thcPercent = parseFloat(thcPercent);
         if (cbdPercent) chemotype.cbdPercent = parseFloat(cbdPercent);
         if (labName) chemotype.labName = labName;
-        if (analysisDate) chemotype.analysisDate = new Date(analysisDate).getTime();
+        if (analysisDate) chemotype.analysisDate = analysisDate.getTime();
       }
 
       const plantId = await createPlant({
@@ -576,11 +577,12 @@ export default function NewPlantScreen() {
                   onChangeText={setLabName}
                   placeholder="e.g., SC Labs, Steep Hill"
                 />
-                <Input
+                <DatePicker
                   label="Analysis Date"
                   value={analysisDate}
-                  onChangeText={setAnalysisDate}
-                  placeholder="YYYY-MM-DD"
+                  onChange={setAnalysisDate}
+                  placeholder="Select analysis date"
+                  maximumDate={new Date()}
                 />
               </View>
             )}

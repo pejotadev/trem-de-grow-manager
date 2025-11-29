@@ -26,6 +26,7 @@ import { Plant, Environment, StageName, HarvestPurpose, HarvestStatus } from '..
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
+import { DatePicker } from '../../../components/DatePicker';
 import { Loading } from '../../../components/Loading';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,7 +56,7 @@ export default function HarvestScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   // Form state
-  const [harvestDate, setHarvestDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [harvestDate, setHarvestDate] = useState<Date | null>(new Date());
   const [wetWeight, setWetWeight] = useState('');
   const [purpose, setPurpose] = useState<HarvestPurpose>('personal');
   const [qualityGrade, setQualityGrade] = useState<'A' | 'B' | 'C' | null>(null);
@@ -120,10 +121,9 @@ export default function HarvestScreen() {
       return;
     }
 
-    // Parse harvest date
-    const harvestDateObj = new Date(harvestDate);
-    if (isNaN(harvestDateObj.getTime())) {
-      Alert.alert('Error', 'Please enter a valid harvest date (YYYY-MM-DD)');
+    // Validate harvest date
+    if (!harvestDate) {
+      Alert.alert('Error', 'Please select a harvest date');
       return;
     }
 
@@ -138,7 +138,7 @@ export default function HarvestScreen() {
       const harvestId = await createHarvest({
         plantId: plant.id,
         userId: userData.uid,
-        harvestDate: harvestDateObj.getTime(),
+        harvestDate: harvestDate.getTime(),
         wetWeightGrams: wetWeightNum,
         status: initialStatus,
         purpose,
@@ -249,11 +249,12 @@ export default function HarvestScreen() {
             <Text style={styles.sectionTitle}>Harvest Details</Text>
 
             {/* Harvest Date */}
-            <Input
+            <DatePicker
               label="Harvest Date *"
               value={harvestDate}
-              onChangeText={setHarvestDate}
-              placeholder="YYYY-MM-DD"
+              onChange={setHarvestDate}
+              placeholder="Select harvest date"
+              maximumDate={new Date()}
             />
 
             {/* Wet Weight */}

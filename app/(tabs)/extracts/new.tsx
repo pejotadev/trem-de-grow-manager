@@ -21,6 +21,7 @@ import { Harvest, ExtractType, ExtractionMethod } from '../../../types';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
+import { DatePicker } from '../../../components/DatePicker';
 import { Loading } from '../../../components/Loading';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
@@ -57,14 +58,14 @@ export default function NewExtractScreen() {
   const [name, setName] = useState('');
   const [extractType, setExtractType] = useState<ExtractType>('oil');
   const [extractionMethod, setExtractionMethod] = useState<ExtractionMethod>('olive_oil');
-  const [extractionDate, setExtractionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [extractionDate, setExtractionDate] = useState<Date | null>(new Date());
   const [inputWeight, setInputWeight] = useState('');
   const [outputVolume, setOutputVolume] = useState('');
   const [outputWeight, setOutputWeight] = useState('');
   const [thcMgPerMl, setThcMgPerMl] = useState('');
   const [cbdMgPerMl, setCbdMgPerMl] = useState('');
   const [carrier, setCarrier] = useState('');
-  const [expirationDate, setExpirationDate] = useState('');
+  const [expirationDate, setExpirationDate] = useState<Date | null>(null);
   const [storageLocation, setStorageLocation] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -158,20 +159,13 @@ export default function NewExtractScreen() {
       return;
     }
 
-    // Parse dates
-    const extractionDateObj = new Date(extractionDate);
-    if (isNaN(extractionDateObj.getTime())) {
-      Alert.alert('Error', 'Please enter a valid extraction date');
+    // Validate dates
+    if (!extractionDate) {
+      Alert.alert('Error', 'Please select an extraction date');
       return;
     }
 
-    let expirationDateNum: number | undefined;
-    if (expirationDate.trim()) {
-      const expDate = new Date(expirationDate);
-      if (!isNaN(expDate.getTime())) {
-        expirationDateNum = expDate.getTime();
-      }
-    }
+    const expirationDateNum: number | undefined = expirationDate?.getTime();
 
     setSubmitting(true);
 
@@ -185,7 +179,7 @@ export default function NewExtractScreen() {
         extractType,
         harvestIds: selectedHarvests.map(h => h.id),
         sourceControlNumbers: selectedHarvests.map(h => h.controlNumber),
-        extractionDate: extractionDateObj.getTime(),
+        extractionDate: extractionDate.getTime(),
         extractionMethod,
         inputWeightGrams: inputWeightNum,
         ...(outputVolumeNum && { outputVolumeMl: outputVolumeNum }),
@@ -259,11 +253,12 @@ export default function NewExtractScreen() {
               <Ionicons name="chevron-down" size={20} color="#666" />
             </TouchableOpacity>
 
-            <Input
+            <DatePicker
               label="Extraction Date *"
               value={extractionDate}
-              onChangeText={setExtractionDate}
-              placeholder="YYYY-MM-DD"
+              onChange={setExtractionDate}
+              placeholder="Select extraction date"
+              maximumDate={new Date()}
             />
           </Card>
 
@@ -393,11 +388,12 @@ export default function NewExtractScreen() {
               <Text style={styles.sectionTitle}>Storage</Text>
             </View>
 
-            <Input
+            <DatePicker
               label="Expiration Date"
               value={expirationDate}
-              onChangeText={setExpirationDate}
-              placeholder="YYYY-MM-DD"
+              onChange={setExpirationDate}
+              placeholder="Select expiration date"
+              minimumDate={extractionDate || undefined}
             />
 
             <Input

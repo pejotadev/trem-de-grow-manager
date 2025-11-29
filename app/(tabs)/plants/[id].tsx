@@ -34,6 +34,7 @@ import { Plant, Stage, WaterRecord, StageName, Environment, PlantSourceType, Gen
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
+import { DatePicker } from '../../../components/DatePicker';
 import { Loading } from '../../../components/Loading';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
@@ -108,7 +109,7 @@ export default function PlantDetailScreen() {
   const [editCbdPercent, setEditCbdPercent] = useState('');
   const [editCbgPercent, setEditCbgPercent] = useState('');
   const [editLabName, setEditLabName] = useState('');
-  const [editAnalysisDate, setEditAnalysisDate] = useState('');
+  const [editAnalysisDate, setEditAnalysisDate] = useState<Date | null>(null);
   
   // Clone state
   const [cloneModalVisible, setCloneModalVisible] = useState(false);
@@ -502,8 +503,8 @@ export default function PlantDetailScreen() {
       setEditCbgPercent(plant.chemotype?.cbgPercent?.toString() || '');
       setEditLabName(plant.chemotype?.labName || '');
       setEditAnalysisDate(plant.chemotype?.analysisDate 
-        ? format(new Date(plant.chemotype.analysisDate), 'yyyy-MM-dd') 
-        : '');
+        ? new Date(plant.chemotype.analysisDate) 
+        : null);
       
       setEditModalVisible(true);
     }
@@ -562,9 +563,8 @@ export default function PlantDetailScreen() {
           if (!isNaN(cbg)) updatedChemotype.cbgPercent = cbg;
         }
         if (editLabName.trim()) updatedChemotype.labName = editLabName.trim();
-        if (editAnalysisDate.trim()) {
-          const date = new Date(editAnalysisDate);
-          if (!isNaN(date.getTime())) updatedChemotype.analysisDate = date.getTime();
+        if (editAnalysisDate) {
+          updatedChemotype.analysisDate = editAnalysisDate.getTime();
         }
       }
 
@@ -1223,11 +1223,12 @@ export default function PlantDetailScreen() {
                 onChangeText={setEditLabName}
                 placeholder="e.g., SC Labs"
               />
-              <Input
+              <DatePicker
                 label="Analysis Date"
                 value={editAnalysisDate}
-                onChangeText={setEditAnalysisDate}
-                placeholder="YYYY-MM-DD"
+                onChange={setEditAnalysisDate}
+                placeholder="Select analysis date"
+                maximumDate={new Date()}
               />
             </ScrollView>
             <View style={styles.modalButtons}>

@@ -27,6 +27,7 @@ import { Patient, Harvest, ProductType, Extract } from '../../../types';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
+import { DatePicker } from '../../../components/DatePicker';
 import { Loading } from '../../../components/Loading';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,7 +56,7 @@ export default function NewDistributionScreen() {
 
   // Form state
   const [productType, setProductType] = useState<ProductType>('flower');
-  const [distributionDate, setDistributionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [distributionDate, setDistributionDate] = useState<Date | null>(new Date());
   const [quantityGrams, setQuantityGrams] = useState('');
   const [quantityMl, setQuantityMl] = useState('');
   const [quantityUnits, setQuantityUnits] = useState('');
@@ -271,10 +272,9 @@ export default function NewDistributionScreen() {
       }
     }
 
-    // Parse date
-    const dateObj = new Date(distributionDate);
-    if (isNaN(dateObj.getTime())) {
-      Alert.alert('Error', 'Please enter a valid date (YYYY-MM-DD)');
+    // Validate date
+    if (!distributionDate) {
+      Alert.alert('Error', 'Please select a distribution date');
       return;
     }
 
@@ -295,7 +295,7 @@ export default function NewDistributionScreen() {
         ...(qtyGrams && { quantityGrams: qtyGrams }),
         ...(qtyMl && { quantityMl: qtyMl }),
         ...(qtyUnits && { quantityUnits: qtyUnits }),
-        distributionDate: dateObj.getTime(),
+        distributionDate: distributionDate.getTime(),
         receivedBy: receivedBy.trim(),
         signatureConfirmation,
         ...(notes.trim() && { notes: notes.trim() }),
@@ -586,11 +586,12 @@ export default function NewDistributionScreen() {
               <Text style={styles.sectionTitle}>Distribution Details</Text>
             </View>
 
-            <Input
+            <DatePicker
               label="Distribution Date *"
               value={distributionDate}
-              onChangeText={setDistributionDate}
-              placeholder="YYYY-MM-DD"
+              onChange={setDistributionDate}
+              placeholder="Select distribution date"
+              maximumDate={new Date()}
             />
 
             <Input
