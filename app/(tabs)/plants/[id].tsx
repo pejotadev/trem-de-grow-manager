@@ -12,6 +12,7 @@ import {
   Platform,
   Switch,
   Linking,
+  RefreshControl,
 } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -115,6 +116,7 @@ export default function PlantDetailScreen() {
   const [cloneStage, setCloneStage] = useState<StageName>('Seedling');
   const [cloneEnvironment, setCloneEnvironment] = useState<Environment | null>(null);
   const [cloning, setCloning] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const { userData } = useAuth();
   const router = useRouter();
 
@@ -166,7 +168,15 @@ export default function PlantDetailScreen() {
       Alert.alert('Error', 'Failed to load plant data: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadPlantData();
+    loadAllPlants();
+    loadEnvironments();
   };
 
   const loadEnvironments = async () => {
@@ -197,16 +207,12 @@ export default function PlantDetailScreen() {
     }
   };
 
-  // Initial load
-  useEffect(() => {
-    loadEnvironments();
-  }, [userData]);
-
-  // Reload data when screen comes into focus (e.g., after creating a harvest)
+  // Reload data when screen comes into focus (e.g., after creating a harvest or environment)
   useFocusEffect(
     useCallback(() => {
       loadPlantData();
       loadAllPlants();
+      loadEnvironments();
     }, [id, userData])
   );
 
@@ -460,7 +466,12 @@ export default function PlantDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
         {/* Plant Info */}
         <Card>
           <View style={styles.plantHeader}>
@@ -1072,7 +1083,7 @@ export default function PlantDetailScreen() {
               </View>
             </View>
 
-            <ScrollView>
+            <ScrollView keyboardShouldPersistTaps="handled">
               <Input
                 label="Number of Clones *"
                 value={cloneCount}
@@ -1085,7 +1096,11 @@ export default function PlantDetailScreen() {
               <Text style={styles.inputLabel}>Target Environment *</Text>
               <TouchableOpacity
                 style={styles.envSelector}
-                onPress={() => setCloneEnvModalVisible(true)}
+                onPress={() => {
+                  console.log('[PlantDetail] Opening clone environment modal, environments count:', environments.length);
+                  setCloneModalVisible(false);
+                  setTimeout(() => setCloneEnvModalVisible(true), 300);
+                }}
               >
                 {cloneEnvironment ? (
                   <View style={styles.selectedEnv}>
@@ -1192,7 +1207,10 @@ export default function PlantDetailScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Target Environment</Text>
-            <ScrollView>
+            {environments.length === 0 && (
+              <Text style={styles.emptyText}>No environments available. Create one first.</Text>
+            )}
+            <ScrollView keyboardShouldPersistTaps="handled">
               {environments.map((env) => (
                 <TouchableOpacity
                   key={env.id}
@@ -1200,6 +1218,7 @@ export default function PlantDetailScreen() {
                   onPress={() => {
                     setCloneEnvironment(env);
                     setCloneEnvModalVisible(false);
+                    setTimeout(() => setCloneModalVisible(true), 300);
                   }}
                 >
                   <View
@@ -1226,7 +1245,10 @@ export default function PlantDetailScreen() {
             </ScrollView>
             <Button
               title="Cancel"
-              onPress={() => setCloneEnvModalVisible(false)}
+              onPress={() => {
+                setCloneEnvModalVisible(false);
+                setTimeout(() => setCloneModalVisible(true), 300);
+              }}
               variant="secondary"
             />
           </View>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   SectionList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { getUserPlants, getUserEnvironments } from '../../firebase/firestore';
 import { Plant, Environment } from '../../types';
@@ -113,9 +114,14 @@ export default function HomeScreen() {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [userData]);
+  // Reload data when screen comes into focus (e.g., after creating a plant)
+  useFocusEffect(
+    useCallback(() => {
+      if (userData) {
+        loadData();
+      }
+    }, [userData])
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);

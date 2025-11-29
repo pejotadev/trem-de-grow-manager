@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Switch,
+  RefreshControl,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -54,6 +55,7 @@ export default function EnvironmentDetailScreen() {
   const [editVentilation, setEditVentilation] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [editIsPublic, setEditIsPublic] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const { userData } = useAuth();
   const router = useRouter();
 
@@ -66,10 +68,12 @@ export default function EnvironmentDetailScreen() {
 
     try {
       console.log('[EnvironmentDetail] Loading environment data for ID:', id);
+      console.log('[EnvironmentDetail] Current user UID:', userData?.uid);
       
       // Load environment first
       const envData = await getEnvironment(id);
       console.log('[EnvironmentDetail] Environment data loaded:', envData);
+      console.log('[EnvironmentDetail] Environment userId:', envData?.userId, '| Current user:', userData?.uid);
       setEnvironment(envData);
       
       // Load plants and records separately to handle errors gracefully
@@ -95,7 +99,13 @@ export default function EnvironmentDetailScreen() {
       Alert.alert('Error', 'Failed to load environment data: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadEnvironmentData();
   };
 
   // Reload data when screen comes into focus
@@ -152,18 +162,34 @@ export default function EnvironmentDetailScreen() {
     if (!id || typeof id !== 'string') return;
 
     try {
-      await updateEnvironment(id, {
+      // Build update data - only include non-empty values
+      // Firestore doesn't accept undefined values
+      const updateData: Partial<Environment> = {
         name: editName,
-        lightSetup: editLightSetup || undefined,
-        ventilation: editVentilation || undefined,
-        notes: editNotes || undefined,
         isPublic: editIsPublic,
-      });
+      };
+      
+      // Only include optional fields if they have values
+      if (editLightSetup.trim()) {
+        updateData.lightSetup = editLightSetup;
+      }
+      if (editVentilation.trim()) {
+        updateData.ventilation = editVentilation;
+      }
+      if (editNotes.trim()) {
+        updateData.notes = editNotes;
+      }
+      
+      console.log('[EnvironmentDetail] Updating environment:', id);
+      console.log('[EnvironmentDetail] Update data:', updateData);
+      
+      await updateEnvironment(id, updateData);
       setEditModalVisible(false);
       loadEnvironmentData();
       Alert.alert('Success', 'Environment updated!');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to update environment');
+    } catch (error: any) {
+      console.error('[EnvironmentDetail] Update error:', error);
+      Alert.alert('Error', 'Failed to update environment: ' + (error.message || 'Unknown error'));
     }
   };
 
@@ -187,7 +213,12 @@ export default function EnvironmentDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
         {/* Environment Info */}
         <Card>
           <View style={styles.envHeader}>
