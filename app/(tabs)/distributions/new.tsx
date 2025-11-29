@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   Switch,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   createDistribution,
@@ -73,10 +74,15 @@ export default function NewDistributionScreen() {
   const router = useRouter();
 
   const loadData = async () => {
+    console.log('[NewDistribution] loadData called, userData:', userData);
+    
     if (!userData || !userData.uid) {
+      console.log('[NewDistribution] No userData, skipping load');
       setLoading(false);
       return;
     }
+
+    console.log('[NewDistribution] Fetching data for user:', userData.uid);
 
     try {
       const [patientsData, harvestsData, extractsData] = await Promise.all([
@@ -84,16 +90,53 @@ export default function NewDistributionScreen() {
         getUserHarvests(userData.uid),
         getUserExtracts(userData.uid),
       ]);
+      
+      console.log('[NewDistribution] Data fetched - patients:', patientsData.length, 'harvests:', harvestsData.length, 'extracts:', extractsData.length);
 
       // Filter to only active patients
       const activePatients = patientsData.filter(p => p.status === 'active');
       setPatients(activePatients);
 
-      // Filter to harvests that have available weight
+      // Show all harvests that are not fully distributed (no status filter - show all)
+      console.log('[NewDistribution] All harvests received:', harvestsData.length, harvestsData.map(h => ({
+        id: h.id,
+        controlNumber: h.controlNumber,
+        status: h.status,
+        wetWeight: h.wetWeightGrams,
+        dryWeight: h.dryWeightGrams,
+        finalWeight: h.finalWeightGrams,
+        distributed: h.distributedGrams,
+        extracted: h.extractedGrams,
+      })));
+      
       const availableHarvests = harvestsData.filter(h => {
-        const availableWeight = (h.finalWeightGrams || h.dryWeightGrams || h.wetWeightGrams) - (h.distributedGrams || 0) - (h.extractedGrams || 0);
-        return availableWeight > 0;
+        // Exclude only fully distributed harvests
+        if (h.status === 'distributed') {
+          console.log(`[NewDistribution] Harvest ${h.controlNumber} excluded - fully distributed`);
+          return false;
+        }
+        
+        // Calculate available weight - use the best available weight (only positive values)
+        // Priority: finalWeightGrams > dryWeightGrams > wetWeightGrams
+        let totalWeight = 0;
+        if (h.finalWeightGrams && h.finalWeightGrams > 0) {
+          totalWeight = h.finalWeightGrams;
+        } else if (h.dryWeightGrams && h.dryWeightGrams > 0) {
+          totalWeight = h.dryWeightGrams;
+        } else if (h.wetWeightGrams && h.wetWeightGrams > 0) {
+          totalWeight = h.wetWeightGrams;
+        }
+        
+        const usedWeight = (h.distributedGrams || 0) + (h.extractedGrams || 0);
+        const availableWeight = totalWeight - usedWeight;
+        
+        console.log(`[NewDistribution] Harvest ${h.controlNumber}: status=${h.status}, total=${totalWeight}g, used=${usedWeight}g, available=${availableWeight}g`);
+        
+        // Show harvest if it has any positive weight
+        return totalWeight > 0;
       });
+      
+      console.log('[NewDistribution] Available harvests:', availableHarvests.length);
       setHarvests(availableHarvests);
 
       // Filter to extracts that have available volume
@@ -139,13 +182,44 @@ export default function NewDistributionScreen() {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [userData]);
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[NewDistribution] Screen focused, loading data. userData:', userData?.uid);
+      loadData();
+    }, [userData])
+  );
+
+  const getHarvestTotalWeight = (harvest: Harvest): number => {
+    // Use the best available weight (only positive values)
+    // Priority: finalWeightGrams > dryWeightGrams > wetWeightGrams
+    if (harvest.finalWeightGrams && harvest.finalWeightGrams > 0) {
+      return harvest.finalWeightGrams;
+    }
+    if (harvest.dryWeightGrams && harvest.dryWeightGrams > 0) {
+      return harvest.dryWeightGrams;
+    }
+    if (harvest.wetWeightGrams && harvest.wetWeightGrams > 0) {
+      return harvest.wetWeightGrams;
+    }
+    return 0;
+  };
 
   const getAvailableWeight = (harvest: Harvest): number => {
-    const totalWeight = harvest.finalWeightGrams || harvest.dryWeightGrams || harvest.wetWeightGrams;
+    const totalWeight = getHarvestTotalWeight(harvest);
     return totalWeight - (harvest.distributedGrams || 0) - (harvest.extractedGrams || 0);
+  };
+
+  const getHarvestWeightDisplay = (harvest: Harvest): string => {
+    const total = getHarvestTotalWeight(harvest);
+    const available = getAvailableWeight(harvest);
+    
+    if (available > 0) {
+      return `${available}g available`;
+    }
+    if (total > 0) {
+      return `${total}g (all distributed)`;
+    }
+    return 'Weight pending';
   };
 
   const getExtractQuantityDisplay = (extract: Extract): string => {
@@ -278,7 +352,7 @@ export default function NewDistributionScreen() {
           <Card>
             <View style={styles.sectionHeader}>
               <Ionicons name="person" size={20} color="#7B1FA2" />
-              <Text style={styles.sectionTitle}>Patient *</Text>
+              <Text style={styles.sectionTitle}>1. Patient *</Text>
             </View>
 
             <TouchableOpacity
@@ -306,55 +380,120 @@ export default function NewDistributionScreen() {
             )}
           </Card>
 
-          {/* Source Selection */}
+          {/* Product Type Selection - NOW SECOND */}
+          <Card>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="pricetag" size={20} color="#7B1FA2" />
+              <Text style={styles.sectionTitle}>2. Product Type *</Text>
+            </View>
+
+            <View style={styles.productTypeGrid}>
+              {PRODUCT_TYPES.map((type) => (
+                <TouchableOpacity
+                  key={type.value}
+                  style={[
+                    styles.productTypeButton,
+                    productType === type.value && styles.productTypeButtonActive,
+                  ]}
+                  onPress={() => {
+                    setProductType(type.value);
+                    // Clear source selection when changing product type
+                    if (type.value === 'flower' && selectedExtract) {
+                      setSelectedExtract(null);
+                      setBatchNumber('');
+                      setProductDescription('');
+                    } else if (type.value !== 'flower' && selectedHarvest) {
+                      setSelectedHarvest(null);
+                      setBatchNumber('');
+                      setProductDescription('');
+                    }
+                  }}
+                >
+                  <Ionicons
+                    name={type.icon}
+                    size={20}
+                    color={productType === type.value ? '#fff' : '#666'}
+                  />
+                  <Text
+                    style={[
+                      styles.productTypeText,
+                      productType === type.value && styles.productTypeTextActive,
+                    ]}
+                  >
+                    {type.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Card>
+
+          {/* Source Selection - NOW THIRD, filtered by product type */}
           <Card>
             <View style={styles.sectionHeader}>
               <Ionicons name="cube" size={20} color="#7B1FA2" />
-              <Text style={styles.sectionTitle}>Source (Optional)</Text>
+              <Text style={styles.sectionTitle}>3. Source (Optional)</Text>
             </View>
 
-            <Text style={styles.inputLabel}>From Harvest</Text>
-            <TouchableOpacity
-              style={[styles.selector, selectedExtract && styles.selectorDisabled]}
-              onPress={() => !selectedExtract && setHarvestModalVisible(true)}
-            >
-              {selectedHarvest ? (
-                <View style={styles.selectedOption}>
-                  <View style={styles.harvestBadge}>
-                    <Text style={styles.harvestBadgeText}>#{selectedHarvest.controlNumber}</Text>
+            {productType === 'flower' ? (
+              <>
+                <Text style={styles.inputLabel}>From Harvest (Drying/Curing)</Text>
+                <TouchableOpacity
+                  style={styles.selector}
+                  onPress={() => setHarvestModalVisible(true)}
+                >
+                  {selectedHarvest ? (
+                    <View style={styles.selectedOption}>
+                      <View style={[styles.harvestBadge, selectedHarvest.status === 'curing' && styles.curingBadge]}>
+                        <Text style={styles.harvestBadgeText}>
+                          #{selectedHarvest.controlNumber} ({selectedHarvest.status})
+                        </Text>
+                      </View>
+                      <Text style={styles.selectorText}>
+                        {getHarvestWeightDisplay(selectedHarvest)}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.selectorPlaceholder}>Select harvest...</Text>
+                  )}
+                  <Ionicons name="chevron-down" size={20} color="#666" />
+                </TouchableOpacity>
+                
+                {harvests.length === 0 && (
+                  <View style={styles.warningBox}>
+                    <Ionicons name="information-circle" size={18} color="#2196F3" />
+                    <Text style={styles.infoText}>No harvests available. Create a harvest from a plant first.</Text>
                   </View>
-                  <Text style={styles.selectorText}>
-                    {getAvailableWeight(selectedHarvest)}g available
-                  </Text>
-                </View>
-              ) : (
-                <Text style={styles.selectorPlaceholder}>
-                  {selectedExtract ? 'Using extract instead' : 'Select harvest...'}
-                </Text>
-              )}
-              <Ionicons name="chevron-down" size={20} color="#666" />
-            </TouchableOpacity>
+                )}
+              </>
+            ) : (
+              <>
+                <Text style={styles.inputLabel}>From Extract</Text>
+                <TouchableOpacity
+                  style={styles.selector}
+                  onPress={() => setExtractModalVisible(true)}
+                >
+                  {selectedExtract ? (
+                    <View style={styles.selectedOption}>
+                      <View style={styles.extractBadge}>
+                        <Ionicons name="flask" size={14} color="#fff" />
+                        <Text style={styles.extractBadgeText}>#{selectedExtract.controlNumber}</Text>
+                      </View>
+                      <Text style={styles.selectorText}>{selectedExtract.name}</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.selectorPlaceholder}>Select extract...</Text>
+                  )}
+                  <Ionicons name="chevron-down" size={20} color="#666" />
+                </TouchableOpacity>
 
-            <Text style={[styles.inputLabel, { marginTop: 16 }]}>Or From Extract</Text>
-            <TouchableOpacity
-              style={[styles.selector, selectedHarvest && styles.selectorDisabled]}
-              onPress={() => !selectedHarvest && setExtractModalVisible(true)}
-            >
-              {selectedExtract ? (
-                <View style={styles.selectedOption}>
-                  <View style={styles.extractBadge}>
-                    <Ionicons name="flask" size={14} color="#fff" />
-                    <Text style={styles.extractBadgeText}>#{selectedExtract.controlNumber}</Text>
+                {extracts.length === 0 && (
+                  <View style={styles.warningBox}>
+                    <Ionicons name="information-circle" size={18} color="#2196F3" />
+                    <Text style={styles.infoText}>No extracts available</Text>
                   </View>
-                  <Text style={styles.selectorText}>{selectedExtract.name}</Text>
-                </View>
-              ) : (
-                <Text style={styles.selectorPlaceholder}>
-                  {selectedHarvest ? 'Using harvest instead' : 'Select extract...'}
-                </Text>
-              )}
-              <Ionicons name="chevron-down" size={20} color="#666" />
-            </TouchableOpacity>
+                )}
+              </>
+            )}
 
             {(selectedHarvest || selectedExtract) && (
               <TouchableOpacity
@@ -375,36 +514,8 @@ export default function NewDistributionScreen() {
           {/* Product Details */}
           <Card>
             <View style={styles.sectionHeader}>
-              <Ionicons name="cube" size={20} color="#7B1FA2" />
-              <Text style={styles.sectionTitle}>Product Details</Text>
-            </View>
-
-            <Text style={styles.inputLabel}>Product Type *</Text>
-            <View style={styles.productTypeGrid}>
-              {PRODUCT_TYPES.map((type) => (
-                <TouchableOpacity
-                  key={type.value}
-                  style={[
-                    styles.productTypeButton,
-                    productType === type.value && styles.productTypeButtonActive,
-                  ]}
-                  onPress={() => setProductType(type.value)}
-                >
-                  <Ionicons
-                    name={type.icon}
-                    size={20}
-                    color={productType === type.value ? '#fff' : '#666'}
-                  />
-                  <Text
-                    style={[
-                      styles.productTypeText,
-                      productType === type.value && styles.productTypeTextActive,
-                    ]}
-                  >
-                    {type.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              <Ionicons name="document-text" size={20} color="#7B1FA2" />
+              <Text style={styles.sectionTitle}>4. Product Details</Text>
             </View>
 
             <Input
@@ -588,15 +699,15 @@ export default function NewDistributionScreen() {
                     style={styles.modalOption}
                     onPress={() => handleHarvestSelect(harvest)}
                   >
-                    <View style={styles.harvestBadge}>
+                    <View style={[styles.harvestBadge, harvest.status === 'curing' && styles.curingBadge]}>
                       <Text style={styles.harvestBadgeText}>#{harvest.controlNumber}</Text>
                     </View>
                     <View style={styles.modalOptionInfo}>
                       <Text style={styles.modalOptionText}>
-                        {getAvailableWeight(harvest)}g available
+                        {getHarvestWeightDisplay(harvest)}
                       </Text>
                       <Text style={styles.modalOptionSubtext}>
-                        {format(new Date(harvest.harvestDate), 'MMM dd, yyyy')}
+                        {(harvest.status || 'unknown').toUpperCase()} • {format(new Date(harvest.harvestDate), 'MMM dd, yyyy')}
                       </Text>
                     </View>
                     {selectedHarvest?.id === harvest.id && (
@@ -729,6 +840,9 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
+  curingBadge: {
+    backgroundColor: '#FF9800',
+  },
   harvestBadgeText: {
     fontSize: 12,
     fontWeight: '600',
@@ -780,6 +894,11 @@ const styles = StyleSheet.create({
   warningText: {
     fontSize: 13,
     color: '#E65100',
+    flex: 1,
+  },
+  infoText: {
+    fontSize: 13,
+    color: '#1976D2',
     flex: 1,
   },
   productTypeGrid: {
