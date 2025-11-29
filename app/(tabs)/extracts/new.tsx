@@ -86,13 +86,54 @@ export default function NewExtractScreen() {
     try {
       const harvestsData = await getUserHarvests(userData.uid);
       
-      // Filter to harvests that have available weight
+      console.log('[NewExtract] All harvests received:', harvestsData.length, harvestsData.map(h => ({
+        id: h.id,
+        controlNumber: h.controlNumber,
+        status: h.status,
+        wetWeight: h.wetWeightGrams,
+        dryWeight: h.dryWeightGrams,
+        finalWeight: h.finalWeightGrams,
+        distributed: h.distributedGrams,
+        extracted: h.extractedGrams,
+      })));
+      
+      // Filter to harvests that are available for extraction (curing, drying, or processed)
+      // Exclude: fresh (not ready), distributed (all used)
       const availableHarvests = harvestsData.filter(h => {
-        const totalWeight = h.finalWeightGrams || h.dryWeightGrams || h.wetWeightGrams;
+        // Exclude fully distributed harvests
+        if (h.status === 'distributed') {
+          console.log(`[NewExtract] Harvest ${h.controlNumber} excluded - fully distributed`);
+          return false;
+        }
+        
+        // Only show harvests in drying, curing, or processed status
+        // Fresh harvests are not ready for extraction
+        if (!['drying', 'curing', 'processed'].includes(h.status)) {
+          console.log(`[NewExtract] Harvest ${h.controlNumber} excluded - status ${h.status} not available for extraction`);
+          return false;
+        }
+        
+        // Calculate available weight - use the best available weight (only positive values)
+        // Priority: finalWeightGrams > dryWeightGrams > wetWeightGrams
+        let totalWeight = 0;
+        if (h.finalWeightGrams && h.finalWeightGrams > 0) {
+          totalWeight = h.finalWeightGrams;
+        } else if (h.dryWeightGrams && h.dryWeightGrams > 0) {
+          totalWeight = h.dryWeightGrams;
+        } else if (h.wetWeightGrams && h.wetWeightGrams > 0) {
+          totalWeight = h.wetWeightGrams;
+        }
+        
         const usedWeight = (h.distributedGrams || 0) + (h.extractedGrams || 0);
-        return totalWeight - usedWeight > 0;
+        const availableWeight = totalWeight - usedWeight;
+        
+        console.log(`[NewExtract] Harvest ${h.controlNumber}: status=${h.status}, total=${totalWeight}g, used=${usedWeight}g, available=${availableWeight}g`);
+        
+        // Show harvest if it has any available weight
+        return availableWeight > 0;
       });
       
+      console.log('[NewExtract] Available harvests for extraction:', availableHarvests.length);
       setHarvests(availableHarvests);
     } catch (error: any) {
       console.error('[NewExtract] Error loading data:', error);
@@ -106,9 +147,33 @@ export default function NewExtractScreen() {
     loadData();
   }, [userData]);
 
+  const getHarvestTotalWeight = (harvest: Harvest): number => {
+    // Use the best available weight (only positive values)
+    // Priority: finalWeightGrams > dryWeightGrams > wetWeightGrams
+    if (harvest.finalWeightGrams && harvest.finalWeightGrams > 0) {
+      return harvest.finalWeightGrams;
+    }
+    if (harvest.dryWeightGrams && harvest.dryWeightGrams > 0) {
+      return harvest.dryWeightGrams;
+    }
+    if (harvest.wetWeightGrams && harvest.wetWeightGrams > 0) {
+      return harvest.wetWeightGrams;
+    }
+    return 0;
+  };
+
   const getAvailableWeight = (harvest: Harvest): number => {
-    const totalWeight = harvest.finalWeightGrams || harvest.dryWeightGrams || harvest.wetWeightGrams;
+    const totalWeight = getHarvestTotalWeight(harvest);
     return totalWeight - (harvest.distributedGrams || 0) - (harvest.extractedGrams || 0);
+  };
+
+  const getHarvestWeightDisplay = (harvest: Harvest): string => {
+    const available = getAvailableWeight(harvest);
+    
+    if (available > 0) {
+      return `${available.toFixed(1)}g available`;
+    }
+    return 'Weight pending';
   };
 
   const getTotalSelectedWeight = (): number => {
@@ -266,7 +331,7 @@ export default function NewExtractScreen() {
           <Card>
             <View style={styles.sectionHeader}>
               <Ionicons name="leaf" size={20} color="#FF5722" />
-              <Text style={styles.sectionTitle}>Source Harvests *</Text>
+              <Text style={styles.sectionTitle}>Source Harvests (Curing/Drying) *</Text>
             </View>
 
             <TouchableOpacity
@@ -274,7 +339,7 @@ export default function NewExtractScreen() {
               onPress={() => setHarvestModalVisible(true)}
             >
               {selectedHarvests.length === 0 ? (
-                <Text style={styles.selectorPlaceholder}>Select source harvests...</Text>
+                <Text style={styles.selectorPlaceholder}>Select from curing/drying harvests...</Text>
               ) : (
                 <View style={styles.selectedHarvestsPreview}>
                   <Text style={styles.selectedHarvestsCount}>
@@ -288,14 +353,28 @@ export default function NewExtractScreen() {
               <Ionicons name="chevron-down" size={20} color="#666" />
             </TouchableOpacity>
 
+            {harvests.length === 0 && (
+              <View style={styles.warningBox}>
+                <Ionicons name="information-circle" size={18} color="#2196F3" />
+                <Text style={styles.infoText}>No harvests in curing/drying status. Harvests become available for extraction after drying begins.</Text>
+              </View>
+            )}
+
             {selectedHarvests.length > 0 && (
               <View style={styles.selectedHarvestsList}>
                 {selectedHarvests.map((harvest) => (
                   <View key={harvest.id} style={styles.selectedHarvestItem}>
-                    <View style={styles.harvestBadge}>
+                    <View style={[
+                      styles.harvestBadge, 
+                      harvest.status === 'curing' && styles.curingBadge,
+                      harvest.status === 'drying' && styles.dryingBadge,
+                    ]}>
                       <Text style={styles.harvestBadgeText}>#{harvest.controlNumber}</Text>
                     </View>
-                    <Text style={styles.harvestWeight}>{getAvailableWeight(harvest)}g</Text>
+                    <View style={styles.harvestItemInfo}>
+                      <Text style={styles.harvestWeight}>{getAvailableWeight(harvest).toFixed(1)}g</Text>
+                      <Text style={styles.harvestStatus}>{(harvest.status || '').toUpperCase()}</Text>
+                    </View>
                     <TouchableOpacity onPress={() => toggleHarvestSelection(harvest)}>
                       <Ionicons name="close-circle" size={20} color="#f44336" />
                     </TouchableOpacity>
@@ -441,15 +520,18 @@ export default function NewExtractScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Source Harvests</Text>
             <Text style={styles.modalSubtitle}>
-              Select one or more harvests to use as source material
+              Select from curing/drying harvests to use as source material
             </Text>
             <ScrollView>
               {harvests.length === 0 ? (
-                <Text style={styles.emptyText}>No harvests with available weight</Text>
+                <View style={styles.emptyContainer}>
+                  <Ionicons name="leaf-outline" size={48} color="#ccc" />
+                  <Text style={styles.emptyText}>No harvests in curing/drying status</Text>
+                  <Text style={styles.emptySubtext}>Harvests need to be in drying, curing, or processed status to be used for extraction</Text>
+                </View>
               ) : (
                 harvests.map((harvest) => {
                   const isSelected = selectedHarvests.some(h => h.id === harvest.id);
-                  const available = getAvailableWeight(harvest);
                   
                   return (
                     <TouchableOpacity
@@ -458,13 +540,21 @@ export default function NewExtractScreen() {
                       onPress={() => toggleHarvestSelection(harvest)}
                     >
                       <View style={styles.harvestOptionContent}>
-                        <View style={styles.harvestBadge}>
-                          <Text style={styles.harvestBadgeText}>#{harvest.controlNumber}</Text>
+                        <View style={[
+                          styles.harvestBadge, 
+                          harvest.status === 'curing' && styles.curingBadge,
+                          harvest.status === 'drying' && styles.dryingBadge,
+                        ]}>
+                          <Text style={styles.harvestBadgeText}>
+                            #{harvest.controlNumber}
+                          </Text>
                         </View>
                         <View style={styles.harvestOptionInfo}>
-                          <Text style={styles.harvestOptionWeight}>{available}g available</Text>
+                          <Text style={styles.harvestOptionWeight}>
+                            {getHarvestWeightDisplay(harvest)}
+                          </Text>
                           <Text style={styles.harvestOptionDate}>
-                            {format(new Date(harvest.harvestDate), 'MMM dd, yyyy')}
+                            {(harvest.status || 'unknown').toUpperCase()} • {format(new Date(harvest.harvestDate), 'MMM dd, yyyy')}
                           </Text>
                         </View>
                       </View>
@@ -658,15 +748,35 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
+  curingBadge: {
+    backgroundColor: '#FF9800',
+  },
+  dryingBadge: {
+    backgroundColor: '#2196F3',
+  },
   harvestBadgeText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#fff',
   },
-  harvestWeight: {
+  harvestItemInfo: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  harvestWeight: {
     fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  harvestStatus: {
+    fontSize: 11,
     color: '#666',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   inputHint: {
     fontSize: 11,
@@ -720,11 +830,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF5722',
     marginTop: 8,
   },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    gap: 12,
+  },
   emptyText: {
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
-    paddingVertical: 24,
+  },
+  emptySubtext: {
+    fontSize: 12,
+    color: '#bbb',
+    textAlign: 'center',
+    paddingHorizontal: 16,
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+    gap: 8,
+  },
+  infoText: {
+    fontSize: 13,
+    color: '#1976D2',
+    flex: 1,
   },
   harvestOption: {
     flexDirection: 'row',
