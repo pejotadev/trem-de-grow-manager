@@ -114,6 +114,11 @@ export default function PatientDetailScreen() {
   const [editPrescriptionFileUrl, setEditPrescriptionFileUrl] = useState('');
   const [editConsentDate, setEditConsentDate] = useState<Date | null>(null);
   const [editConsentFileUrl, setEditConsentFileUrl] = useState('');
+  // Allowance fields
+  const [editAllowanceOilGrams, setEditAllowanceOilGrams] = useState('');
+  const [editAllowanceExtractGrams, setEditAllowanceExtractGrams] = useState('');
+  const [editAllowanceFlowerThcGrams, setEditAllowanceFlowerThcGrams] = useState('');
+  const [editAllowanceFlowerCbdGrams, setEditAllowanceFlowerCbdGrams] = useState('');
 
   const { userData } = useAuth();
   const router = useRouter();
@@ -164,6 +169,11 @@ export default function PatientDetailScreen() {
     setEditPrescriptionFileUrl(patient.prescriptionFileUrl || '');
     setEditConsentDate(patient.consentSignedDate ? new Date(patient.consentSignedDate) : null);
     setEditConsentFileUrl(patient.consentFileUrl || '');
+    // Initialize allowance fields
+    setEditAllowanceOilGrams(patient.allowanceOilGrams?.toString() || '');
+    setEditAllowanceExtractGrams(patient.allowanceExtractGrams?.toString() || '');
+    setEditAllowanceFlowerThcGrams(patient.allowanceFlowerThcGrams?.toString() || '');
+    setEditAllowanceFlowerCbdGrams(patient.allowanceFlowerCbdGrams?.toString() || '');
     setEditModalVisible(true);
   };
 
@@ -193,6 +203,11 @@ export default function PatientDetailScreen() {
         prescriptionFileUrl: editPrescriptionFileUrl.trim() || undefined,
         consentSignedDate: editConsentDate?.getTime() || undefined,
         consentFileUrl: editConsentFileUrl.trim() || undefined,
+        // Allowance fields
+        allowanceOilGrams: editAllowanceOilGrams ? parseFloat(editAllowanceOilGrams) : undefined,
+        allowanceExtractGrams: editAllowanceExtractGrams ? parseFloat(editAllowanceExtractGrams) : undefined,
+        allowanceFlowerThcGrams: editAllowanceFlowerThcGrams ? parseFloat(editAllowanceFlowerThcGrams) : undefined,
+        allowanceFlowerCbdGrams: editAllowanceFlowerCbdGrams ? parseFloat(editAllowanceFlowerCbdGrams) : undefined,
       });
 
       setEditModalVisible(false);
@@ -476,6 +491,45 @@ export default function PatientDetailScreen() {
           )}
         </Card>
 
+        {/* Prescription Allowances */}
+        <Card>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="fitness" size={20} color="#0288D1" />
+            <Text style={styles.sectionTitle}>Prescription Allowances (g/month)</Text>
+          </View>
+
+          <View style={styles.allowanceGrid}>
+            <View style={styles.allowanceItem}>
+              <Ionicons name="water" size={20} color="#2196F3" />
+              <Text style={styles.allowanceValue}>
+                {patient.allowanceOilGrams || 0}g
+              </Text>
+              <Text style={styles.allowanceLabel}>Oil</Text>
+            </View>
+            <View style={styles.allowanceItem}>
+              <Ionicons name="flask" size={20} color="#FF9800" />
+              <Text style={styles.allowanceValue}>
+                {patient.allowanceExtractGrams || 0}g
+              </Text>
+              <Text style={styles.allowanceLabel}>Extract</Text>
+            </View>
+            <View style={styles.allowanceItem}>
+              <Ionicons name="leaf" size={20} color="#4CAF50" />
+              <Text style={styles.allowanceValue}>
+                {patient.allowanceFlowerThcGrams || 0}g
+              </Text>
+              <Text style={styles.allowanceLabel}>THC Flower</Text>
+            </View>
+            <View style={styles.allowanceItem}>
+              <Ionicons name="leaf-outline" size={20} color="#8BC34A" />
+              <Text style={styles.allowanceValue}>
+                {patient.allowanceFlowerCbdGrams || 0}g
+              </Text>
+              <Text style={styles.allowanceLabel}>CBD Flower</Text>
+            </View>
+          </View>
+        </Card>
+
         {/* Notes */}
         {patient.notes && (
           <Card>
@@ -727,6 +781,54 @@ export default function PatientDetailScreen() {
                 placeholder="https://..."
                 autoCapitalize="none"
               />
+
+              {/* Allowances Section */}
+              <View style={styles.editSectionHeader}>
+                <Ionicons name="fitness" size={18} color="#0288D1" />
+                <Text style={styles.editSectionTitle}>Prescription Allowances (g/month)</Text>
+              </View>
+
+              <View style={styles.allowanceRow}>
+                <View style={styles.allowanceInput}>
+                  <Input
+                    label="Oil (g)"
+                    value={editAllowanceOilGrams}
+                    onChangeText={setEditAllowanceOilGrams}
+                    placeholder="0"
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+                <View style={styles.allowanceInput}>
+                  <Input
+                    label="Extract (g)"
+                    value={editAllowanceExtractGrams}
+                    onChangeText={setEditAllowanceExtractGrams}
+                    placeholder="0"
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.allowanceRow}>
+                <View style={styles.allowanceInput}>
+                  <Input
+                    label="THC Flower (g)"
+                    value={editAllowanceFlowerThcGrams}
+                    onChangeText={setEditAllowanceFlowerThcGrams}
+                    placeholder="0"
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+                <View style={styles.allowanceInput}>
+                  <Input
+                    label="CBD Flower (g)"
+                    value={editAllowanceFlowerCbdGrams}
+                    onChangeText={setEditAllowanceFlowerCbdGrams}
+                    placeholder="0"
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+              </View>
 
               <Input
                 label="Notes"
@@ -1120,6 +1222,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#0288D1',
     fontWeight: '500',
+  },
+  // Allowance styles
+  allowanceGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  allowanceItem: {
+    width: '47%',
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  allowanceValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 4,
+  },
+  allowanceLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  allowanceRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  allowanceInput: {
+    flex: 1,
   },
 });
 

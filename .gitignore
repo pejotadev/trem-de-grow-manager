@@ -22,3 +22,6 @@ firebase-config-template.txt
 firestore.rules
 firestore.indexes.json
 
+# Backup files with sensitive data
+users-backup.json
+*.backup.json

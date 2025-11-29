@@ -1,7 +1,7 @@
 // Using Firebase Compat SDK for React Native compatibility
 import { db } from './firebaseConfig';
 import firebase from 'firebase/compat/app';
-import { Plant, Stage, WaterRecord, EnvironmentRecord, Environment, StageName, User, FriendRequest, Friendship, FriendRequestStatus, GeneticInfo, Harvest, Patient, Distribution, Extract } from '../types';
+import { Plant, Stage, WaterRecord, EnvironmentRecord, Environment, StageName, User, FriendRequest, Friendship, FriendRequestStatus, GeneticInfo, Harvest, Patient, Distribution, Extract, Order, OrderStatus } from '../types';
 
 // ==================== UTILITIES ====================
 
@@ -1254,4 +1254,163 @@ export const deleteExtract = async (extractId: string): Promise<void> => {
   }
   
   await db.collection('extracts').doc(extractId).delete();
+};
+
+// ==================== ORDERS ====================
+
+// Counter for order numbers (stored in a separate document)
+const getNextOrderNumber = async (userId: string): Promise<number> => {
+  const counterRef = db.collection('counters').doc(`orders_${userId}`);
+  
+  return db.runTransaction(async (transaction) => {
+    const counterDoc = await transaction.get(counterRef);
+    
+    let nextNumber = 1;
+    if (counterDoc.exists) {
+      nextNumber = (counterDoc.data()?.count || 0) + 1;
+    }
+    
+    transaction.set(counterRef, { count: nextNumber }, { merge: true });
+    return nextNumber;
+  });
+};
+
+/**
+ * Generates an order number in format: O-YYYY-#####
+ * Example: O-2025-00001
+ */
+export const generateOrderNumber = (sequence: number): string => {
+  const year = new Date().getFullYear();
+  const sequenceStr = String(sequence).padStart(5, '0');
+  return `O-${year}-${sequenceStr}`;
+};
+
+export const createOrder = async (orderData: Omit<Order, 'id' | 'orderNumber'>): Promise<string> => {
+  if (!orderData.userId) {
+    throw new Error('userId is required to create an order');
+  }
+  
+  // Get next order number
+  const sequence = await getNextOrderNumber(orderData.userId);
+  const orderNumber = generateOrderNumber(sequence);
+  
+  // Create the order
+  const docRef = await db.collection('orders').add({
+    ...orderData,
+    orderNumber,
+    createdAt: Date.now(),
+  });
+  
+  console.log('[Firestore] Created order with number:', orderNumber);
+  
+  return docRef.id;
+};
+
+export const getOrder = async (orderId: string): Promise<Order | null> => {
+  console.log('[Firestore] Getting order with ID:', orderId);
+  const docSnap = await db.collection('orders').doc(orderId).get();
+  
+  if (docSnap.exists) {
+    const order = { id: docSnap.id, ...docSnap.data() } as Order;
+    console.log('[Firestore] Order found:', order.orderNumber);
+    return order;
+  }
+  console.log('[Firestore] Order not found');
+  return null;
+};
+
+export const getUserOrders = async (userId: string): Promise<Order[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getUserOrders called with undefined/null userId');
+    return [];
+  }
+  
+  const querySnapshot = await db
+    .collection('orders')
+    .where('userId', '==', userId)
+    .orderBy('requestedAt', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Order));
+};
+
+export const getPatientOrders = async (patientId: string): Promise<Order[]> => {
+  const querySnapshot = await db
+    .collection('orders')
+    .where('patientId', '==', patientId)
+    .orderBy('requestedAt', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Order));
+};
+
+export const getPendingOrders = async (userId: string): Promise<Order[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getPendingOrders called with undefined/null userId');
+    return [];
+  }
+  
+  const querySnapshot = await db
+    .collection('orders')
+    .where('userId', '==', userId)
+    .where('status', '==', 'pending')
+    .orderBy('requestedAt', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Order));
+};
+
+export const updateOrder = async (orderId: string, data: Partial<Order>): Promise<void> => {
+  await db.collection('orders').doc(orderId).update(data);
+};
+
+export const approveOrder = async (orderId: string): Promise<void> => {
+  await db.collection('orders').doc(orderId).update({
+    status: 'approved' as OrderStatus,
+    processedAt: Date.now(),
+  });
+};
+
+export const rejectOrder = async (orderId: string): Promise<void> => {
+  await db.collection('orders').doc(orderId).update({
+    status: 'rejected' as OrderStatus,
+    processedAt: Date.now(),
+  });
+};
+
+export const fulfillOrder = async (
+  orderId: string,
+  distributionData: Omit<Distribution, 'id' | 'distributionNumber'>
+): Promise<string> => {
+  // Create the distribution
+  const distributionId = await createDistribution(distributionData);
+  
+  // Update the order
+  await db.collection('orders').doc(orderId).update({
+    status: 'fulfilled' as OrderStatus,
+    processedAt: Date.now(),
+    distributionId,
+  });
+  
+  return distributionId;
+};
+
+export const cancelOrder = async (orderId: string): Promise<void> => {
+  await db.collection('orders').doc(orderId).update({
+    status: 'cancelled' as OrderStatus,
+    processedAt: Date.now(),
+  });
+};
+
+export const deleteOrder = async (orderId: string): Promise<void> => {
+  await db.collection('orders').doc(orderId).delete();
 };

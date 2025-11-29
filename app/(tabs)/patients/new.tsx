@@ -52,6 +52,12 @@ export default function NewPatientScreen() {
   const [consentDate, setConsentDate] = useState<Date | null>(null);
   const [consentFileUrl, setConsentFileUrl] = useState('');
 
+  // Allowances (max grams per month)
+  const [allowanceOilGrams, setAllowanceOilGrams] = useState('');
+  const [allowanceExtractGrams, setAllowanceExtractGrams] = useState('');
+  const [allowanceFlowerThcGrams, setAllowanceFlowerThcGrams] = useState('');
+  const [allowanceFlowerCbdGrams, setAllowanceFlowerCbdGrams] = useState('');
+
   // Notes
   const [notes, setNotes] = useState('');
 
@@ -100,6 +106,10 @@ export default function NewPatientScreen() {
         ...(prescriptionFileUrl.trim() && { prescriptionFileUrl: prescriptionFileUrl.trim() }),
         ...(consentDateNum && { consentSignedDate: consentDateNum }),
         ...(consentFileUrl.trim() && { consentFileUrl: consentFileUrl.trim() }),
+        ...(allowanceOilGrams && { allowanceOilGrams: parseFloat(allowanceOilGrams) }),
+        ...(allowanceExtractGrams && { allowanceExtractGrams: parseFloat(allowanceExtractGrams) }),
+        ...(allowanceFlowerThcGrams && { allowanceFlowerThcGrams: parseFloat(allowanceFlowerThcGrams) }),
+        ...(allowanceFlowerCbdGrams && { allowanceFlowerCbdGrams: parseFloat(allowanceFlowerCbdGrams) }),
         ...(notes.trim() && { notes: notes.trim() }),
         createdAt: now,
         updatedAt: now,
@@ -299,6 +309,60 @@ export default function NewPatientScreen() {
             </Text>
           </Card>
 
+          {/* Prescription Allowances */}
+          <Card>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="fitness" size={20} color="#0288D1" />
+              <Text style={styles.sectionTitle}>Prescription Allowances (g/month)</Text>
+            </View>
+
+            <View style={styles.allowanceRow}>
+              <View style={styles.allowanceInput}>
+                <Input
+                  label="Oil (g)"
+                  value={allowanceOilGrams}
+                  onChangeText={setAllowanceOilGrams}
+                  placeholder="0"
+                  keyboardType="decimal-pad"
+                />
+              </View>
+              <View style={styles.allowanceInput}>
+                <Input
+                  label="Extract (g)"
+                  value={allowanceExtractGrams}
+                  onChangeText={setAllowanceExtractGrams}
+                  placeholder="0"
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            </View>
+
+            <View style={styles.allowanceRow}>
+              <View style={styles.allowanceInput}>
+                <Input
+                  label="THC Flower (g)"
+                  value={allowanceFlowerThcGrams}
+                  onChangeText={setAllowanceFlowerThcGrams}
+                  placeholder="0"
+                  keyboardType="decimal-pad"
+                />
+              </View>
+              <View style={styles.allowanceInput}>
+                <Input
+                  label="CBD Flower (g)"
+                  value={allowanceFlowerCbdGrams}
+                  onChangeText={setAllowanceFlowerCbdGrams}
+                  placeholder="0"
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            </View>
+
+            <Text style={styles.inputHint}>
+              Maximum grams the patient can receive per month based on prescription.
+            </Text>
+          </Card>
+
           {/* Notes */}
           <Card>
             <View style={styles.sectionHeader}>
@@ -427,6 +491,13 @@ const styles = StyleSheet.create({
   submitButton: {
     backgroundColor: '#0288D1',
     marginTop: 8,
+  },
+  allowanceRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  allowanceInput: {
+    flex: 1,
   },
 });
 

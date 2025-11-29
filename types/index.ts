@@ -180,6 +180,11 @@ export interface Patient {
   notes?: string;
   createdAt: number;
   updatedAt: number;
+  // Prescription allowances (max grams per month)
+  allowanceOilGrams?: number;
+  allowanceExtractGrams?: number;
+  allowanceFlowerThcGrams?: number;
+  allowanceFlowerCbdGrams?: number;
 }
 
 // Extract Types
@@ -235,5 +240,30 @@ export interface Distribution {
   receivedBy: string; // Who picked up
   signatureConfirmation?: boolean;
   notes?: string;
+  createdAt: number;
+}
+
+// Order Types
+export type OrderStatus = 'pending' | 'approved' | 'rejected' | 'fulfilled' | 'cancelled';
+
+export interface Order {
+  id: string;
+  orderNumber: string; // Format: O-YYYY-#####
+  userId: string;
+  patientId: string;
+  patientName: string; // Denormalized for display
+  productType: ProductType;
+  harvestId?: string; // If ordering from specific harvest/curing
+  harvestControlNumber?: string; // Denormalized for display
+  extractId?: string; // If ordering extract
+  extractControlNumber?: string; // Denormalized for display
+  requestedQuantityGrams?: number;
+  requestedQuantityMl?: number;
+  status: OrderStatus;
+  notes?: string;
+  requestedAt: number;
+  processedAt?: number;
+  processedBy?: string;
+  distributionId?: string; // Reference to created distribution when fulfilled
   createdAt: number;
 }

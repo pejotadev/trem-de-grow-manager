@@ -27,6 +27,12 @@ export default function DistributionsLayout() {
         }}
       />
       <Stack.Screen
+        name="order"
+        options={{
+          title: 'Create Order',
+        }}
+      />
+      <Stack.Screen
         name="[id]"
         options={{
           title: 'Distribution Details',
