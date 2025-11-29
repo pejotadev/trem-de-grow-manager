@@ -7,12 +7,12 @@ import 'firebase/compat/firestore';
 // Project: grow-85028
 // Last updated: 2024-11-26
 const firebaseConfig = {
-  apiKey: "AIzaSyBE1bBhQ4QPOXDg9NFFObJQ7Eqk70xMD-s",
-  authDomain: "grow-85028.firebaseapp.com",
-  projectId: "grow-85028",
-  storageBucket: "grow-85028.firebasestorage.app",
-  messagingSenderId: "607775361050",
-  appId: "1:607775361050:web:8cd4cec8aa69d9a39929a3"
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || '',
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || '',
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '',
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || ''
 };
 
 // Initialize Firebase app (only if not already initialized)
