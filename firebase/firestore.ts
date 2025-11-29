@@ -1,7 +1,7 @@
 // Using Firebase Compat SDK for React Native compatibility
 import { db } from './firebaseConfig';
 import firebase from 'firebase/compat/app';
-import { Plant, Stage, WaterRecord, EnvironmentRecord, Environment, StageName, User, FriendRequest, Friendship, FriendRequestStatus, GeneticInfo } from '../types';
+import { Plant, Stage, WaterRecord, EnvironmentRecord, Environment, StageName, User, FriendRequest, Friendship, FriendRequestStatus, GeneticInfo, Harvest, Patient, Distribution, Extract } from '../types';
 
 // ==================== UTILITIES ====================
 
@@ -45,13 +45,34 @@ export const generateCloneControlNumber = (environmentName: string, sequence: nu
   return `CL-${initials}-${year}-${sequenceStr}`;
 };
 
+/**
+ * Generates a control number for harvests in format: H-{ENV_INITIALS}-{YEAR}-{SEQUENCE}
+ * Example: H-MT-2025-00001 for a harvest in "Main Tent" environment
+ */
+export const generateHarvestControlNumber = (environmentName: string, sequence: number): string => {
+  // Get initials from environment name (first letter of each word)
+  const initials = environmentName
+    .split(/\s+/)
+    .map(word => word.charAt(0).toUpperCase())
+    .join('');
+  
+  // Get current year
+  const year = new Date().getFullYear();
+  
+  // Format sequence with leading zeros (5 digits)
+  const sequenceStr = String(sequence).padStart(5, '0');
+  
+  return `H-${initials}-${year}-${sequenceStr}`;
+};
+
 // ==================== ENVIRONMENTS ====================
 
 export const createEnvironment = async (envData: Omit<Environment, 'id'>): Promise<string> => {
-  // Ensure plantCounter is initialized to 0 and isPublic defaults to false
+  // Ensure plantCounter and harvestCounter are initialized to 0 and isPublic defaults to false
   const dataWithDefaults = {
     ...envData,
     plantCounter: 0,
+    harvestCounter: 0,
     isPublic: envData.isPublic ?? false,
   };
   const docRef = await db.collection('environments').add(dataWithDefaults);
@@ -381,7 +402,8 @@ export const getUser = async (userId: string): Promise<User | null> => {
 };
 
 export const updateUser = async (userId: string, data: Partial<User>): Promise<void> => {
-  await db.collection('users').doc(userId).update(data);
+  // Use set with merge to create the document if it doesn't exist
+  await db.collection('users').doc(userId).set(data, { merge: true });
 };
 
 export const searchUsersByEmail = async (emailQuery: string, currentUserId: string): Promise<User[]> => {
@@ -743,4 +765,404 @@ export const getFriendEnvironmentPlants = async (
     id: doc.id,
     ...doc.data()
   } as Plant));
+};
+
+// ==================== HARVESTS ====================
+
+export const createHarvest = async (harvestData: Omit<Harvest, 'id' | 'controlNumber'>): Promise<string> => {
+  // Get the plant to find its environment
+  const plant = await getPlant(harvestData.plantId);
+  
+  if (!plant) {
+    throw new Error('Plant not found');
+  }
+  
+  // Get the environment to get its name and current harvest counter
+  const environment = await getEnvironment(plant.environmentId);
+  
+  if (!environment) {
+    throw new Error('Environment not found');
+  }
+  
+  // Get the next sequence number (increment harvest counter)
+  const nextSequence = (environment.harvestCounter || 0) + 1;
+  
+  // Generate harvest control number
+  const controlNumber = generateHarvestControlNumber(environment.name, nextSequence);
+  
+  // Create the harvest with generated control number
+  const docRef = await db.collection('harvests').add({
+    ...harvestData,
+    controlNumber,
+  });
+  
+  // Increment the environment's harvest counter
+  await db.collection('environments').doc(plant.environmentId).update({
+    harvestCounter: firebase.firestore.FieldValue.increment(1),
+  });
+  
+  console.log('[Firestore] Created harvest with control number:', controlNumber);
+  
+  return docRef.id;
+};
+
+export const getHarvest = async (harvestId: string): Promise<Harvest | null> => {
+  console.log('[Firestore] Getting harvest with ID:', harvestId);
+  const docSnap = await db.collection('harvests').doc(harvestId).get();
+  
+  if (docSnap.exists) {
+    const harvest = { id: docSnap.id, ...docSnap.data() } as Harvest;
+    console.log('[Firestore] Harvest found:', harvest);
+    return harvest;
+  }
+  console.log('[Firestore] Harvest not found');
+  return null;
+};
+
+export const getPlantHarvests = async (plantId: string): Promise<Harvest[]> => {
+  const querySnapshot = await db
+    .collection('harvests')
+    .where('plantId', '==', plantId)
+    .orderBy('harvestDate', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Harvest));
+};
+
+export const getUserHarvests = async (userId: string): Promise<Harvest[]> => {
+  const querySnapshot = await db
+    .collection('harvests')
+    .where('userId', '==', userId)
+    .orderBy('harvestDate', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Harvest));
+};
+
+export const updateHarvest = async (harvestId: string, data: Partial<Harvest>): Promise<void> => {
+  await db.collection('harvests').doc(harvestId).update(data);
+};
+
+export const deleteHarvest = async (harvestId: string): Promise<void> => {
+  await db.collection('harvests').doc(harvestId).delete();
+};
+
+// ==================== PATIENTS ====================
+
+export const createPatient = async (patientData: Omit<Patient, 'id'>): Promise<string> => {
+  const now = Date.now();
+  const docRef = await db.collection('patients').add({
+    ...patientData,
+    createdAt: now,
+    updatedAt: now,
+  });
+  console.log('[Firestore] Created patient with ID:', docRef.id);
+  return docRef.id;
+};
+
+export const getPatient = async (patientId: string): Promise<Patient | null> => {
+  console.log('[Firestore] Getting patient with ID:', patientId);
+  const docSnap = await db.collection('patients').doc(patientId).get();
+  
+  if (docSnap.exists) {
+    const patient = { id: docSnap.id, ...docSnap.data() } as Patient;
+    console.log('[Firestore] Patient found:', patient.name);
+    return patient;
+  }
+  console.log('[Firestore] Patient not found');
+  return null;
+};
+
+export const getUserPatients = async (userId: string): Promise<Patient[]> => {
+  const querySnapshot = await db
+    .collection('patients')
+    .where('userId', '==', userId)
+    .orderBy('name', 'asc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Patient));
+};
+
+export const searchPatients = async (userId: string, query: string): Promise<Patient[]> => {
+  // Firestore doesn't support full-text search, so we fetch all user's patients
+  // and filter in memory. For production, consider Algolia or similar.
+  const allPatients = await getUserPatients(userId);
+  
+  const lowerQuery = query.toLowerCase();
+  return allPatients.filter(patient => 
+    patient.name.toLowerCase().includes(lowerQuery) ||
+    patient.documentNumber.toLowerCase().includes(lowerQuery) ||
+    (patient.email && patient.email.toLowerCase().includes(lowerQuery)) ||
+    (patient.phone && patient.phone.includes(query))
+  );
+};
+
+export const updatePatient = async (patientId: string, data: Partial<Patient>): Promise<void> => {
+  await db.collection('patients').doc(patientId).update({
+    ...data,
+    updatedAt: Date.now(),
+  });
+};
+
+export const deactivatePatient = async (patientId: string): Promise<void> => {
+  await db.collection('patients').doc(patientId).update({
+    status: 'inactive',
+    updatedAt: Date.now(),
+  });
+};
+
+export const deletePatient = async (patientId: string): Promise<void> => {
+  await db.collection('patients').doc(patientId).delete();
+};
+
+// ==================== DISTRIBUTIONS ====================
+
+// Counter for distribution numbers (stored in a separate document)
+const getNextDistributionNumber = async (userId: string): Promise<number> => {
+  const counterRef = db.collection('counters').doc(`distributions_${userId}`);
+  
+  return db.runTransaction(async (transaction) => {
+    const counterDoc = await transaction.get(counterRef);
+    
+    let nextNumber = 1;
+    if (counterDoc.exists) {
+      nextNumber = (counterDoc.data()?.count || 0) + 1;
+    }
+    
+    transaction.set(counterRef, { count: nextNumber }, { merge: true });
+    return nextNumber;
+  });
+};
+
+/**
+ * Generates a distribution number in format: D-YYYY-#####
+ * Example: D-2025-00001
+ */
+export const generateDistributionNumber = (sequence: number): string => {
+  const year = new Date().getFullYear();
+  const sequenceStr = String(sequence).padStart(5, '0');
+  return `D-${year}-${sequenceStr}`;
+};
+
+export const createDistribution = async (distributionData: Omit<Distribution, 'id' | 'distributionNumber'>): Promise<string> => {
+  // Get next distribution number
+  const sequence = await getNextDistributionNumber(distributionData.userId);
+  const distributionNumber = generateDistributionNumber(sequence);
+  
+  // Create the distribution
+  const docRef = await db.collection('distributions').add({
+    ...distributionData,
+    distributionNumber,
+    createdAt: Date.now(),
+  });
+  
+  // If distributing from a harvest, update the harvest's distributed amount
+  if (distributionData.harvestId && distributionData.quantityGrams) {
+    await db.collection('harvests').doc(distributionData.harvestId).update({
+      distributedGrams: firebase.firestore.FieldValue.increment(distributionData.quantityGrams),
+    });
+  }
+  
+  console.log('[Firestore] Created distribution with number:', distributionNumber);
+  
+  return docRef.id;
+};
+
+export const getDistribution = async (distributionId: string): Promise<Distribution | null> => {
+  console.log('[Firestore] Getting distribution with ID:', distributionId);
+  const docSnap = await db.collection('distributions').doc(distributionId).get();
+  
+  if (docSnap.exists) {
+    const distribution = { id: docSnap.id, ...docSnap.data() } as Distribution;
+    console.log('[Firestore] Distribution found:', distribution.distributionNumber);
+    return distribution;
+  }
+  console.log('[Firestore] Distribution not found');
+  return null;
+};
+
+export const getUserDistributions = async (userId: string): Promise<Distribution[]> => {
+  const querySnapshot = await db
+    .collection('distributions')
+    .where('userId', '==', userId)
+    .orderBy('distributionDate', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Distribution));
+};
+
+export const getPatientDistributions = async (patientId: string): Promise<Distribution[]> => {
+  const querySnapshot = await db
+    .collection('distributions')
+    .where('patientId', '==', patientId)
+    .orderBy('distributionDate', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Distribution));
+};
+
+export const getHarvestDistributions = async (harvestId: string): Promise<Distribution[]> => {
+  const querySnapshot = await db
+    .collection('distributions')
+    .where('harvestId', '==', harvestId)
+    .orderBy('distributionDate', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Distribution));
+};
+
+export const updateDistribution = async (distributionId: string, data: Partial<Distribution>): Promise<void> => {
+  await db.collection('distributions').doc(distributionId).update(data);
+};
+
+export const deleteDistribution = async (distributionId: string): Promise<void> => {
+  // Get the distribution first to update harvest if needed
+  const distribution = await getDistribution(distributionId);
+  
+  if (distribution && distribution.harvestId && distribution.quantityGrams) {
+    // Decrement the distributed amount from the harvest
+    await db.collection('harvests').doc(distribution.harvestId).update({
+      distributedGrams: firebase.firestore.FieldValue.increment(-distribution.quantityGrams),
+    });
+  }
+  
+  await db.collection('distributions').doc(distributionId).delete();
+};
+
+// ==================== EXTRACTS ====================
+
+// Counter for extract numbers (stored in a separate document)
+const getNextExtractNumber = async (userId: string): Promise<number> => {
+  const counterRef = db.collection('counters').doc(`extracts_${userId}`);
+  
+  return db.runTransaction(async (transaction) => {
+    const counterDoc = await transaction.get(counterRef);
+    
+    let nextNumber = 1;
+    if (counterDoc.exists) {
+      nextNumber = (counterDoc.data()?.count || 0) + 1;
+    }
+    
+    transaction.set(counterRef, { count: nextNumber }, { merge: true });
+    return nextNumber;
+  });
+};
+
+/**
+ * Generates an extract control number in format: EX-YYYY-#####
+ * Example: EX-2025-00001
+ */
+export const generateExtractControlNumber = (sequence: number): string => {
+  const year = new Date().getFullYear();
+  const sequenceStr = String(sequence).padStart(5, '0');
+  return `EX-${year}-${sequenceStr}`;
+};
+
+export const createExtract = async (extractData: Omit<Extract, 'id' | 'controlNumber'>): Promise<string> => {
+  // Get next extract number
+  const sequence = await getNextExtractNumber(extractData.userId);
+  const controlNumber = generateExtractControlNumber(sequence);
+  
+  // Create the extract
+  const docRef = await db.collection('extracts').add({
+    ...extractData,
+    controlNumber,
+    createdAt: Date.now(),
+  });
+  
+  // Update each source harvest to track extraction
+  for (const harvestId of extractData.harvestIds) {
+    // Calculate how much weight was used from each harvest
+    // For simplicity, we divide equally if multiple harvests
+    const weightPerHarvest = extractData.inputWeightGrams / extractData.harvestIds.length;
+    
+    await db.collection('harvests').doc(harvestId).update({
+      extractedGrams: firebase.firestore.FieldValue.increment(weightPerHarvest),
+      extractedForIds: firebase.firestore.FieldValue.arrayUnion(docRef.id),
+    });
+  }
+  
+  console.log('[Firestore] Created extract with control number:', controlNumber);
+  
+  return docRef.id;
+};
+
+export const getExtract = async (extractId: string): Promise<Extract | null> => {
+  console.log('[Firestore] Getting extract with ID:', extractId);
+  const docSnap = await db.collection('extracts').doc(extractId).get();
+  
+  if (docSnap.exists) {
+    const extract = { id: docSnap.id, ...docSnap.data() } as Extract;
+    console.log('[Firestore] Extract found:', extract.controlNumber);
+    return extract;
+  }
+  console.log('[Firestore] Extract not found');
+  return null;
+};
+
+export const getUserExtracts = async (userId: string): Promise<Extract[]> => {
+  const querySnapshot = await db
+    .collection('extracts')
+    .where('userId', '==', userId)
+    .orderBy('extractionDate', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Extract));
+};
+
+export const getHarvestExtracts = async (harvestId: string): Promise<Extract[]> => {
+  const querySnapshot = await db
+    .collection('extracts')
+    .where('harvestIds', 'array-contains', harvestId)
+    .orderBy('extractionDate', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Extract));
+};
+
+export const updateExtract = async (extractId: string, data: Partial<Extract>): Promise<void> => {
+  await db.collection('extracts').doc(extractId).update(data);
+};
+
+export const deleteExtract = async (extractId: string): Promise<void> => {
+  // Get the extract first to update harvests
+  const extract = await getExtract(extractId);
+  
+  if (extract) {
+    // Remove extraction tracking from each source harvest
+    const weightPerHarvest = extract.inputWeightGrams / extract.harvestIds.length;
+    
+    for (const harvestId of extract.harvestIds) {
+      await db.collection('harvests').doc(harvestId).update({
+        extractedGrams: firebase.firestore.FieldValue.increment(-weightPerHarvest),
+        extractedForIds: firebase.firestore.FieldValue.arrayRemove(extractId),
+      });
+    }
+  }
+  
+  await db.collection('extracts').doc(extractId).delete();
 };

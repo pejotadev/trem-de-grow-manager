@@ -18,7 +18,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'My Plants',
+          title: 'Plants',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="leaf" size={size} color={color} />
           ),
@@ -58,6 +58,45 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people" size={size} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="menu"
+        options={{
+          title: 'Menu',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="menu" size={size} color={color} />
+          ),
+        }}
+      />
+      {/* Hidden from tabs but accessible via menu */}
+      <Tabs.Screen
+        name="extracts"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="patients"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="distributions"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          href: null,
+          headerShown: false,
         }}
       />
     </Tabs>

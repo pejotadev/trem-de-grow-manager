@@ -1,6 +1,7 @@
+import React from 'react';
 import { Stack } from 'expo-router';
 
-export default function PlantsLayout() {
+export default function ProfileLayout() {
   return (
     <Stack
       screenOptions={{
@@ -13,10 +14,14 @@ export default function PlantsLayout() {
         },
       }}
     >
-      <Stack.Screen name="new" options={{ title: 'New Plant' }} />
-      <Stack.Screen name="[id]" options={{ title: 'Plant Details' }} />
-      <Stack.Screen name="harvest" options={{ title: 'Record Harvest' }} />
+      <Stack.Screen
+        name="index"
+        options={{
+          title: 'Profile',
+        }}
+      />
     </Stack>
   );
 }
+
 

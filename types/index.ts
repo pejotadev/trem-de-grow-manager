@@ -50,6 +50,7 @@ export interface Environment {
   isPublic: boolean; // If true, friends can view this environment and its plants
   createdAt: number;
   plantCounter: number; // Counter for generating sequential control numbers
+  harvestCounter: number; // Counter for generating sequential harvest control numbers
 }
 
 // Plant Types
@@ -122,4 +123,117 @@ export interface EnvironmentRecord {
   humidity: number;
   lightHours: number;
   notes: string;
+}
+
+// Harvest Types
+export type HarvestPurpose = 'patient' | 'research' | 'extract' | 'personal' | 'donation' | 'other';
+
+export type HarvestStatus = 'fresh' | 'drying' | 'curing' | 'processed' | 'distributed';
+
+export interface Harvest {
+  id: string;
+  plantId: string;
+  userId: string;
+  controlNumber: string; // Format: H-{ENV}-{YEAR}-{SEQUENCE}
+  harvestDate: number;
+  wetWeightGrams: number;
+  dryWeightGrams?: number;
+  trimWeightGrams?: number;
+  finalWeightGrams?: number;
+  distributedGrams?: number; // Track how much has been distributed
+  extractedGrams?: number; // Track how much has been used for extraction
+  extractedForIds?: string[]; // Track which extracts used this harvest
+  status: HarvestStatus;
+  purpose: HarvestPurpose;
+  destinationPatientId?: string;
+  qualityGrade?: 'A' | 'B' | 'C';
+  storageLocation?: string;
+  notes?: string;
+  createdAt: number;
+}
+
+// Patient Types
+export type PatientStatus = 'active' | 'inactive' | 'pending';
+
+export type PatientDocumentType = 'cpf' | 'rg' | 'passport' | 'other';
+
+export interface Patient {
+  id: string;
+  associationId?: string; // For future association feature
+  userId: string; // Who registered this patient
+  name: string; // Required
+  documentType: PatientDocumentType;
+  documentNumber: string; // Required
+  email?: string;
+  phone?: string;
+  address?: string;
+  joinDate: number;
+  status: PatientStatus;
+  medicalCondition?: string;
+  prescribingDoctor?: string;
+  doctorCrm?: string;
+  prescriptionDate?: number;
+  prescriptionExpirationDate?: number;
+  prescriptionFileUrl?: string;
+  consentSignedDate?: number;
+  consentFileUrl?: string;
+  notes?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+// Extract Types
+export type ExtractionMethod = 'co2' | 'ethanol' | 'butane' | 'rosin' | 'ice_water' | 'olive_oil' | 'other';
+
+export type ExtractType = 'oil' | 'tincture' | 'concentrate' | 'isolate' | 'full_spectrum' | 'broad_spectrum' | 'other';
+
+export interface Extract {
+  id: string;
+  userId: string;
+  controlNumber: string; // Format: EX-YYYY-#####
+  name: string;
+  extractType: ExtractType;
+  harvestIds: string[]; // Source harvests - can be multiple
+  sourceControlNumbers: string[]; // For display
+  extractionDate: number;
+  extractionMethod: ExtractionMethod;
+  inputWeightGrams: number; // Total input material
+  outputVolumeMl?: number;
+  outputWeightGrams?: number;
+  thcMgPerMl?: number;
+  cbdMgPerMl?: number;
+  concentration?: string;
+  carrier?: string; // e.g., "MCT oil", "olive oil"
+  batchNumber: string;
+  expirationDate?: number;
+  storageLocation?: string;
+  notes?: string;
+  labAnalysisId?: string;
+  createdAt: number;
+}
+
+// Distribution Types
+export type ProductType = 'flower' | 'extract' | 'oil' | 'edible' | 'topical' | 'other';
+
+export interface Distribution {
+  id: string;
+  distributionNumber: string; // Format: D-YYYY-#####
+  userId: string;
+  patientId: string;
+  patientName: string; // Denormalized for display
+  productType: ProductType;
+  harvestId?: string; // If distributing flower
+  harvestControlNumber?: string; // Denormalized for display
+  extractId?: string; // If distributing extract
+  extractControlNumber?: string; // Denormalized for display
+  batchNumber: string; // Source batch
+  productDescription: string;
+  quantityGrams?: number;
+  quantityMl?: number;
+  quantityUnits?: number;
+  distributionDate: number;
+  receivedBy: string; // Who picked up
+  signatureConfirmation?: boolean;
+  notes?: string;
+  createdAt: number;
 }

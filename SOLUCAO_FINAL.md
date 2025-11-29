@@ -99,3 +99,4 @@ O `initializeAuth` deve resolver isso. Se não resolver, a única solução é:
 O servidor Expo está rodando. Abra o app e teste o login. Me diga o que acontece!
 
 
+

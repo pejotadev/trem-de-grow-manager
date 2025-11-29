@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
   Switch,
   Linking,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   getPlant,
@@ -26,8 +26,9 @@ import {
   getUserEnvironments,
   getUserPlants,
   clonePlants,
+  getPlantHarvests,
 } from '../../../firebase/firestore';
-import { Plant, Stage, WaterRecord, StageName, Environment, PlantSourceType, GeneticInfo, Chemotype } from '../../../types';
+import { Plant, Stage, WaterRecord, StageName, Environment, PlantSourceType, GeneticInfo, Chemotype, Harvest, HarvestStatus, HarvestPurpose } from '../../../types';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
@@ -36,6 +37,24 @@ import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 
 const STAGES: StageName[] = ['Seedling', 'Veg', 'Flower', 'Drying', 'Curing'];
+const HARVESTABLE_STAGES: StageName[] = ['Flower', 'Drying', 'Curing'];
+
+const HARVEST_STATUS_COLORS: Record<HarvestStatus, string> = {
+  fresh: '#4CAF50',
+  drying: '#FF9800',
+  curing: '#9C27B0',
+  processed: '#2196F3',
+  distributed: '#607D8B',
+};
+
+const HARVEST_PURPOSE_LABELS: Record<HarvestPurpose, string> = {
+  patient: 'Patient',
+  research: 'Research',
+  extract: 'Extract',
+  personal: 'Personal',
+  donation: 'Donation',
+  other: 'Other',
+};
 
 const SOURCE_TYPE_LABELS: Record<PlantSourceType, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string }> = {
   seed: { label: 'Seed', icon: 'ellipse', color: '#8BC34A' },
@@ -66,6 +85,7 @@ export default function PlantDetailScreen() {
   const [allPlants, setAllPlants] = useState<Plant[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
   const [waterRecords, setWaterRecords] = useState<WaterRecord[]>([]);
+  const [harvests, setHarvests] = useState<Harvest[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Edit modal state
@@ -120,9 +140,10 @@ export default function PlantDetailScreen() {
         envData = await getEnvironment(plantData.environmentId);
       }
 
-      const [stagesData, waterData] = await Promise.all([
+      const [stagesData, waterData, harvestsData] = await Promise.all([
         getPlantStages(id),
         getPlantWaterRecords(id),
+        getPlantHarvests(id),
       ]);
 
       console.log('[PlantDetail] Plant data loaded:', plantData);
@@ -130,6 +151,7 @@ export default function PlantDetailScreen() {
       setEnvironment(envData);
       setStages(stagesData);
       setWaterRecords(waterData);
+      setHarvests(harvestsData);
 
       // Load parent plant if this is a clone
       if (plantData.genetics?.parentPlantId || plantData.motherPlantId) {
@@ -175,11 +197,18 @@ export default function PlantDetailScreen() {
     }
   };
 
+  // Initial load
   useEffect(() => {
-    loadPlantData();
     loadEnvironments();
-    loadAllPlants();
-  }, [id, userData]);
+  }, [userData]);
+
+  // Reload data when screen comes into focus (e.g., after creating a harvest)
+  useFocusEffect(
+    useCallback(() => {
+      loadPlantData();
+      loadAllPlants();
+    }, [id, userData])
+  );
 
   const handleDelete = () => {
     Alert.alert(
@@ -397,6 +426,12 @@ export default function PlantDetailScreen() {
   const navigateToClone = (cloneId: string) => {
     router.push(`/(tabs)/plants/${cloneId}`);
   };
+
+  const navigateToHarvest = () => {
+    router.push(`/(tabs)/plants/harvest?plantId=${id}`);
+  };
+
+  const canHarvest = plant?.currentStage && HARVESTABLE_STAGES.includes(plant.currentStage);
 
   const openLabReport = () => {
     if (plant?.chemotype?.reportUrl) {
@@ -732,6 +767,58 @@ export default function PlantDetailScreen() {
             <Text style={styles.emptyText}>No watering logs</Text>
           )}
         </Card>
+
+        {/* Harvests Section */}
+        <Card>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Harvests ({harvests.length})</Text>
+          </View>
+          {harvests.length > 0 ? (
+            harvests.map((harvest) => (
+              <View key={harvest.id} style={styles.harvestItem}>
+                <View style={styles.harvestIcon}>
+                  <Ionicons name="cut" size={20} color="#4CAF50" />
+                </View>
+                <View style={styles.harvestContent}>
+                  <View style={styles.harvestHeader}>
+                    <Text style={styles.harvestControlNumber}>#{harvest.controlNumber}</Text>
+                    <View style={[styles.harvestStatusBadge, { backgroundColor: HARVEST_STATUS_COLORS[harvest.status] }]}>
+                      <Text style={styles.harvestStatusText}>{harvest.status}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.harvestDate}>
+                    {format(new Date(harvest.harvestDate), 'MMM dd, yyyy')}
+                  </Text>
+                  <View style={styles.harvestDetails}>
+                    <Text style={styles.harvestWeight}>
+                      {harvest.wetWeightGrams}g wet
+                      {harvest.dryWeightGrams && ` → ${harvest.dryWeightGrams}g dry`}
+                    </Text>
+                    <Text style={styles.harvestPurpose}>
+                      {HARVEST_PURPOSE_LABELS[harvest.purpose]}
+                    </Text>
+                  </View>
+                  {harvest.qualityGrade && (
+                    <View style={styles.harvestGradeBadge}>
+                      <Text style={styles.harvestGradeText}>Grade {harvest.qualityGrade}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.emptyText}>No harvests recorded</Text>
+          )}
+        </Card>
+
+        {/* Harvest Button - show if in harvestable stage */}
+        {canHarvest && (
+          <Button
+            title="🌿 Harvest This Plant"
+            onPress={navigateToHarvest}
+            variant="primary"
+          />
+        )}
 
         <Button title="Clone Plant" onPress={handleClonePress} variant="secondary" />
         <Button title="Delete Plant" onPress={handleDelete} variant="danger" />
@@ -1748,5 +1835,79 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     flex: 1,
+  },
+  // Harvest styles
+  harvestItem: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  harvestIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#e8f5e9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  harvestContent: {
+    flex: 1,
+  },
+  harvestHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  harvestControlNumber: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  harvestStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  harvestStatusText: {
+    fontSize: 11,
+    color: '#fff',
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  harvestDate: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 4,
+  },
+  harvestDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  harvestWeight: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '500',
+  },
+  harvestPurpose: {
+    fontSize: 12,
+    color: '#999',
+  },
+  harvestGradeBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginTop: 6,
+  },
+  harvestGradeText: {
+    fontSize: 11,
+    color: '#666',
+    fontWeight: '500',
   },
 });

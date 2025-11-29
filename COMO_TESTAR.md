@@ -129,3 +129,4 @@ const db = getFirestore(app);
 - Se o Firebase Auth não funcionar, precisamos downgrade para Firebase v9
 
 
+

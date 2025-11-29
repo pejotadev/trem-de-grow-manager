@@ -154,3 +154,4 @@ If you add new queries with filtering + sorting, you'll need to:
 **Once indexes are built, the app will work perfectly!** 🌱
 
 
+
