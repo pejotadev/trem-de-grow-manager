@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   getFriends,
@@ -29,6 +30,7 @@ import { Ionicons } from '@expo/vector-icons';
 type TabType = 'friends' | 'requests';
 
 export default function FriendsScreen() {
+  const { t } = useTranslation(['friends', 'common']);
   const [activeTab, setActiveTab] = useState<TabType>('friends');
   const [friends, setFriends] = useState<{ friendship: Friendship; friend: User }[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
@@ -62,7 +64,7 @@ export default function FriendsScreen() {
         // Don't show alert for index building - show UI message instead
       } else {
         setIndexBuilding(false);
-        Alert.alert('Error', 'Failed to load friends: ' + (error.message || 'Unknown error'));
+        Alert.alert(t('common:error'), t('friends:errors.failedToLoad'));
       }
     } finally {
       setLoading(false);
@@ -86,10 +88,10 @@ export default function FriendsScreen() {
     
     try {
       await acceptFriendRequest(request.id, userData);
-      Alert.alert('Success', 'Friend request accepted!');
+      Alert.alert(t('common:success'), t('friends:success.requestAccepted'));
       loadData();
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to accept request');
+      Alert.alert(t('common:error'), t('friends:errors.failedToAccept'));
     }
   };
 
@@ -97,20 +99,20 @@ export default function FriendsScreen() {
     if (!userData) return;
 
     Alert.alert(
-      'Reject Request',
-      `Reject friend request from ${request.fromUserDisplayName || request.fromUserEmail}?`,
+      t('friends:actions.rejectRequest'),
+      t('friends:actions.rejectConfirm', { name: request.fromUserDisplayName || request.fromUserEmail }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common:cancel'), style: 'cancel' },
         {
-          text: 'Reject',
+          text: t('friends:actions.reject'),
           style: 'destructive',
           onPress: async () => {
             try {
               await rejectFriendRequest(request.id, userData.uid);
-              Alert.alert('Done', 'Friend request rejected');
+              Alert.alert(t('common:done'), t('friends:success.requestRejected'));
               loadData();
             } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to reject request');
+              Alert.alert(t('common:error'), t('friends:errors.failedToReject'));
             }
           },
         },
@@ -122,20 +124,20 @@ export default function FriendsScreen() {
     if (!userData) return;
 
     Alert.alert(
-      'Remove Friend',
-      `Are you sure you want to remove ${friend.displayName || friend.email} as a friend?`,
+      t('friends:actions.removeFriend'),
+      t('friends:actions.removeConfirm', { name: friend.displayName || friend.email }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common:cancel'), style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('friends:actions.remove'),
           style: 'destructive',
           onPress: async () => {
             try {
               await removeFriend(friendship.id, userData.uid);
-              Alert.alert('Done', 'Friend removed');
+              Alert.alert(t('common:done'), t('friends:success.friendRemoved'));
               loadData();
             } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to remove friend');
+              Alert.alert(t('common:error'), t('friends:errors.failedToRemove'));
             }
           },
         },
@@ -160,7 +162,7 @@ export default function FriendsScreen() {
               <Text style={styles.friendEmail}>{item.friend.email}</Text>
             )}
             <Text style={styles.friendSince}>
-              Friends since {format(new Date(item.friendship.createdAt), 'MMM dd, yyyy')}
+              {t('friends:friendsSince', { date: format(new Date(item.friendship.createdAt), 'MMM dd, yyyy') })}
             </Text>
           </View>
           <View style={styles.friendActions}>
@@ -193,7 +195,7 @@ export default function FriendsScreen() {
             <Text style={styles.friendEmail}>{item.fromUserEmail}</Text>
           )}
           <Text style={styles.requestDate}>
-            Sent {format(new Date(item.createdAt), 'MMM dd, yyyy')}
+            {t('friends:sent', { date: format(new Date(item.createdAt), 'MMM dd, yyyy') })}
           </Text>
         </View>
         <View style={styles.requestActions}>
@@ -215,7 +217,7 @@ export default function FriendsScreen() {
   );
 
   if (loading) {
-    return <Loading message="Loading friends..." />;
+    return <Loading message={t('friends:loading')} />;
   }
 
   return (
@@ -232,7 +234,7 @@ export default function FriendsScreen() {
             color={activeTab === 'friends' ? '#4CAF50' : '#999'}
           />
           <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>
-            Friends ({friends.length})
+            {t('friends:tabs.friends')} ({friends.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -245,7 +247,7 @@ export default function FriendsScreen() {
             color={activeTab === 'requests' ? '#4CAF50' : '#999'}
           />
           <Text style={[styles.tabText, activeTab === 'requests' && styles.activeTabText]}>
-            Requests ({requests.length})
+            {t('friends:tabs.requests')} ({requests.length})
           </Text>
           {requests.length > 0 && (
             <View style={styles.badge}>
@@ -261,9 +263,9 @@ export default function FriendsScreen() {
           <View style={styles.indexBuildingCard}>
             <Ionicons name="hourglass-outline" size={24} color="#FF9800" />
             <View style={styles.indexBuildingText}>
-              <Text style={styles.indexBuildingTitle}>Setting up friends feature...</Text>
+              <Text style={styles.indexBuildingTitle}>{t('friends:indexBuilding.title')}</Text>
               <Text style={styles.indexBuildingSubtext}>
-                The database index is being created. This usually takes 1-2 minutes. Please refresh in a moment.
+                {t('friends:indexBuilding.subtitle')}
               </Text>
             </View>
           </View>
@@ -272,9 +274,9 @@ export default function FriendsScreen() {
           friends.length === 0 && !indexBuilding ? (
             <View style={styles.emptyState}>
               <Ionicons name="people-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyText}>No friends yet</Text>
+              <Text style={styles.emptyText}>{t('friends:noFriends')}</Text>
               <Text style={styles.emptySubtext}>
-                Search for friends to connect with!
+                {t('friends:noFriendsSubtext')}
               </Text>
             </View>
           ) : friends.length > 0 ? (
@@ -292,9 +294,9 @@ export default function FriendsScreen() {
           requests.length === 0 && !indexBuilding ? (
             <View style={styles.emptyState}>
               <Ionicons name="mail-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyText}>No pending requests</Text>
+              <Text style={styles.emptyText}>{t('friends:noRequests')}</Text>
               <Text style={styles.emptySubtext}>
-                When someone sends you a friend request, it will appear here.
+                {t('friends:noRequestsSubtext')}
               </Text>
             </View>
           ) : requests.length > 0 ? (
@@ -313,7 +315,7 @@ export default function FriendsScreen() {
 
       {/* Add Friend Button */}
       <Button
-        title="+ Find Friends"
+        title={t('friends:findFriends')}
         onPress={() => router.push('/(tabs)/friends/search')}
         style={styles.addButton}
       />
@@ -494,4 +496,3 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
-

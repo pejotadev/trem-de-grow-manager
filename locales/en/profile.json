@@ -1,0 +1,28 @@
+{
+  "title": "Profile",
+  "avatarHint": "Your initials are generated from your name",
+  "sections": {
+    "personalInfo": "Personal Information",
+    "accountInfo": "Account Information",
+    "language": "Language"
+  },
+  "form": {
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Enter your name",
+    "email": "Email",
+    "emailCannotChange": "Cannot be changed",
+    "userId": "User ID"
+  },
+  "language": {
+    "title": "Language",
+    "selectLanguage": "Select your preferred language"
+  },
+  "success": {
+    "profileUpdated": "Profile updated successfully!"
+  },
+  "errors": {
+    "enterName": "Please enter your name",
+    "failedToUpdate": "Failed to update profile"
+  }
+}
+

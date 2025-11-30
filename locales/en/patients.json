@@ -1,0 +1,83 @@
+{
+  "title": "Patients",
+  "loading": "Loading patients...",
+  "addPatient": "+ Register Patient",
+  "noPatients": "No patients registered",
+  "noPatientsSubtext": "Register your first patient to get started",
+  "noMatch": "No patients match your search",
+  "noMatchSubtext": "Try adjusting your search or filters",
+  "searchPlaceholder": "Search by name or document...",
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending"
+  },
+  "prescription": {
+    "valid": "Valid",
+    "expired": "Expired",
+    "expiringSoon": "Expiring soon",
+    "noPrescription": "No prescription",
+    "label": "Prescription"
+  },
+  "form": {
+    "nameLabel": "Full Name",
+    "namePlaceholder": "Enter patient's full name",
+    "documentType": "Document Type",
+    "documentNumber": "Document Number",
+    "documentPlaceholder": "Enter document number",
+    "emailLabel": "Email",
+    "emailPlaceholder": "patient@email.com",
+    "phoneLabel": "Phone",
+    "phonePlaceholder": "Enter phone number",
+    "addressLabel": "Address",
+    "addressPlaceholder": "Enter address",
+    "statusLabel": "Status",
+    "medicalCondition": "Medical Condition",
+    "medicalConditionPlaceholder": "e.g., Chronic pain, Epilepsy",
+    "prescribingDoctor": "Prescribing Doctor",
+    "doctorPlaceholder": "Dr. Name",
+    "doctorCrm": "Doctor's CRM",
+    "crmPlaceholder": "CRM number",
+    "prescriptionDate": "Prescription Date",
+    "prescriptionExpiration": "Prescription Expiration",
+    "allowances": "Monthly Allowances",
+    "allowanceOil": "Oil (grams)",
+    "allowanceExtract": "Extract (grams)",
+    "allowanceFlowerThc": "Flower THC (grams)",
+    "allowanceFlowerCbd": "Flower CBD (grams)",
+    "createPatient": "Register Patient",
+    "updatePatient": "Update Patient"
+  },
+  "documentTypes": {
+    "cpf": "CPF",
+    "rg": "RG",
+    "passport": "Passport",
+    "other": "Other"
+  },
+  "detail": {
+    "personalInfo": "Personal Information",
+    "contactInfo": "Contact Information",
+    "medicalInfo": "Medical Information",
+    "prescriptionInfo": "Prescription Information",
+    "allowances": "Monthly Allowances",
+    "distributions": "Distribution History",
+    "noDistributions": "No distributions yet",
+    "deletePatient": "Delete Patient",
+    "deleteConfirm": "Are you sure you want to delete this patient? This action cannot be undone.",
+    "patientNotFound": "Patient not found"
+  },
+  "success": {
+    "created": "Patient registered successfully!",
+    "updated": "Patient updated successfully!",
+    "deleted": "Patient deleted successfully"
+  },
+  "errors": {
+    "nameRequired": "Please enter the patient's name",
+    "documentRequired": "Please enter the document number",
+    "failedToCreate": "Failed to register patient",
+    "failedToUpdate": "Failed to update patient",
+    "failedToDelete": "Failed to delete patient",
+    "failedToLoad": "Failed to load patient data"
+  }
+}
+

@@ -1,0 +1,94 @@
+{
+  "appName": "GrowControl",
+  "loading": "Carregando...",
+  "error": "Erro",
+  "success": "Sucesso",
+  "cancel": "Cancelar",
+  "save": "Salvar",
+  "saveChanges": "Salvar Alterações",
+  "saving": "Salvando...",
+  "delete": "Excluir",
+  "edit": "Editar",
+  "create": "Criar",
+  "update": "Atualizar",
+  "confirm": "Confirmar",
+  "yes": "Sim",
+  "no": "Não",
+  "ok": "OK",
+  "done": "Concluído",
+  "goBack": "Voltar",
+  "viewAll": "Ver Todos",
+  "search": "Buscar",
+  "filter": "Filtrar",
+  "all": "Todos",
+  "refresh": "Atualizar",
+  "noResults": "Nenhum resultado encontrado",
+  "optional": "opcional",
+  "required": "obrigatório",
+  "notes": "Observações",
+  "notesPlaceholder": "Observações adicionais...",
+  "version": "Versão",
+  "features": "Recursos",
+  "dates": {
+    "today": "Hoje",
+    "yesterday": "Ontem",
+    "daysAgo": "{{count}} dias atrás",
+    "memberSince": "Membro Desde",
+    "created": "Criado em",
+    "started": "Iniciado em",
+    "joined": "Entrou em"
+  },
+  "units": {
+    "grams": "g",
+    "milliliters": "ml",
+    "meters": "Metros",
+    "feet": "Pés",
+    "units": "unidades"
+  },
+  "tabs": {
+    "plants": "Plantas",
+    "environments": "Ambientes",
+    "logs": "Registros",
+    "friends": "Amigos",
+    "menu": "Menu"
+  },
+  "stages": {
+    "seedling": "Muda",
+    "veg": "Vegetativo",
+    "flower": "Floração",
+    "drying": "Secagem",
+    "curing": "Cura"
+  },
+  "environmentTypes": {
+    "indoor": "Indoor",
+    "outdoor": "Outdoor",
+    "greenhouse": "Estufa"
+  },
+  "sourceTypes": {
+    "seed": "Semente",
+    "clone": "Clone",
+    "cutting": "Estaca",
+    "tissue_culture": "Tecido"
+  },
+  "validation": {
+    "required": "Este campo é obrigatório",
+    "invalidEmail": "Endereço de e-mail inválido",
+    "passwordTooShort": "A senha deve ter pelo menos 6 caracteres",
+    "passwordsDontMatch": "As senhas não coincidem",
+    "fillAllFields": "Por favor, preencha todos os campos",
+    "enterName": "Por favor, digite um nome",
+    "enterValidNumber": "Por favor, digite um número válido",
+    "userNotAuthenticated": "Usuário não autenticado"
+  },
+  "status": {
+    "active": "Ativo",
+    "inactive": "Inativo",
+    "pending": "Pendente",
+    "fresh": "Fresco",
+    "drying": "Secando",
+    "curing": "Curando",
+    "processed": "Processado",
+    "distributed": "Distribuído"
+  }
+}
+

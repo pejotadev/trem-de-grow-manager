@@ -12,6 +12,7 @@ import {
   Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import { createEnvironment } from '../../../firebase/firestore';
 import { EnvironmentType } from '../../../types';
@@ -19,13 +20,8 @@ import { Input } from '../../../components/Input';
 import { Button } from '../../../components/Button';
 import { Ionicons } from '@expo/vector-icons';
 
-const ENVIRONMENT_TYPES: { type: EnvironmentType; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
-  { type: 'indoor', label: 'Indoor', icon: 'home', color: '#9C27B0' },
-  { type: 'outdoor', label: 'Outdoor', icon: 'sunny', color: '#FF9800' },
-  { type: 'greenhouse', label: 'Greenhouse', icon: 'leaf', color: '#4CAF50' },
-];
-
 export default function NewEnvironmentScreen() {
+  const { t } = useTranslation(['environments', 'common']);
   const [name, setName] = useState('');
   const [selectedType, setSelectedType] = useState<EnvironmentType>('indoor');
   const [width, setWidth] = useState('');
@@ -40,14 +36,20 @@ export default function NewEnvironmentScreen() {
   const { userData } = useAuth();
   const router = useRouter();
 
+  const ENVIRONMENT_TYPES: { type: EnvironmentType; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
+    { type: 'indoor', label: t('common:environmentTypes.indoor'), icon: 'home', color: '#9C27B0' },
+    { type: 'outdoor', label: t('common:environmentTypes.outdoor'), icon: 'sunny', color: '#FF9800' },
+    { type: 'greenhouse', label: t('common:environmentTypes.greenhouse'), icon: 'leaf', color: '#4CAF50' },
+  ];
+
   const handleSubmit = async () => {
     if (!name) {
-      Alert.alert('Error', 'Please enter an environment name');
+      Alert.alert(t('common:error'), t('environments:errors.nameRequired'));
       return;
     }
 
     if (!userData || !userData.uid) {
-      Alert.alert('Error', 'User not authenticated');
+      Alert.alert(t('common:error'), t('common:validation.userNotAuthenticated'));
       return;
     }
 
@@ -93,15 +95,15 @@ export default function NewEnvironmentScreen() {
       const environmentId = await createEnvironment(environmentData);
       console.log('[NewEnvironment] Environment created with ID:', environmentId);
 
-      Alert.alert('Success', 'Environment created successfully!', [
+      Alert.alert(t('common:success'), t('environments:success.created'), [
         {
-          text: 'OK',
+          text: t('common:ok'),
           onPress: () => router.back(),
         },
       ]);
     } catch (error: any) {
       console.error('[NewEnvironment] Error creating environment:', error);
-      Alert.alert('Error', 'Failed to create environment: ' + (error.message || 'Unknown error'));
+      Alert.alert(t('common:error'), t('environments:errors.failedToCreate'));
     } finally {
       setLoading(false);
     }
@@ -119,14 +121,14 @@ export default function NewEnvironmentScreen() {
         >
           <View style={styles.content}>
             <Input
-              label="Environment Name *"
+              label={`${t('environments:form.nameLabel')} *`}
               value={name}
               onChangeText={setName}
-              placeholder="e.g., Main Tent, Backyard Garden"
+              placeholder={t('environments:form.namePlaceholder')}
             />
 
             <View style={styles.section}>
-              <Text style={styles.label}>Environment Type *</Text>
+              <Text style={styles.label}>{t('environments:form.typeLabel')} *</Text>
               <View style={styles.typeButtons}>
                 {ENVIRONMENT_TYPES.map((envType) => (
                   <TouchableOpacity
@@ -156,25 +158,25 @@ export default function NewEnvironmentScreen() {
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.label}>Dimensions (optional)</Text>
+              <Text style={styles.label}>{t('environments:form.dimensionsLabel')} ({t('common:optional')})</Text>
               <View style={styles.unitSelector}>
                 <TouchableOpacity
                   style={[styles.unitButton, unit === 'm' && styles.unitButtonActive]}
                   onPress={() => setUnit('m')}
                 >
-                  <Text style={[styles.unitText, unit === 'm' && styles.unitTextActive]}>Meters</Text>
+                  <Text style={[styles.unitText, unit === 'm' && styles.unitTextActive]}>{t('common:units.meters')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.unitButton, unit === 'ft' && styles.unitButtonActive]}
                   onPress={() => setUnit('ft')}
                 >
-                  <Text style={[styles.unitText, unit === 'ft' && styles.unitTextActive]}>Feet</Text>
+                  <Text style={[styles.unitText, unit === 'ft' && styles.unitTextActive]}>{t('common:units.feet')}</Text>
                 </TouchableOpacity>
               </View>
               <View style={styles.dimensionsRow}>
                 <View style={styles.dimensionInput}>
                   <Input
-                    label="Width"
+                    label={t('environments:form.widthLabel')}
                     value={width}
                     onChangeText={setWidth}
                     placeholder="0"
@@ -183,7 +185,7 @@ export default function NewEnvironmentScreen() {
                 </View>
                 <View style={styles.dimensionInput}>
                   <Input
-                    label="Length"
+                    label={t('environments:form.lengthLabel')}
                     value={length}
                     onChangeText={setLength}
                     placeholder="0"
@@ -192,7 +194,7 @@ export default function NewEnvironmentScreen() {
                 </View>
                 <View style={styles.dimensionInput}>
                   <Input
-                    label="Height"
+                    label={t('environments:form.heightLabel')}
                     value={height}
                     onChangeText={setHeight}
                     placeholder="0"
@@ -203,24 +205,24 @@ export default function NewEnvironmentScreen() {
             </View>
 
             <Input
-              label="Light Setup (optional)"
+              label={`${t('environments:form.lightSetupLabel')} (${t('common:optional')})`}
               value={lightSetup}
               onChangeText={setLightSetup}
-              placeholder="e.g., 600W HPS, Full Spectrum LED"
+              placeholder={t('environments:form.lightSetupPlaceholder')}
             />
 
             <Input
-              label="Ventilation (optional)"
+              label={`${t('environments:form.ventilationLabel')} (${t('common:optional')})`}
               value={ventilation}
               onChangeText={setVentilation}
-              placeholder="e.g., Inline fan with carbon filter"
+              placeholder={t('environments:form.ventilationPlaceholder')}
             />
 
             <Input
-              label="Notes (optional)"
+              label={`${t('environments:form.notesLabel')} (${t('common:optional')})`}
               value={notes}
               onChangeText={setNotes}
-              placeholder="Any additional notes about this environment..."
+              placeholder={t('environments:form.notesPlaceholder')}
               multiline
               numberOfLines={3}
             />
@@ -230,7 +232,7 @@ export default function NewEnvironmentScreen() {
               <View style={styles.publicHeader}>
                 <View style={styles.publicLabelContainer}>
                   <Ionicons name="globe-outline" size={20} color="#4CAF50" />
-                  <Text style={styles.publicLabel}>Public Environment</Text>
+                  <Text style={styles.publicLabel}>{t('environments:form.publicEnvironment')}</Text>
                 </View>
                 <Switch
                   value={isPublic}
@@ -241,13 +243,13 @@ export default function NewEnvironmentScreen() {
               </View>
               <Text style={styles.publicDescription}>
                 {isPublic
-                  ? 'Friends can view this environment and its plants.'
-                  : 'Only you can see this environment.'}
+                  ? t('environments:form.publicDescription')
+                  : t('environments:form.privateDescription')}
               </Text>
             </View>
 
             <Button
-              title="Create Environment"
+              title={t('environments:form.createEnvironment')}
               onPress={handleSubmit}
               disabled={loading}
               style={styles.submitButton}
@@ -362,5 +364,3 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
-
-

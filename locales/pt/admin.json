@@ -1,0 +1,99 @@
+{
+  "audit": {
+    "title": "Log de Auditoria",
+    "loading": "Carregando logs de auditoria...",
+    "noLogs": "Nenhum log de auditoria",
+    "noLogsSubtext": "Alterações nos dados aparecerão aqui",
+    "filters": {
+      "allActions": "Todas as Ações",
+      "allCollections": "Todas as Coleções"
+    },
+    "actions": {
+      "create": "Criado",
+      "update": "Atualizado",
+      "delete": "Excluído"
+    },
+    "collections": {
+      "plants": "Plantas",
+      "environments": "Ambientes",
+      "harvests": "Colheitas",
+      "patients": "Pacientes",
+      "extracts": "Extratos",
+      "distributions": "Distribuições",
+      "documents": "Documentos"
+    },
+    "detail": {
+      "timestamp": "Data/Hora",
+      "action": "Ação",
+      "collection": "Coleção",
+      "documentId": "ID do Documento",
+      "userId": "ID do Usuário",
+      "changes": "Alterações",
+      "before": "Antes",
+      "after": "Depois"
+    }
+  },
+  "documents": {
+    "title": "Protocolos e Documentos",
+    "loading": "Carregando documentos...",
+    "addDocument": "+ Novo Documento",
+    "noDocuments": "Nenhum documento ainda",
+    "noDocumentsSubtext": "Crie seu primeiro documento institucional",
+    "category": {
+      "protocol": "Protocolo",
+      "sop": "POP",
+      "form": "Formulário",
+      "policy": "Política",
+      "other": "Outro"
+    },
+    "form": {
+      "titleLabel": "Título",
+      "titlePlaceholder": "Título do documento",
+      "categoryLabel": "Categoria",
+      "versionLabel": "Versão",
+      "versionPlaceholder": "ex: 1.0",
+      "contentLabel": "Conteúdo",
+      "contentPlaceholder": "Digite o conteúdo do documento...",
+      "createDocument": "Criar Documento",
+      "updateDocument": "Atualizar Documento"
+    },
+    "detail": {
+      "documentInfo": "Informações do Documento",
+      "lastUpdated": "Última Atualização",
+      "deleteDocument": "Excluir Documento",
+      "deleteConfirm": "Tem certeza que deseja excluir este documento?"
+    },
+    "success": {
+      "created": "Documento criado com sucesso!",
+      "updated": "Documento atualizado com sucesso!",
+      "deleted": "Documento excluído com sucesso"
+    },
+    "errors": {
+      "titleRequired": "Por favor, digite um título",
+      "contentRequired": "Por favor, digite o conteúdo",
+      "failedToCreate": "Falha ao criar documento",
+      "failedToUpdate": "Falha ao atualizar documento",
+      "failedToDelete": "Falha ao excluir documento"
+    }
+  },
+  "reports": {
+    "title": "Relatórios de Conformidade",
+    "loading": "Gerando relatório...",
+    "description": "Gere relatórios detalhados de conformidade e inventário",
+    "types": {
+      "inventory": "Relatório de Inventário",
+      "distribution": "Relatório de Distribuição",
+      "patient": "Relatório de Pacientes",
+      "production": "Relatório de Produção"
+    },
+    "dateRange": "Período",
+    "from": "De",
+    "to": "Até",
+    "generate": "Gerar Relatório",
+    "export": "Exportar",
+    "exportPdf": "Exportar como PDF",
+    "exportCsv": "Exportar como CSV",
+    "noData": "Nenhum dado para o período selecionado"
+  }
+}
+

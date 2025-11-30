@@ -10,12 +10,14 @@ import {
   Alert,
 } from 'react-native';
 import { Link } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { StatusBar } from 'expo-status-bar';
 
 export default function LoginScreen() {
+  const { t } = useTranslation(['auth', 'common']);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,7 +25,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common:error'), t('common:validation.fillAllFields'));
       return;
     }
 
@@ -31,7 +33,7 @@ export default function LoginScreen() {
     try {
       await login(email, password);
     } catch (error: any) {
-      Alert.alert('Login Failed', error.message);
+      Alert.alert(t('auth:login.loginFailed'), error.message);
     } finally {
       setLoading(false);
     }
@@ -47,32 +49,32 @@ export default function LoginScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.content}>
-            <Text style={styles.title}>🌱 GrowControl</Text>
-            <Text style={styles.subtitle}>Login to your account</Text>
+            <Text style={styles.title}>{t('auth:login.title')}</Text>
+            <Text style={styles.subtitle}>{t('auth:login.subtitle')}</Text>
 
             <Input
-              label="Email"
+              label={t('auth:login.emailLabel')}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
-              placeholder="your@email.com"
+              placeholder={t('auth:login.emailPlaceholder')}
             />
 
             <Input
-              label="Password"
+              label={t('auth:login.passwordLabel')}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
-              placeholder="Enter your password"
+              placeholder={t('auth:login.passwordPlaceholder')}
             />
 
-          <Button title="Login" onPress={handleLogin} disabled={loading} />
+          <Button title={t('auth:login.loginButton')} onPress={handleLogin} disabled={loading} />
 
           <View style={styles.footer}>
-              <Text style={styles.footerText}>Don't have an account? </Text>
+              <Text style={styles.footerText}>{t('auth:login.noAccount')} </Text>
               <Link href="/(auth)/register" style={styles.link}>
-                <Text style={styles.linkText}>Sign up</Text>
+                <Text style={styles.linkText}>{t('auth:login.signUp')}</Text>
               </Link>
             </View>
           </View>
@@ -127,4 +129,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-

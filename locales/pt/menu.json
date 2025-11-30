@@ -1,0 +1,44 @@
+{
+  "title": "Menu",
+  "user": "Usuário",
+  "features": "Recursos",
+  "appInfo": {
+    "title": "Grow Manager",
+    "version": "Versão {{version}}"
+  },
+  "items": {
+    "inventory": {
+      "title": "Inventário",
+      "subtitle": "Acompanhe colheitas e estoque disponível"
+    },
+    "extracts": {
+      "title": "Extratos",
+      "subtitle": "Gerencie seus extratos de cannabis"
+    },
+    "patients": {
+      "title": "Pacientes",
+      "subtitle": "Gerencie registros de pacientes"
+    },
+    "distributions": {
+      "title": "Distribuições",
+      "subtitle": "Acompanhe distribuições de produtos"
+    },
+    "protocols": {
+      "title": "Protocolos e Documentos",
+      "subtitle": "Gerencie documentos institucionais"
+    },
+    "reports": {
+      "title": "Relatórios de Conformidade",
+      "subtitle": "Gere e exporte relatórios"
+    },
+    "auditLog": {
+      "title": "Log de Auditoria",
+      "subtitle": "Visualize histórico de alterações de dados"
+    },
+    "profile": {
+      "title": "Perfil",
+      "subtitle": "Edite suas configurações de perfil"
+    }
+  }
+}
+

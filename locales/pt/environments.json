@@ -1,0 +1,51 @@
+{
+  "title": "Ambientes",
+  "addEnvironment": "+ Adicionar Ambiente",
+  "noEnvironments": "Nenhum ambiente ainda",
+  "createFirst": "Crie seu primeiro ambiente de cultivo!",
+  "loading": "Carregando ambientes...",
+  "loadingDetails": "Carregando detalhes do ambiente...",
+  "environmentNotFound": "Ambiente não encontrado",
+  "form": {
+    "nameLabel": "Nome do Ambiente",
+    "namePlaceholder": "ex: Tenda Principal, Jardim",
+    "typeLabel": "Tipo de Ambiente",
+    "dimensionsLabel": "Dimensões",
+    "widthLabel": "Largura",
+    "lengthLabel": "Comprimento",
+    "heightLabel": "Altura",
+    "lightSetupLabel": "Configuração de Luz",
+    "lightSetupPlaceholder": "ex: 600W HPS, LED Full Spectrum",
+    "ventilationLabel": "Ventilação",
+    "ventilationPlaceholder": "ex: Exaustor com filtro de carvão",
+    "notesLabel": "Observações",
+    "notesPlaceholder": "Observações adicionais sobre este ambiente...",
+    "publicEnvironment": "Ambiente Público",
+    "publicDescription": "Amigos podem visualizar este ambiente e suas plantas.",
+    "privateDescription": "Apenas você pode ver este ambiente.",
+    "createEnvironment": "Criar Ambiente",
+    "selectEnvironment": "Selecionar Ambiente"
+  },
+  "detail": {
+    "editEnvironment": "Editar Ambiente",
+    "deleteEnvironment": "Excluir Ambiente",
+    "deleteConfirm": "Tem certeza que deseja excluir este ambiente? Isso também excluirá todas as plantas e registros neste ambiente. Esta ação não pode ser desfeita.",
+    "deleted": "Ambiente excluído",
+    "updated": "Ambiente atualizado!",
+    "public": "Público",
+    "plants": "Plantas",
+    "failedToLoad": "Falha ao carregar dados do ambiente",
+    "failedToDelete": "Falha ao excluir ambiente",
+    "failedToUpdate": "Falha ao atualizar ambiente",
+    "noEnvironmentLogs": "Nenhum registro de ambiente"
+  },
+  "success": {
+    "created": "Ambiente criado com sucesso!"
+  },
+  "errors": {
+    "nameRequired": "Por favor, digite um nome para o ambiente",
+    "failedToCreate": "Falha ao criar ambiente",
+    "failedToLoad": "Falha ao carregar ambientes"
+  }
+}
+

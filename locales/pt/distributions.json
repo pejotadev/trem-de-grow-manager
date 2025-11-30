@@ -1,0 +1,67 @@
+{
+  "title": "Distribuições",
+  "loading": "Carregando distribuições...",
+  "addDistribution": "+ Nova Distribuição",
+  "noDistributions": "Nenhuma distribuição ainda",
+  "noDistributionsSubtext": "Registre sua primeira distribuição para um paciente",
+  "noMatch": "Nenhuma distribuição corresponde a este filtro",
+  "noMatchSubtext": "Tente selecionar um filtro diferente",
+  "toPatient": "para",
+  "product": "Produto",
+  "allProducts": "Todos os Produtos",
+  "allPatients": "Todos os Pacientes",
+  "status": {
+    "pending": "Pendente",
+    "completed": "Concluída",
+    "cancelled": "Cancelada"
+  },
+  "productTypes": {
+    "flower": "Flor",
+    "oil": "Óleo",
+    "extract": "Extrato",
+    "edible": "Comestível",
+    "other": "Outro"
+  },
+  "form": {
+    "patientLabel": "Paciente",
+    "selectPatient": "Selecionar paciente",
+    "productTypeLabel": "Tipo de Produto",
+    "selectSource": "Selecionar Origem",
+    "sourceHarvest": "Colheita de Origem",
+    "selectHarvest": "Selecionar colheita",
+    "sourceExtract": "Extrato de Origem",
+    "selectExtract": "Selecionar extrato",
+    "quantityLabel": "Quantidade (gramas)",
+    "quantityMlLabel": "Quantidade (ml)",
+    "quantityUnitsLabel": "Quantidade (unidades)",
+    "batchNumber": "Número do Lote",
+    "batchPlaceholder": "Opcional - para rastreabilidade",
+    "distributionDate": "Data de Distribuição",
+    "statusLabel": "Status",
+    "createDistribution": "Criar Distribuição",
+    "creating": "Criando..."
+  },
+  "detail": {
+    "distributionInfo": "Informações da Distribuição",
+    "patientInfo": "Informações do Paciente",
+    "productInfo": "Informações do Produto",
+    "sourceInfo": "Informações da Origem",
+    "deleteDistribution": "Excluir Distribuição",
+    "deleteConfirm": "Tem certeza que deseja excluir esta distribuição? Esta ação não pode ser desfeita.",
+    "distributionNotFound": "Distribuição não encontrada"
+  },
+  "success": {
+    "created": "Distribuição criada com sucesso!",
+    "deleted": "Distribuição excluída com sucesso"
+  },
+  "errors": {
+    "selectPatient": "Por favor, selecione um paciente",
+    "selectSource": "Por favor, selecione uma origem (colheita ou extrato)",
+    "quantityRequired": "Por favor, digite a quantidade",
+    "quantityExceedsAvailable": "Quantidade excede o estoque disponível",
+    "failedToCreate": "Falha ao criar distribuição",
+    "failedToDelete": "Falha ao excluir distribuição",
+    "failedToLoad": "Falha ao carregar dados da distribuição"
+  }
+}
+

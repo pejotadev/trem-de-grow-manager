@@ -1,0 +1,78 @@
+{
+  "title": "Extracts",
+  "loading": "Loading extracts...",
+  "addExtract": "+ Create Extract",
+  "noExtracts": "No extracts yet",
+  "noExtractsSubtext": "Create your first extract from harvested material",
+  "noMatch": "No extracts match this filter",
+  "noMatchSubtext": "Try selecting a different filter",
+  "sourceHarvests": "source harvest",
+  "sourceHarvests_plural": "source harvests",
+  "extracted": "Extracted",
+  "types": {
+    "oil": "Oil",
+    "tincture": "Tincture",
+    "concentrate": "Concentrate",
+    "isolate": "Isolate",
+    "full_spectrum": "Full Spectrum",
+    "broad_spectrum": "Broad Spectrum",
+    "other": "Other"
+  },
+  "methods": {
+    "co2": "CO₂",
+    "ethanol": "Ethanol",
+    "butane": "Butane",
+    "rosin": "Rosin Press",
+    "ice_water": "Ice Water",
+    "olive_oil": "Olive Oil",
+    "other": "Other"
+  },
+  "expiration": {
+    "expired": "Expired",
+    "daysLeft": "{{count}}d left"
+  },
+  "form": {
+    "nameLabel": "Extract Name",
+    "namePlaceholder": "e.g., Full Spectrum CBD Oil",
+    "typeLabel": "Extract Type",
+    "methodLabel": "Extraction Method",
+    "sourceHarvests": "Source Harvests",
+    "selectHarvests": "Select harvests to use",
+    "inputWeight": "Input Weight (grams)",
+    "outputVolume": "Output Volume (ml)",
+    "outputWeight": "Output Weight (grams)",
+    "thcConcentration": "THC (mg/ml)",
+    "cbdConcentration": "CBD (mg/ml)",
+    "carrier": "Carrier Oil",
+    "carrierPlaceholder": "e.g., MCT oil, olive oil",
+    "batchNumber": "Batch Number",
+    "extractionDate": "Extraction Date",
+    "expirationDate": "Expiration Date",
+    "storageLocation": "Storage Location",
+    "storageLocationPlaceholder": "e.g., Refrigerator, Shelf A",
+    "createExtract": "Create Extract",
+    "creating": "Creating..."
+  },
+  "detail": {
+    "extractInfo": "Extract Information",
+    "concentration": "Concentration",
+    "production": "Production Details",
+    "storage": "Storage",
+    "deleteExtract": "Delete Extract",
+    "deleteConfirm": "Are you sure you want to delete this extract? This action cannot be undone.",
+    "extractNotFound": "Extract not found"
+  },
+  "success": {
+    "created": "Extract created successfully!",
+    "deleted": "Extract deleted successfully"
+  },
+  "errors": {
+    "nameRequired": "Please enter extract name",
+    "selectHarvest": "Please select at least one source harvest",
+    "inputWeightRequired": "Please enter input weight",
+    "failedToCreate": "Failed to create extract",
+    "failedToDelete": "Failed to delete extract",
+    "failedToLoad": "Failed to load extract data"
+  }
+}
+

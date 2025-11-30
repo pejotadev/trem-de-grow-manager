@@ -8,9 +8,12 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { updateUser } from '../../../firebase/firestore';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
@@ -18,7 +21,9 @@ import { Input } from '../../../components/Input';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
+  const { t } = useTranslation(['profile', 'common']);
   const { userData, refreshUser } = useAuth();
+  const { language, changeLanguage, supportedLanguages } = useLanguage();
   const router = useRouter();
 
   const [displayName, setDisplayName] = useState('');
@@ -34,7 +39,7 @@ export default function ProfileScreen() {
     if (!userData) return;
 
     if (!displayName.trim()) {
-      Alert.alert('Error', 'Please enter your name');
+      Alert.alert(t('common:error'), t('profile:errors.enterName'));
       return;
     }
 
@@ -50,15 +55,19 @@ export default function ProfileScreen() {
         await refreshUser();
       }
 
-      Alert.alert('Success', 'Profile updated successfully!', [
-        { text: 'OK', onPress: () => router.back() },
+      Alert.alert(t('common:success'), t('profile:success.profileUpdated'), [
+        { text: t('common:ok'), onPress: () => router.back() },
       ]);
     } catch (error: any) {
       console.error('[Profile] Error updating profile:', error);
-      Alert.alert('Error', 'Failed to update profile');
+      Alert.alert(t('common:error'), t('profile:errors.failedToUpdate'));
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleLanguageChange = async (langCode: string) => {
+    await changeLanguage(langCode);
   };
 
   const getInitials = (name?: string, email?: string): string => {
@@ -90,7 +99,7 @@ export default function ProfileScreen() {
               </Text>
             </View>
             <Text style={styles.avatarHint}>
-              Your initials are generated from your name
+              {t('profile:avatarHint')}
             </Text>
           </View>
 
@@ -98,24 +107,60 @@ export default function ProfileScreen() {
           <Card>
             <View style={styles.sectionHeader}>
               <Ionicons name="person" size={20} color="#4CAF50" />
-              <Text style={styles.sectionTitle}>Personal Information</Text>
+              <Text style={styles.sectionTitle}>{t('profile:sections.personalInfo')}</Text>
             </View>
 
             <Input
-              label="Display Name"
+              label={t('profile:form.displayName')}
               value={displayName}
               onChangeText={setDisplayName}
-              placeholder="Enter your name"
+              placeholder={t('profile:form.displayNamePlaceholder')}
               autoCapitalize="words"
             />
 
             <View style={styles.emailRow}>
-              <Text style={styles.emailLabel}>Email</Text>
+              <Text style={styles.emailLabel}>{t('profile:form.email')}</Text>
               <Text style={styles.emailValue}>{userData?.email}</Text>
               <View style={styles.emailBadge}>
                 <Ionicons name="lock-closed" size={12} color="#999" />
-                <Text style={styles.emailBadgeText}>Cannot be changed</Text>
+                <Text style={styles.emailBadgeText}>{t('profile:form.emailCannotChange')}</Text>
               </View>
+            </View>
+          </Card>
+
+          {/* Language Selection */}
+          <Card>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="globe" size={20} color="#4CAF50" />
+              <Text style={styles.sectionTitle}>{t('profile:sections.language')}</Text>
+            </View>
+            
+            <Text style={styles.languageHint}>{t('profile:language.selectLanguage')}</Text>
+            
+            <View style={styles.languageOptions}>
+              {supportedLanguages.map((lang) => (
+                <TouchableOpacity
+                  key={lang.code}
+                  style={[
+                    styles.languageOption,
+                    language === lang.code && styles.languageOptionActive,
+                  ]}
+                  onPress={() => handleLanguageChange(lang.code)}
+                >
+                  <Text style={styles.languageFlag}>{lang.flag}</Text>
+                  <Text
+                    style={[
+                      styles.languageName,
+                      language === lang.code && styles.languageNameActive,
+                    ]}
+                  >
+                    {lang.name}
+                  </Text>
+                  {language === lang.code && (
+                    <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                  )}
+                </TouchableOpacity>
+              ))}
             </View>
           </Card>
 
@@ -123,11 +168,11 @@ export default function ProfileScreen() {
           <Card>
             <View style={styles.sectionHeader}>
               <Ionicons name="information-circle" size={20} color="#4CAF50" />
-              <Text style={styles.sectionTitle}>Account Information</Text>
+              <Text style={styles.sectionTitle}>{t('profile:sections.accountInfo')}</Text>
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>User ID</Text>
+              <Text style={styles.infoLabel}>{t('profile:form.userId')}</Text>
               <Text style={styles.infoValue} numberOfLines={1}>
                 {userData?.uid}
               </Text>
@@ -135,13 +180,16 @@ export default function ProfileScreen() {
 
             {userData?.createdAt && (
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Member Since</Text>
+                <Text style={styles.infoLabel}>{t('common:dates.memberSince')}</Text>
                 <Text style={styles.infoValue}>
-                  {new Date(userData.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
+                  {new Date(userData.createdAt).toLocaleDateString(
+                    language === 'pt' ? 'pt-BR' : 'en-US',
+                    {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    }
+                  )}
                 </Text>
               </View>
             )}
@@ -150,13 +198,13 @@ export default function ProfileScreen() {
           {/* Actions */}
           <View style={styles.actions}>
             <Button
-              title={saving ? 'Saving...' : 'Save Changes'}
+              title={saving ? t('common:saving') : t('common:saveChanges')}
               onPress={handleSave}
               disabled={saving}
               style={styles.saveButton}
             />
             <Button
-              title="Cancel"
+              title={t('common:cancel')}
               onPress={() => router.back()}
               variant="secondary"
               disabled={saving}
@@ -246,6 +294,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
   },
+  // Language
+  languageHint: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
+  },
+  languageOptions: {
+    gap: 8,
+  },
+  languageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  languageOptionActive: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
+  },
+  languageFlag: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  languageName: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  languageNameActive: {
+    fontWeight: '600',
+    color: '#2E7D32',
+  },
   // Info rows
   infoRow: {
     flexDirection: 'row',
@@ -276,5 +359,3 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
   },
 });
-
-

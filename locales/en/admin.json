@@ -1,0 +1,99 @@
+{
+  "audit": {
+    "title": "Audit Log",
+    "loading": "Loading audit logs...",
+    "noLogs": "No audit logs",
+    "noLogsSubtext": "Changes to data will appear here",
+    "filters": {
+      "allActions": "All Actions",
+      "allCollections": "All Collections"
+    },
+    "actions": {
+      "create": "Created",
+      "update": "Updated",
+      "delete": "Deleted"
+    },
+    "collections": {
+      "plants": "Plants",
+      "environments": "Environments",
+      "harvests": "Harvests",
+      "patients": "Patients",
+      "extracts": "Extracts",
+      "distributions": "Distributions",
+      "documents": "Documents"
+    },
+    "detail": {
+      "timestamp": "Timestamp",
+      "action": "Action",
+      "collection": "Collection",
+      "documentId": "Document ID",
+      "userId": "User ID",
+      "changes": "Changes",
+      "before": "Before",
+      "after": "After"
+    }
+  },
+  "documents": {
+    "title": "Protocols & Documents",
+    "loading": "Loading documents...",
+    "addDocument": "+ New Document",
+    "noDocuments": "No documents yet",
+    "noDocumentsSubtext": "Create your first institutional document",
+    "category": {
+      "protocol": "Protocol",
+      "sop": "SOP",
+      "form": "Form",
+      "policy": "Policy",
+      "other": "Other"
+    },
+    "form": {
+      "titleLabel": "Title",
+      "titlePlaceholder": "Document title",
+      "categoryLabel": "Category",
+      "versionLabel": "Version",
+      "versionPlaceholder": "e.g., 1.0",
+      "contentLabel": "Content",
+      "contentPlaceholder": "Enter document content...",
+      "createDocument": "Create Document",
+      "updateDocument": "Update Document"
+    },
+    "detail": {
+      "documentInfo": "Document Information",
+      "lastUpdated": "Last Updated",
+      "deleteDocument": "Delete Document",
+      "deleteConfirm": "Are you sure you want to delete this document?"
+    },
+    "success": {
+      "created": "Document created successfully!",
+      "updated": "Document updated successfully!",
+      "deleted": "Document deleted successfully"
+    },
+    "errors": {
+      "titleRequired": "Please enter a title",
+      "contentRequired": "Please enter content",
+      "failedToCreate": "Failed to create document",
+      "failedToUpdate": "Failed to update document",
+      "failedToDelete": "Failed to delete document"
+    }
+  },
+  "reports": {
+    "title": "Compliance Reports",
+    "loading": "Generating report...",
+    "description": "Generate detailed compliance and inventory reports",
+    "types": {
+      "inventory": "Inventory Report",
+      "distribution": "Distribution Report",
+      "patient": "Patient Report",
+      "production": "Production Report"
+    },
+    "dateRange": "Date Range",
+    "from": "From",
+    "to": "To",
+    "generate": "Generate Report",
+    "export": "Export",
+    "exportPdf": "Export as PDF",
+    "exportCsv": "Export as CSV",
+    "noData": "No data for selected period"
+  }
+}
+

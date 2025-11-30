@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { getUserPlants, getUserEnvironments } from '../../firebase/firestore';
 import { Plant, Environment } from '../../types';
@@ -40,6 +41,7 @@ interface PlantSection {
 }
 
 export default function HomeScreen() {
+  const { t } = useTranslation(['plants', 'common', 'environments', 'auth']);
   const [plants, setPlants] = useState<Plant[]>([]);
   const [environments, setEnvironments] = useState<Environment[]>([]);
   const [sections, setSections] = useState<PlantSection[]>([]);
@@ -97,7 +99,7 @@ export default function HomeScreen() {
       // Add unassigned plants if any
       if (grouped['unassigned']) {
         newSections.push({
-          title: 'Unassigned',
+          title: t('plants:unassigned'),
           environmentId: 'unassigned',
           environmentType: 'indoor',
           data: grouped['unassigned'],
@@ -107,7 +109,7 @@ export default function HomeScreen() {
       setSections(newSections);
     } catch (error: any) {
       console.error('[HomeScreen] Error loading data:', error);
-      Alert.alert('Error', 'Failed to load data: ' + (error.message || 'Unknown error'));
+      Alert.alert(t('common:error'), error.message || 'Unknown error');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -129,10 +131,10 @@ export default function HomeScreen() {
   };
 
   const handleLogout = async () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('auth:logout.title'), t('auth:logout.confirmMessage'), [
+      { text: t('common:cancel'), style: 'cancel' },
       {
-        text: 'Logout',
+        text: t('auth:logout.button'),
         style: 'destructive',
         onPress: async () => {
           await logout();
@@ -142,7 +144,7 @@ export default function HomeScreen() {
   };
 
   if (loading) {
-    return <Loading message="Loading plants..." />;
+    return <Loading message={t('plants:loadingPlants')} />;
   }
 
   const renderPlant = ({ item }: { item: Plant }) => (
@@ -159,11 +161,11 @@ export default function HomeScreen() {
             <Text style={styles.plantStrain}>{item.strain}</Text>
             {item.currentStage && (
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>{item.currentStage}</Text>
+                <Text style={styles.badgeText}>{t(`common:stages.${item.currentStage}`)}</Text>
               </View>
             )}
             <Text style={styles.plantDate}>
-              Started: {format(new Date(item.startDate), 'MMM dd, yyyy')}
+              {t('common:dates.started')}: {format(new Date(item.startDate), 'MMM dd, yyyy')}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={24} color="#999" />
@@ -208,15 +210,15 @@ export default function HomeScreen() {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="leaf-outline" size={64} color="#ccc" />
-      <Text style={styles.emptyText}>No plants yet</Text>
+      <Text style={styles.emptyText}>{t('plants:noPlants')}</Text>
       <Text style={styles.emptySubtext}>
         {environments.length === 0 
-          ? 'Create an environment first, then add your plants!' 
-          : 'Start your first grow!'}
+          ? t('plants:createEnvironmentFirst')
+          : t('plants:startFirstGrow')}
       </Text>
       {environments.length === 0 && (
         <Button
-          title="Create Environment"
+          title={t('plants:createEnvironment')}
           onPress={() => router.push('/(tabs)/environments/new')}
           style={styles.emptyButton}
         />
@@ -228,7 +230,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Hello! 🌱</Text>
+          <Text style={styles.greeting}>{t('plants:hello')}</Text>
           <Text style={styles.email}>{userData?.email}</Text>
         </View>
         <TouchableOpacity onPress={handleLogout}>
@@ -242,12 +244,12 @@ export default function HomeScreen() {
           <View style={styles.statCard}>
             <Ionicons name="leaf" size={24} color="#4CAF50" />
             <Text style={styles.statNumber}>{plants.length}</Text>
-            <Text style={styles.statLabel}>Plants</Text>
+            <Text style={styles.statLabel}>{t('common:tabs.plants')}</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="cube" size={24} color="#2E7D32" />
             <Text style={styles.statNumber}>{environments.length}</Text>
-            <Text style={styles.statLabel}>Environments</Text>
+            <Text style={styles.statLabel}>{t('common:tabs.environments')}</Text>
           </View>
         </View>
 
@@ -267,7 +269,7 @@ export default function HomeScreen() {
         )}
 
         <Button
-          title="+ Add New Plant"
+          title={t('plants:addPlant')}
           onPress={() => router.push('/(tabs)/plants/new')}
           variant="primary"
           style={styles.addButton}

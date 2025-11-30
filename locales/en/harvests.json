@@ -1,0 +1,70 @@
+{
+  "title": "Harvests",
+  "subtitle": "Inventory",
+  "loading": "Loading harvests...",
+  "noHarvests": "No harvests yet",
+  "noHarvestsSubtext": "Harvest your plants to see them here",
+  "noMatch": "No harvests match this filter",
+  "noMatchSubtext": "Try selecting a different filter",
+  "totalAvailable": "Total Available",
+  "harvestDate": "Harvested",
+  "status": {
+    "fresh": "Fresh",
+    "drying": "Drying",
+    "curing": "Curing",
+    "processed": "Processed",
+    "distributed": "Distributed"
+  },
+  "weights": {
+    "wet": "Wet",
+    "dry": "Dry",
+    "available": "Available"
+  },
+  "form": {
+    "plantLabel": "Plant",
+    "selectPlant": "Select plant to harvest",
+    "wetWeightLabel": "Wet Weight (grams)",
+    "wetWeightPlaceholder": "Weight at harvest",
+    "harvestDate": "Harvest Date",
+    "harvestMethod": "Harvest Method",
+    "methodFull": "Full Plant",
+    "methodPartial": "Partial",
+    "methodProgressive": "Progressive",
+    "batchNumber": "Batch Number",
+    "batchPlaceholder": "Optional - for traceability",
+    "storageLocation": "Storage Location",
+    "storagePlaceholder": "e.g., Drying room A",
+    "createHarvest": "Record Harvest",
+    "creating": "Creating..."
+  },
+  "detail": {
+    "harvestInfo": "Harvest Information",
+    "plantInfo": "Plant Information",
+    "weights": "Weights",
+    "dryingLoss": "Drying Loss",
+    "processing": "Processing",
+    "distributions": "Distributions",
+    "noDistributions": "No distributions from this harvest",
+    "updateStatus": "Update Status",
+    "recordDryWeight": "Record Dry Weight",
+    "dryWeightLabel": "Dry Weight (grams)",
+    "wasteWeight": "Waste/Trim Weight (grams)",
+    "deleteHarvest": "Delete Harvest",
+    "deleteConfirm": "Are you sure you want to delete this harvest? This action cannot be undone.",
+    "harvestNotFound": "Harvest not found"
+  },
+  "success": {
+    "created": "Harvest recorded successfully!",
+    "updated": "Harvest updated successfully!",
+    "deleted": "Harvest deleted successfully"
+  },
+  "errors": {
+    "selectPlant": "Please select a plant",
+    "wetWeightRequired": "Please enter the wet weight",
+    "failedToCreate": "Failed to create harvest",
+    "failedToUpdate": "Failed to update harvest",
+    "failedToDelete": "Failed to delete harvest",
+    "failedToLoad": "Failed to load harvest data"
+  }
+}
+

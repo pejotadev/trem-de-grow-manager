@@ -1,0 +1,54 @@
+{
+  "title": "Amigos",
+  "loading": "Carregando amigos...",
+  "tabs": {
+    "friends": "Amigos",
+    "requests": "Solicitações"
+  },
+  "noFriends": "Nenhum amigo ainda",
+  "noFriendsSubtext": "Procure amigos para se conectar!",
+  "noRequests": "Nenhuma solicitação pendente",
+  "noRequestsSubtext": "Quando alguém enviar uma solicitação de amizade, ela aparecerá aqui.",
+  "findFriends": "+ Encontrar Amigos",
+  "friendsSince": "Amigos desde {{date}}",
+  "sent": "Enviado em {{date}}",
+  "indexBuilding": {
+    "title": "Configurando recurso de amigos...",
+    "subtitle": "O índice do banco de dados está sendo criado. Isso geralmente leva 1-2 minutos. Por favor, atualize em um momento."
+  },
+  "actions": {
+    "accept": "Aceitar",
+    "reject": "Rejeitar",
+    "remove": "Remover",
+    "rejectRequest": "Rejeitar Solicitação",
+    "rejectConfirm": "Rejeitar solicitação de amizade de {{name}}?",
+    "removeFriend": "Remover Amigo",
+    "removeConfirm": "Tem certeza que deseja remover {{name}} como amigo?"
+  },
+  "success": {
+    "requestAccepted": "Solicitação de amizade aceita!",
+    "requestRejected": "Solicitação de amizade rejeitada",
+    "friendRemoved": "Amigo removido"
+  },
+  "errors": {
+    "failedToLoad": "Falha ao carregar amigos",
+    "failedToAccept": "Falha ao aceitar solicitação",
+    "failedToReject": "Falha ao rejeitar solicitação",
+    "failedToRemove": "Falha ao remover amigo"
+  },
+  "search": {
+    "title": "Encontrar Amigos",
+    "placeholder": "Buscar por email...",
+    "noResults": "Nenhum usuário encontrado",
+    "sendRequest": "Enviar Solicitação",
+    "requestSent": "Solicitação Enviada",
+    "alreadyFriends": "Já são Amigos",
+    "requestPending": "Solicitação Pendente"
+  },
+  "profile": {
+    "publicEnvironments": "Ambientes Públicos",
+    "noPublicEnvironments": "Nenhum ambiente público",
+    "viewPlants": "Ver Plantas"
+  }
+}
+

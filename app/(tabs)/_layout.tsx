@@ -1,7 +1,10 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 export default function TabsLayout() {
+  const { t } = useTranslation('common');
+
   return (
     <Tabs
       screenOptions={{
@@ -18,7 +21,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Plants',
+          title: t('tabs.plants'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="leaf" size={size} color={color} />
           ),
@@ -27,7 +30,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="environments"
         options={{
-          title: 'Environments',
+          title: t('tabs.environments'),
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="cube" size={size} color={color} />
@@ -43,7 +46,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="logs"
         options={{
-          title: 'Logs',
+          title: t('tabs.logs'),
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="clipboard" size={size} color={color} />
@@ -53,7 +56,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="friends"
         options={{
-          title: 'Friends',
+          title: t('tabs.friends'),
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people" size={size} color={color} />
@@ -63,7 +66,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="menu"
         options={{
-          title: 'Menu',
+          title: t('tabs.menu'),
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="menu" size={size} color={color} />

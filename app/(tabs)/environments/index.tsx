@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getUserEnvironments, getEnvironmentPlants } from '../../../firebase/firestore';
 import { Environment, Plant } from '../../../types';
@@ -37,6 +38,7 @@ interface EnvironmentWithPlantCount extends Environment {
 }
 
 export default function EnvironmentsScreen() {
+  const { t } = useTranslation(['environments', 'common', 'plants']);
   const [environments, setEnvironments] = useState<EnvironmentWithPlantCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -72,7 +74,7 @@ export default function EnvironmentsScreen() {
       setEnvironments(environmentsWithCounts);
     } catch (error: any) {
       console.error('[EnvironmentsScreen] Error loading environments:', error);
-      Alert.alert('Error', 'Failed to load environments: ' + (error.message || 'Unknown error'));
+      Alert.alert(t('common:error'), t('environments:errors.failedToLoad'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -108,7 +110,7 @@ export default function EnvironmentsScreen() {
             <Text style={styles.envName}>{item.name}</Text>
             <View style={styles.badgeRow}>
               <View style={[styles.badge, { backgroundColor: ENVIRONMENT_COLORS[item.type] }]}>
-                <Text style={styles.badgeText}>{item.type}</Text>
+                <Text style={styles.badgeText}>{t(`common:environmentTypes.${item.type}`)}</Text>
               </View>
               {item.isPublic && (
                 <View style={styles.publicBadge}>
@@ -117,7 +119,9 @@ export default function EnvironmentsScreen() {
               )}
               <View style={styles.plantCountBadge}>
                 <Ionicons name="leaf" size={14} color="#4CAF50" />
-                <Text style={styles.plantCountText}>{item.plantCount} plants</Text>
+                <Text style={styles.plantCountText}>
+                  {item.plantCount} {item.plantCount === 1 ? t('plants:plant') : t('plants:plants')}
+                </Text>
               </View>
             </View>
             {item.dimensions && (
@@ -126,7 +130,7 @@ export default function EnvironmentsScreen() {
               </Text>
             )}
             <Text style={styles.envDate}>
-              Created: {format(new Date(item.createdAt), 'MMM dd, yyyy')}
+              {t('common:dates.created')}: {format(new Date(item.createdAt), 'MMM dd, yyyy')}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={24} color="#999" />
@@ -141,12 +145,12 @@ export default function EnvironmentsScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         {loading ? (
-          <Loading message="Loading environments..." />
+          <Loading message={t('environments:loading')} />
         ) : environments.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="cube-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No environments yet</Text>
-            <Text style={styles.emptySubtext}>Create your first grow environment!</Text>
+            <Text style={styles.emptyText}>{t('environments:noEnvironments')}</Text>
+            <Text style={styles.emptySubtext}>{t('environments:createFirst')}</Text>
           </View>
         ) : (
           <FlatList
@@ -160,7 +164,7 @@ export default function EnvironmentsScreen() {
         )}
 
         <Button
-          title="+ Add New Environment"
+          title={t('environments:addEnvironment')}
           onPress={() => router.push('/(tabs)/environments/new')}
           variant="primary"
           style={styles.addButton}
@@ -265,4 +269,3 @@ const styles = StyleSheet.create({
     backgroundColor: '#2E7D32',
   },
 });
-

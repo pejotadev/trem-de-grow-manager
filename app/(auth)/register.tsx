@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Link } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import { Input } from '../../components/Input';
@@ -17,6 +18,7 @@ import { Button } from '../../components/Button';
 import { StatusBar } from 'expo-status-bar';
 
 export default function RegisterScreen() {
+  const { t } = useTranslation(['auth', 'common']);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,17 +27,17 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common:error'), t('common:validation.fillAllFields'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert(t('common:error'), t('common:validation.passwordsDontMatch'));
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      Alert.alert(t('common:error'), t('common:validation.passwordTooShort'));
       return;
     }
 
@@ -43,7 +45,7 @@ export default function RegisterScreen() {
     try {
       await register(email, password);
     } catch (error: any) {
-      Alert.alert('Registration Failed', error.message);
+      Alert.alert(t('auth:register.registrationFailed'), error.message);
     } finally {
       setLoading(false);
     }
@@ -58,40 +60,40 @@ export default function RegisterScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.content}>
-            <Text style={styles.title}>🌱 GrowControl</Text>
-            <Text style={styles.subtitle}>Create your account</Text>
+            <Text style={styles.title}>{t('auth:register.title')}</Text>
+            <Text style={styles.subtitle}>{t('auth:register.subtitle')}</Text>
 
             <Input
-              label="Email"
+              label={t('auth:register.emailLabel')}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
-              placeholder="your@email.com"
+              placeholder={t('auth:register.emailPlaceholder')}
             />
 
             <Input
-              label="Password"
+              label={t('auth:register.passwordLabel')}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
-              placeholder="At least 6 characters"
+              placeholder={t('auth:register.passwordPlaceholder')}
             />
 
             <Input
-              label="Confirm Password"
+              label={t('auth:register.confirmPasswordLabel')}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
-              placeholder="Re-enter your password"
+              placeholder={t('auth:register.confirmPasswordPlaceholder')}
             />
 
-            <Button title="Sign Up" onPress={handleRegister} disabled={loading} />
+            <Button title={t('auth:register.signUpButton')} onPress={handleRegister} disabled={loading} />
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Already have an account? </Text>
+              <Text style={styles.footerText}>{t('auth:register.hasAccount')} </Text>
               <Link href="/(auth)/login" style={styles.link}>
-                <Text style={styles.linkText}>Login</Text>
+                <Text style={styles.linkText}>{t('auth:register.login')}</Text>
               </Link>
             </View>
           </View>
@@ -146,4 +148,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-

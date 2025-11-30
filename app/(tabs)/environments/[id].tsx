@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   getEnvironment,
@@ -44,6 +45,7 @@ const ENVIRONMENT_COLORS: Record<string, string> = {
 };
 
 export default function EnvironmentDetailScreen() {
+  const { t } = useTranslation(['environments', 'common', 'plants']);
   const { id } = useLocalSearchParams();
   const [environment, setEnvironment] = useState<Environment | null>(null);
   const [plants, setPlants] = useState<Plant[]>([]);
@@ -96,7 +98,7 @@ export default function EnvironmentDetailScreen() {
       }
     } catch (error: any) {
       console.error('[EnvironmentDetail] Error loading environment data:', error);
-      Alert.alert('Error', 'Failed to load environment data: ' + (error.message || 'Unknown error'));
+      Alert.alert(t('common:error'), t('environments:detail.failedToLoad'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -119,22 +121,22 @@ export default function EnvironmentDetailScreen() {
 
   const handleDelete = () => {
     Alert.alert(
-      'Delete Environment',
-      'Are you sure you want to delete this environment? This will also delete all plants and logs in this environment. This action cannot be undone.',
+      t('environments:detail.deleteEnvironment'),
+      t('environments:detail.deleteConfirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common:cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common:delete'),
           style: 'destructive',
           onPress: async () => {
             if (!id || typeof id !== 'string') return;
             try {
               await deleteEnvironment(id);
-              Alert.alert('Success', 'Environment deleted', [
-                { text: 'OK', onPress: () => router.back() },
+              Alert.alert(t('common:success'), t('environments:detail.deleted'), [
+                { text: t('common:ok'), onPress: () => router.back() },
               ]);
             } catch (error) {
-              Alert.alert('Error', 'Failed to delete environment');
+              Alert.alert(t('common:error'), t('environments:detail.failedToDelete'));
             }
           },
         },
@@ -155,7 +157,7 @@ export default function EnvironmentDetailScreen() {
 
   const handleEditSave = async () => {
     if (!editName) {
-      Alert.alert('Error', 'Please enter a name');
+      Alert.alert(t('common:error'), t('environments:errors.nameRequired'));
       return;
     }
 
@@ -186,23 +188,23 @@ export default function EnvironmentDetailScreen() {
       await updateEnvironment(id, updateData);
       setEditModalVisible(false);
       loadEnvironmentData();
-      Alert.alert('Success', 'Environment updated!');
+      Alert.alert(t('common:success'), t('environments:detail.updated'));
     } catch (error: any) {
       console.error('[EnvironmentDetail] Update error:', error);
-      Alert.alert('Error', 'Failed to update environment: ' + (error.message || 'Unknown error'));
+      Alert.alert(t('common:error'), t('environments:detail.failedToUpdate'));
     }
   };
 
   if (loading) {
-    return <Loading message="Loading environment details..." />;
+    return <Loading message={t('environments:loadingDetails')} />;
   }
 
   if (!environment) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Environment not found</Text>
-          <Button title="Go Back" onPress={() => router.back()} />
+          <Text style={styles.errorText}>{t('environments:environmentNotFound')}</Text>
+          <Button title={t('common:goBack')} onPress={() => router.back()} />
         </View>
       </SafeAreaView>
     );
@@ -229,12 +231,12 @@ export default function EnvironmentDetailScreen() {
               <Text style={styles.envName}>{environment.name}</Text>
               <View style={styles.badgeRow}>
                 <View style={[styles.badge, { backgroundColor: envColor }]}>
-                  <Text style={styles.badgeText}>{environment.type}</Text>
+                  <Text style={styles.badgeText}>{t(`common:environmentTypes.${environment.type}`)}</Text>
                 </View>
                 {environment.isPublic && (
                   <View style={styles.publicBadge}>
                     <Ionicons name="globe" size={12} color="#fff" />
-                    <Text style={styles.publicBadgeText}>Public</Text>
+                    <Text style={styles.publicBadgeText}>{t('environments:detail.public')}</Text>
                   </View>
                 )}
               </View>
@@ -244,7 +246,7 @@ export default function EnvironmentDetailScreen() {
                 </Text>
               )}
               <Text style={styles.date}>
-                Created: {format(new Date(environment.createdAt), 'MMM dd, yyyy')}
+                {t('common:dates.created')}: {format(new Date(environment.createdAt), 'MMM dd, yyyy')}
               </Text>
             </View>
             <TouchableOpacity onPress={handleEditPress} style={styles.editButton}>
@@ -256,12 +258,12 @@ export default function EnvironmentDetailScreen() {
         {/* Equipment Info */}
         {(environment.lightSetup || environment.ventilation) && (
           <Card>
-            <Text style={styles.sectionTitle}>Equipment</Text>
+            <Text style={styles.sectionTitle}>{t('plants:detail.equipment')}</Text>
             {environment.lightSetup && (
               <View style={styles.equipmentItem}>
                 <Ionicons name="sunny" size={20} color="#FFC107" />
                 <View style={styles.equipmentText}>
-                  <Text style={styles.equipmentLabel}>Light Setup</Text>
+                  <Text style={styles.equipmentLabel}>{t('plants:detail.lightSetup')}</Text>
                   <Text style={styles.equipmentValue}>{environment.lightSetup}</Text>
                 </View>
               </View>
@@ -270,7 +272,7 @@ export default function EnvironmentDetailScreen() {
               <View style={styles.equipmentItem}>
                 <Ionicons name="aperture" size={20} color="#2196F3" />
                 <View style={styles.equipmentText}>
-                  <Text style={styles.equipmentLabel}>Ventilation</Text>
+                  <Text style={styles.equipmentLabel}>{t('plants:detail.ventilation')}</Text>
                   <Text style={styles.equipmentValue}>{environment.ventilation}</Text>
                 </View>
               </View>
@@ -281,7 +283,7 @@ export default function EnvironmentDetailScreen() {
         {/* Notes */}
         {environment.notes && (
           <Card>
-            <Text style={styles.sectionTitle}>Notes</Text>
+            <Text style={styles.sectionTitle}>{t('common:notes')}</Text>
             <Text style={styles.notesText}>{environment.notes}</Text>
           </Card>
         )}
@@ -289,9 +291,9 @@ export default function EnvironmentDetailScreen() {
         {/* Plants in this Environment */}
         <Card>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Plants ({plants.length})</Text>
+            <Text style={styles.sectionTitle}>{t('environments:detail.plants')} ({plants.length})</Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/plants/new')}>
-              <Text style={styles.addLink}>+ Add Plant</Text>
+              <Text style={styles.addLink}>{t('plants:detail.addPlant')}</Text>
             </TouchableOpacity>
           </View>
           {plants.length > 0 ? (
@@ -314,7 +316,7 @@ export default function EnvironmentDetailScreen() {
                   <Text style={styles.plantStrain}>{plant.strain}</Text>
                   {plant.currentStage && (
                     <View style={styles.stageBadge}>
-                      <Text style={styles.stageBadgeText}>{plant.currentStage}</Text>
+                      <Text style={styles.stageBadgeText}>{t(`common:stages.${plant.currentStage}`)}</Text>
                     </View>
                   )}
                 </View>
@@ -322,7 +324,7 @@ export default function EnvironmentDetailScreen() {
               </TouchableOpacity>
             ))
           ) : (
-            <Text style={styles.emptyText}>No plants in this environment yet</Text>
+            <Text style={styles.emptyText}>{t('plants:detail.noPlantsInEnvironment')}</Text>
           )}
         </Card>
 
@@ -330,10 +332,10 @@ export default function EnvironmentDetailScreen() {
         <Card>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
-              Recent Environment Logs ({envRecords.length})
+              {t('plants:detail.recentEnvironmentLogs')} ({envRecords.length})
             </Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/logs/environment')}>
-              <Text style={styles.viewAll}>View All</Text>
+              <Text style={styles.viewAll}>{t('common:viewAll')}</Text>
             </TouchableOpacity>
           </View>
           {envRecords.slice(0, 3).map((record) => (
@@ -355,11 +357,11 @@ export default function EnvironmentDetailScreen() {
             </View>
           ))}
           {envRecords.length === 0 && (
-            <Text style={styles.emptyText}>No environment logs</Text>
+            <Text style={styles.emptyText}>{t('environments:detail.noEnvironmentLogs')}</Text>
           )}
         </Card>
 
-        <Button title="Delete Environment" onPress={handleDelete} variant="danger" />
+        <Button title={t('environments:detail.deleteEnvironment')} onPress={handleDelete} variant="danger" />
       </ScrollView>
 
       {/* Edit Environment Modal */}
@@ -374,31 +376,31 @@ export default function EnvironmentDetailScreen() {
           style={styles.modalOverlay}
         >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Environment</Text>
+            <Text style={styles.modalTitle}>{t('environments:detail.editEnvironment')}</Text>
             <ScrollView>
               <Input
-                label="Environment Name"
+                label={t('environments:form.nameLabel')}
                 value={editName}
                 onChangeText={setEditName}
-                placeholder="e.g., Main Tent"
+                placeholder={t('environments:form.namePlaceholder')}
               />
               <Input
-                label="Light Setup"
+                label={t('environments:form.lightSetupLabel')}
                 value={editLightSetup}
                 onChangeText={setEditLightSetup}
-                placeholder="e.g., 600W HPS"
+                placeholder={t('environments:form.lightSetupPlaceholder')}
               />
               <Input
-                label="Ventilation"
+                label={t('environments:form.ventilationLabel')}
                 value={editVentilation}
                 onChangeText={setEditVentilation}
-                placeholder="e.g., Inline fan"
+                placeholder={t('environments:form.ventilationPlaceholder')}
               />
               <Input
-                label="Notes"
+                label={t('common:notes')}
                 value={editNotes}
                 onChangeText={setEditNotes}
-                placeholder="Any notes..."
+                placeholder={t('common:notesPlaceholder')}
                 multiline
                 numberOfLines={3}
               />
@@ -408,7 +410,7 @@ export default function EnvironmentDetailScreen() {
                 <View style={styles.publicHeader}>
                   <View style={styles.publicLabelContainer}>
                     <Ionicons name="globe-outline" size={20} color="#4CAF50" />
-                    <Text style={styles.publicLabel}>Public Environment</Text>
+                    <Text style={styles.publicLabel}>{t('environments:form.publicEnvironment')}</Text>
                   </View>
                   <Switch
                     value={editIsPublic}
@@ -419,15 +421,15 @@ export default function EnvironmentDetailScreen() {
                 </View>
                 <Text style={styles.publicDescription}>
                   {editIsPublic
-                    ? 'Friends can view this environment and its plants.'
-                    : 'Only you can see this environment.'}
+                    ? t('environments:form.publicDescription')
+                    : t('environments:form.privateDescription')}
                 </Text>
               </View>
             </ScrollView>
             <View style={styles.modalButtons}>
-              <Button title="Save Changes" onPress={handleEditSave} />
+              <Button title={t('common:saveChanges')} onPress={handleEditSave} />
               <Button
-                title="Cancel"
+                title={t('common:cancel')}
                 onPress={() => setEditModalVisible(false)}
                 variant="secondary"
               />
@@ -703,4 +705,3 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
-

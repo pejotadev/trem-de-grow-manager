@@ -1,0 +1,78 @@
+{
+  "title": "Extratos",
+  "loading": "Carregando extratos...",
+  "addExtract": "+ Criar Extrato",
+  "noExtracts": "Nenhum extrato ainda",
+  "noExtractsSubtext": "Crie seu primeiro extrato a partir de material colhido",
+  "noMatch": "Nenhum extrato corresponde a este filtro",
+  "noMatchSubtext": "Tente selecionar um filtro diferente",
+  "sourceHarvests": "colheita de origem",
+  "sourceHarvests_plural": "colheitas de origem",
+  "extracted": "Extraído",
+  "types": {
+    "oil": "Óleo",
+    "tincture": "Tintura",
+    "concentrate": "Concentrado",
+    "isolate": "Isolado",
+    "full_spectrum": "Espectro Completo",
+    "broad_spectrum": "Amplo Espectro",
+    "other": "Outro"
+  },
+  "methods": {
+    "co2": "CO₂",
+    "ethanol": "Etanol",
+    "butane": "Butano",
+    "rosin": "Prensa de Rosin",
+    "ice_water": "Água Gelada",
+    "olive_oil": "Azeite de Oliva",
+    "other": "Outro"
+  },
+  "expiration": {
+    "expired": "Expirado",
+    "daysLeft": "{{count}}d restantes"
+  },
+  "form": {
+    "nameLabel": "Nome do Extrato",
+    "namePlaceholder": "ex: Óleo CBD Full Spectrum",
+    "typeLabel": "Tipo de Extrato",
+    "methodLabel": "Método de Extração",
+    "sourceHarvests": "Colheitas de Origem",
+    "selectHarvests": "Selecionar colheitas para usar",
+    "inputWeight": "Peso de Entrada (gramas)",
+    "outputVolume": "Volume de Saída (ml)",
+    "outputWeight": "Peso de Saída (gramas)",
+    "thcConcentration": "THC (mg/ml)",
+    "cbdConcentration": "CBD (mg/ml)",
+    "carrier": "Óleo Carreador",
+    "carrierPlaceholder": "ex: óleo MCT, azeite de oliva",
+    "batchNumber": "Número do Lote",
+    "extractionDate": "Data de Extração",
+    "expirationDate": "Data de Validade",
+    "storageLocation": "Local de Armazenamento",
+    "storageLocationPlaceholder": "ex: Geladeira, Prateleira A",
+    "createExtract": "Criar Extrato",
+    "creating": "Criando..."
+  },
+  "detail": {
+    "extractInfo": "Informações do Extrato",
+    "concentration": "Concentração",
+    "production": "Detalhes de Produção",
+    "storage": "Armazenamento",
+    "deleteExtract": "Excluir Extrato",
+    "deleteConfirm": "Tem certeza que deseja excluir este extrato? Esta ação não pode ser desfeita.",
+    "extractNotFound": "Extrato não encontrado"
+  },
+  "success": {
+    "created": "Extrato criado com sucesso!",
+    "deleted": "Extrato excluído com sucesso"
+  },
+  "errors": {
+    "nameRequired": "Por favor, digite o nome do extrato",
+    "selectHarvest": "Por favor, selecione pelo menos uma colheita de origem",
+    "inputWeightRequired": "Por favor, digite o peso de entrada",
+    "failedToCreate": "Falha ao criar extrato",
+    "failedToDelete": "Falha ao excluir extrato",
+    "failedToLoad": "Falha ao carregar dados do extrato"
+  }
+}
+

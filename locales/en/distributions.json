@@ -1,0 +1,67 @@
+{
+  "title": "Distributions",
+  "loading": "Loading distributions...",
+  "addDistribution": "+ New Distribution",
+  "noDistributions": "No distributions yet",
+  "noDistributionsSubtext": "Record your first distribution to a patient",
+  "noMatch": "No distributions match this filter",
+  "noMatchSubtext": "Try selecting a different filter",
+  "toPatient": "to",
+  "product": "Product",
+  "allProducts": "All Products",
+  "allPatients": "All Patients",
+  "status": {
+    "pending": "Pending",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "productTypes": {
+    "flower": "Flower",
+    "oil": "Oil",
+    "extract": "Extract",
+    "edible": "Edible",
+    "other": "Other"
+  },
+  "form": {
+    "patientLabel": "Patient",
+    "selectPatient": "Select patient",
+    "productTypeLabel": "Product Type",
+    "selectSource": "Select Source",
+    "sourceHarvest": "Source Harvest",
+    "selectHarvest": "Select harvest",
+    "sourceExtract": "Source Extract",
+    "selectExtract": "Select extract",
+    "quantityLabel": "Quantity (grams)",
+    "quantityMlLabel": "Quantity (ml)",
+    "quantityUnitsLabel": "Quantity (units)",
+    "batchNumber": "Batch Number",
+    "batchPlaceholder": "Optional - for traceability",
+    "distributionDate": "Distribution Date",
+    "statusLabel": "Status",
+    "createDistribution": "Create Distribution",
+    "creating": "Creating..."
+  },
+  "detail": {
+    "distributionInfo": "Distribution Information",
+    "patientInfo": "Patient Information",
+    "productInfo": "Product Information",
+    "sourceInfo": "Source Information",
+    "deleteDistribution": "Delete Distribution",
+    "deleteConfirm": "Are you sure you want to delete this distribution? This action cannot be undone.",
+    "distributionNotFound": "Distribution not found"
+  },
+  "success": {
+    "created": "Distribution created successfully!",
+    "deleted": "Distribution deleted successfully"
+  },
+  "errors": {
+    "selectPatient": "Please select a patient",
+    "selectSource": "Please select a source (harvest or extract)",
+    "quantityRequired": "Please enter the quantity",
+    "quantityExceedsAvailable": "Quantity exceeds available stock",
+    "failedToCreate": "Failed to create distribution",
+    "failedToDelete": "Failed to delete distribution",
+    "failedToLoad": "Failed to load distribution data"
+  }
+}
+

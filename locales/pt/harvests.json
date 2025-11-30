@@ -1,0 +1,70 @@
+{
+  "title": "Colheitas",
+  "subtitle": "Inventário",
+  "loading": "Carregando colheitas...",
+  "noHarvests": "Nenhuma colheita ainda",
+  "noHarvestsSubtext": "Colha suas plantas para vê-las aqui",
+  "noMatch": "Nenhuma colheita corresponde a este filtro",
+  "noMatchSubtext": "Tente selecionar um filtro diferente",
+  "totalAvailable": "Total Disponível",
+  "harvestDate": "Colhida",
+  "status": {
+    "fresh": "Fresco",
+    "drying": "Secando",
+    "curing": "Curando",
+    "processed": "Processado",
+    "distributed": "Distribuído"
+  },
+  "weights": {
+    "wet": "Úmido",
+    "dry": "Seco",
+    "available": "Disponível"
+  },
+  "form": {
+    "plantLabel": "Planta",
+    "selectPlant": "Selecionar planta para colher",
+    "wetWeightLabel": "Peso Úmido (gramas)",
+    "wetWeightPlaceholder": "Peso na colheita",
+    "harvestDate": "Data de Colheita",
+    "harvestMethod": "Método de Colheita",
+    "methodFull": "Planta Inteira",
+    "methodPartial": "Parcial",
+    "methodProgressive": "Progressivo",
+    "batchNumber": "Número do Lote",
+    "batchPlaceholder": "Opcional - para rastreabilidade",
+    "storageLocation": "Local de Armazenamento",
+    "storagePlaceholder": "ex: Sala de secagem A",
+    "createHarvest": "Registrar Colheita",
+    "creating": "Criando..."
+  },
+  "detail": {
+    "harvestInfo": "Informações da Colheita",
+    "plantInfo": "Informações da Planta",
+    "weights": "Pesos",
+    "dryingLoss": "Perda de Secagem",
+    "processing": "Processamento",
+    "distributions": "Distribuições",
+    "noDistributions": "Nenhuma distribuição desta colheita",
+    "updateStatus": "Atualizar Status",
+    "recordDryWeight": "Registrar Peso Seco",
+    "dryWeightLabel": "Peso Seco (gramas)",
+    "wasteWeight": "Peso de Resíduos/Aparas (gramas)",
+    "deleteHarvest": "Excluir Colheita",
+    "deleteConfirm": "Tem certeza que deseja excluir esta colheita? Esta ação não pode ser desfeita.",
+    "harvestNotFound": "Colheita não encontrada"
+  },
+  "success": {
+    "created": "Colheita registrada com sucesso!",
+    "updated": "Colheita atualizada com sucesso!",
+    "deleted": "Colheita excluída com sucesso"
+  },
+  "errors": {
+    "selectPlant": "Por favor, selecione uma planta",
+    "wetWeightRequired": "Por favor, digite o peso úmido",
+    "failedToCreate": "Falha ao criar colheita",
+    "failedToUpdate": "Falha ao atualizar colheita",
+    "failedToDelete": "Falha ao excluir colheita",
+    "failedToLoad": "Falha ao carregar dados da colheita"
+  }
+}
+

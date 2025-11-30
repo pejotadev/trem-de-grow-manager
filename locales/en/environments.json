@@ -1,0 +1,51 @@
+{
+  "title": "Environments",
+  "addEnvironment": "+ Add New Environment",
+  "noEnvironments": "No environments yet",
+  "createFirst": "Create your first grow environment!",
+  "loading": "Loading environments...",
+  "loadingDetails": "Loading environment details...",
+  "environmentNotFound": "Environment not found",
+  "form": {
+    "nameLabel": "Environment Name",
+    "namePlaceholder": "e.g., Main Tent, Backyard Garden",
+    "typeLabel": "Environment Type",
+    "dimensionsLabel": "Dimensions",
+    "widthLabel": "Width",
+    "lengthLabel": "Length",
+    "heightLabel": "Height",
+    "lightSetupLabel": "Light Setup",
+    "lightSetupPlaceholder": "e.g., 600W HPS, Full Spectrum LED",
+    "ventilationLabel": "Ventilation",
+    "ventilationPlaceholder": "e.g., Inline fan with carbon filter",
+    "notesLabel": "Notes",
+    "notesPlaceholder": "Any additional notes about this environment...",
+    "publicEnvironment": "Public Environment",
+    "publicDescription": "Friends can view this environment and its plants.",
+    "privateDescription": "Only you can see this environment.",
+    "createEnvironment": "Create Environment",
+    "selectEnvironment": "Select Environment"
+  },
+  "detail": {
+    "editEnvironment": "Edit Environment",
+    "deleteEnvironment": "Delete Environment",
+    "deleteConfirm": "Are you sure you want to delete this environment? This will also delete all plants and logs in this environment. This action cannot be undone.",
+    "deleted": "Environment deleted",
+    "updated": "Environment updated!",
+    "public": "Public",
+    "plants": "Plants",
+    "failedToLoad": "Failed to load environment data",
+    "failedToDelete": "Failed to delete environment",
+    "failedToUpdate": "Failed to update environment",
+    "noEnvironmentLogs": "No environment logs"
+  },
+  "success": {
+    "created": "Environment created successfully!"
+  },
+  "errors": {
+    "nameRequired": "Please enter an environment name",
+    "failedToCreate": "Failed to create environment",
+    "failedToLoad": "Failed to load environments"
+  }
+}
+

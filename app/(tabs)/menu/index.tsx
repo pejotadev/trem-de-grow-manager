@@ -9,13 +9,12 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
 interface MenuItem {
   id: string;
-  title: string;
-  subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
   route: string;
@@ -24,64 +23,48 @@ interface MenuItem {
 const MENU_ITEMS: MenuItem[] = [
   {
     id: 'inventory',
-    title: 'Inventory',
-    subtitle: 'Track harvests and available stock',
     icon: 'cube',
     color: '#388E3C',
     route: '/(tabs)/harvests',
   },
   {
     id: 'extracts',
-    title: 'Extracts',
-    subtitle: 'Manage your cannabis extracts',
     icon: 'flask',
     color: '#FF5722',
     route: '/(tabs)/extracts',
   },
   {
     id: 'patients',
-    title: 'Patients',
-    subtitle: 'Manage patient records',
     icon: 'medkit',
     color: '#0288D1',
     route: '/(tabs)/patients',
   },
   {
     id: 'distributions',
-    title: 'Distributions',
-    subtitle: 'Track product distributions',
     icon: 'gift',
     color: '#7B1FA2',
     route: '/(tabs)/distributions',
   },
   {
     id: 'protocols',
-    title: 'Protocols & Documents',
-    subtitle: 'Manage institutional documents',
     icon: 'document-text',
     color: '#009688',
     route: '/(tabs)/admin/documents',
   },
   {
     id: 'reports',
-    title: 'Compliance Reports',
-    subtitle: 'Generate and export reports',
     icon: 'bar-chart',
     color: '#E91E63',
     route: '/(tabs)/admin/reports',
   },
   {
-    id: 'audit-log',
-    title: 'Audit Log',
-    subtitle: 'View all data change history',
+    id: 'auditLog',
     icon: 'time',
     color: '#607D8B',
     route: '/(tabs)/admin/audit-log',
   },
   {
     id: 'profile',
-    title: 'Profile',
-    subtitle: 'Edit your profile settings',
     icon: 'person-circle',
     color: '#4CAF50',
     route: '/(tabs)/profile',
@@ -89,17 +72,18 @@ const MENU_ITEMS: MenuItem[] = [
 ];
 
 export default function MenuScreen() {
+  const { t } = useTranslation(['menu', 'auth', 'common']);
   const { userData, logout } = useAuth();
   const router = useRouter();
 
   const handleLogout = () => {
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      t('auth:logout.title'),
+      t('auth:logout.confirmMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common:cancel'), style: 'cancel' },
         {
-          text: 'Logout',
+          text: t('auth:logout.button'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -127,6 +111,14 @@ export default function MenuScreen() {
     return 'U';
   };
 
+  const getMenuItemTitle = (id: string): string => {
+    return t(`menu:items.${id}.title`);
+  };
+
+  const getMenuItemSubtitle = (id: string): string => {
+    return t(`menu:items.${id}.subtitle`);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -139,7 +131,7 @@ export default function MenuScreen() {
           </View>
           <View style={styles.userInfo}>
             <Text style={styles.userName}>
-              {userData?.displayName || 'User'}
+              {userData?.displayName || t('menu:user')}
             </Text>
             <Text style={styles.userEmail}>{userData?.email}</Text>
           </View>
@@ -153,7 +145,7 @@ export default function MenuScreen() {
 
         {/* Menu Items */}
         <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>Features</Text>
+          <Text style={styles.sectionTitle}>{t('menu:features')}</Text>
           {MENU_ITEMS.map((item) => (
             <TouchableOpacity
               key={item.id}
@@ -164,8 +156,8 @@ export default function MenuScreen() {
                 <Ionicons name={item.icon} size={24} color={item.color} />
               </View>
               <View style={styles.menuItemContent}>
-                <Text style={styles.menuItemTitle}>{item.title}</Text>
-                <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
+                <Text style={styles.menuItemTitle}>{getMenuItemTitle(item.id)}</Text>
+                <Text style={styles.menuItemSubtitle}>{getMenuItemSubtitle(item.id)}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#ccc" />
             </TouchableOpacity>
@@ -177,14 +169,14 @@ export default function MenuScreen() {
           <View style={styles.appLogoContainer}>
             <Ionicons name="leaf" size={32} color="#4CAF50" />
           </View>
-          <Text style={styles.appName}>Grow Manager</Text>
-          <Text style={styles.appVersion}>Version 1.0.0</Text>
+          <Text style={styles.appName}>{t('menu:appInfo.title')}</Text>
+          <Text style={styles.appVersion}>{t('menu:appInfo.version', { version: '1.0.0' })}</Text>
         </View>
 
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={22} color="#f44336" />
-          <Text style={styles.logoutText}>Logout</Text>
+          <Text style={styles.logoutText}>{t('auth:logout.button')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -337,5 +329,3 @@ const styles = StyleSheet.create({
     color: '#f44336',
   },
 });
-
-

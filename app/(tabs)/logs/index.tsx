@@ -8,17 +8,19 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Card } from '../../../components/Card';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function LogsScreen() {
+  const { t } = useTranslation('logs');
   const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Logs</Text>
-        <Text style={styles.subtitle}>Track your growing activities</Text>
+        <Text style={styles.title}>{t('title')}</Text>
+        <Text style={styles.subtitle}>{t('subtitle')}</Text>
 
         {/* Plant Activity Logs - NEW */}
         <TouchableOpacity onPress={() => router.push('/(tabs)/logs/plant-log')}>
@@ -28,17 +30,17 @@ export default function LogsScreen() {
                 <Ionicons name="leaf" size={32} color="#4CAF50" />
               </View>
               <View style={styles.cardText}>
-                <Text style={styles.cardTitle}>Plant Activity Log</Text>
+                <Text style={styles.cardTitle}>{t('plantActivityLog.title')}</Text>
                 <Text style={styles.cardSubtitle}>
-                  Detailed logging: nutrients, training, defoliation, treatments & more
+                  {t('plantActivityLog.subtitle')}
                 </Text>
                 <View style={styles.badgeRow}>
                   <View style={styles.scopeBadge}>
                     <Ionicons name="leaf" size={12} color="#4CAF50" />
-                    <Text style={styles.scopeText}>Per Plant</Text>
+                    <Text style={styles.scopeText}>{t('plantActivityLog.perPlant')}</Text>
                   </View>
                   <View style={[styles.scopeBadge, styles.newBadge]}>
-                    <Text style={styles.newBadgeText}>NEW</Text>
+                    <Text style={styles.newBadgeText}>{t('plantActivityLog.new')}</Text>
                   </View>
                 </View>
               </View>
@@ -55,13 +57,13 @@ export default function LogsScreen() {
                 <Ionicons name="water" size={32} color="#2196F3" />
               </View>
               <View style={styles.cardText}>
-                <Text style={styles.cardTitle}>Quick Watering Log</Text>
+                <Text style={styles.cardTitle}>{t('quickWateringLog.title')}</Text>
                 <Text style={styles.cardSubtitle}>
-                  Simple watering log with ingredients
+                  {t('quickWateringLog.subtitle')}
                 </Text>
                 <View style={styles.scopeBadge}>
                   <Ionicons name="leaf" size={12} color="#4CAF50" />
-                  <Text style={styles.scopeText}>Per Plant</Text>
+                  <Text style={styles.scopeText}>{t('quickWateringLog.perPlant')}</Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={24} color="#999" />
@@ -77,18 +79,18 @@ export default function LogsScreen() {
                 <Ionicons name="thermometer" size={32} color="#FF9800" />
               </View>
               <View style={styles.cardText}>
-                <Text style={styles.cardTitle}>Environment Logs</Text>
+                <Text style={styles.cardTitle}>{t('environmentLogs.title')}</Text>
                 <Text style={styles.cardSubtitle}>
-                  Temperature, humidity, lighting & bulk plant updates
+                  {t('environmentLogs.subtitle')}
                 </Text>
                 <View style={styles.badgeRow}>
                   <View style={styles.scopeBadge}>
                     <Ionicons name="cube" size={12} color="#2E7D32" />
-                    <Text style={styles.scopeText}>Per Environment</Text>
+                    <Text style={styles.scopeText}>{t('environmentLogs.perEnvironment')}</Text>
                   </View>
                   <View style={[styles.scopeBadge, { backgroundColor: '#E1BEE7' }]}>
                     <Ionicons name="layers" size={12} color="#7B1FA2" />
-                    <Text style={[styles.scopeText, { color: '#7B1FA2' }]}>Bulk Updates</Text>
+                    <Text style={[styles.scopeText, { color: '#7B1FA2' }]}>{t('environmentLogs.bulkUpdates')}</Text>
                   </View>
                 </View>
               </View>
@@ -99,18 +101,16 @@ export default function LogsScreen() {
 
         {/* Info Cards */}
         <View style={styles.infoSection}>
-          <Text style={styles.infoSectionTitle}>About Log Types</Text>
+          <Text style={styles.infoSectionTitle}>{t('aboutLogTypes')}</Text>
           
           <View style={styles.infoCard}>
             <View style={styles.infoIconContainer}>
               <Ionicons name="leaf" size={20} color="#4CAF50" />
             </View>
             <View style={styles.infoContent}>
-              <Text style={styles.infoTitle}>Plant Activity Log</Text>
+              <Text style={styles.infoTitle}>{t('plantActivityLog.title')}</Text>
               <Text style={styles.infoText}>
-                Comprehensive logging for individual plants. Track nutrients, pH/EC levels, 
-                training techniques (LST, HST, topping), defoliation, transplanting, pest 
-                treatments, and more.
+                {t('plantActivityDescription')}
               </Text>
             </View>
           </View>
@@ -120,10 +120,9 @@ export default function LogsScreen() {
               <Ionicons name="water" size={20} color="#2196F3" />
             </View>
             <View style={styles.infoContent}>
-              <Text style={styles.infoTitle}>Quick Watering Log</Text>
+              <Text style={styles.infoTitle}>{t('quickWateringLog.title')}</Text>
               <Text style={styles.infoText}>
-                Simple and fast watering logs. Just select a plant, add ingredients, 
-                and optional notes. Good for quick daily tracking.
+                {t('quickWateringDescription')}
               </Text>
             </View>
           </View>
@@ -133,11 +132,9 @@ export default function LogsScreen() {
               <Ionicons name="thermometer" size={20} color="#FF9800" />
             </View>
             <View style={styles.infoContent}>
-              <Text style={styles.infoTitle}>Environment Logs</Text>
+              <Text style={styles.infoTitle}>{t('environmentLogs.title')}</Text>
               <Text style={styles.infoText}>
-                Two modes: (1) Log environmental conditions like temperature, humidity, 
-                and light hours. (2) Bulk plant updates - apply the same activity to 
-                all plants in an environment at once.
+                {t('environmentDescription')}
               </Text>
             </View>
           </View>
@@ -147,27 +144,24 @@ export default function LogsScreen() {
         <View style={styles.tipsCard}>
           <View style={styles.tipsHeader}>
             <Ionicons name="bulb" size={20} color="#FFC107" />
-            <Text style={styles.tipsTitle}>Pro Tips</Text>
+            <Text style={styles.tipsTitle}>{t('proTips')}</Text>
           </View>
           <View style={styles.tipItem}>
             <Text style={styles.tipBullet}>•</Text>
             <Text style={styles.tipText}>
-              Use <Text style={styles.tipBold}>Bulk Updates</Text> when watering or feeding 
-              all plants in an environment with the same solution.
+              {t('tip1', { defaultValue: 'Use Bulk Updates when watering or feeding all plants in an environment with the same solution.' })}
             </Text>
           </View>
           <View style={styles.tipItem}>
             <Text style={styles.tipBullet}>•</Text>
             <Text style={styles.tipText}>
-              Track <Text style={styles.tipBold}>pH and EC</Text> of your runoff to monitor 
-              nutrient uptake and salt buildup.
+              {t('tip2', { defaultValue: 'Track pH and EC of your runoff to monitor nutrient uptake and salt buildup.' })}
             </Text>
           </View>
           <View style={styles.tipItem}>
             <Text style={styles.tipBullet}>•</Text>
             <Text style={styles.tipText}>
-              Log <Text style={styles.tipBold}>training activities</Text> to track how your 
-              plants respond to different techniques.
+              {t('tip3', { defaultValue: 'Log training activities to track how your plants respond to different techniques.' })}
             </Text>
           </View>
         </View>

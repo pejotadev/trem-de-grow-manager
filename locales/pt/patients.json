@@ -1,0 +1,83 @@
+{
+  "title": "Pacientes",
+  "loading": "Carregando pacientes...",
+  "addPatient": "+ Cadastrar Paciente",
+  "noPatients": "Nenhum paciente cadastrado",
+  "noPatientsSubtext": "Cadastre seu primeiro paciente para começar",
+  "noMatch": "Nenhum paciente corresponde à sua busca",
+  "noMatchSubtext": "Tente ajustar sua busca ou filtros",
+  "searchPlaceholder": "Buscar por nome ou documento...",
+  "status": {
+    "active": "Ativo",
+    "inactive": "Inativo",
+    "pending": "Pendente"
+  },
+  "prescription": {
+    "valid": "Válida",
+    "expired": "Expirada",
+    "expiringSoon": "Expirando em breve",
+    "noPrescription": "Sem prescrição",
+    "label": "Prescrição"
+  },
+  "form": {
+    "nameLabel": "Nome Completo",
+    "namePlaceholder": "Digite o nome completo do paciente",
+    "documentType": "Tipo de Documento",
+    "documentNumber": "Número do Documento",
+    "documentPlaceholder": "Digite o número do documento",
+    "emailLabel": "Email",
+    "emailPlaceholder": "paciente@email.com",
+    "phoneLabel": "Telefone",
+    "phonePlaceholder": "Digite o número de telefone",
+    "addressLabel": "Endereço",
+    "addressPlaceholder": "Digite o endereço",
+    "statusLabel": "Status",
+    "medicalCondition": "Condição Médica",
+    "medicalConditionPlaceholder": "ex: Dor crônica, Epilepsia",
+    "prescribingDoctor": "Médico Prescritor",
+    "doctorPlaceholder": "Dr. Nome",
+    "doctorCrm": "CRM do Médico",
+    "crmPlaceholder": "Número do CRM",
+    "prescriptionDate": "Data da Prescrição",
+    "prescriptionExpiration": "Validade da Prescrição",
+    "allowances": "Cotas Mensais",
+    "allowanceOil": "Óleo (gramas)",
+    "allowanceExtract": "Extrato (gramas)",
+    "allowanceFlowerThc": "Flor THC (gramas)",
+    "allowanceFlowerCbd": "Flor CBD (gramas)",
+    "createPatient": "Cadastrar Paciente",
+    "updatePatient": "Atualizar Paciente"
+  },
+  "documentTypes": {
+    "cpf": "CPF",
+    "rg": "RG",
+    "passport": "Passaporte",
+    "other": "Outro"
+  },
+  "detail": {
+    "personalInfo": "Informações Pessoais",
+    "contactInfo": "Informações de Contato",
+    "medicalInfo": "Informações Médicas",
+    "prescriptionInfo": "Informações da Prescrição",
+    "allowances": "Cotas Mensais",
+    "distributions": "Histórico de Distribuições",
+    "noDistributions": "Nenhuma distribuição ainda",
+    "deletePatient": "Excluir Paciente",
+    "deleteConfirm": "Tem certeza que deseja excluir este paciente? Esta ação não pode ser desfeita.",
+    "patientNotFound": "Paciente não encontrado"
+  },
+  "success": {
+    "created": "Paciente cadastrado com sucesso!",
+    "updated": "Paciente atualizado com sucesso!",
+    "deleted": "Paciente excluído com sucesso"
+  },
+  "errors": {
+    "nameRequired": "Por favor, digite o nome do paciente",
+    "documentRequired": "Por favor, digite o número do documento",
+    "failedToCreate": "Falha ao cadastrar paciente",
+    "failedToUpdate": "Falha ao atualizar paciente",
+    "failedToDelete": "Falha ao excluir paciente",
+    "failedToLoad": "Falha ao carregar dados do paciente"
+  }
+}
+

@@ -1,0 +1,54 @@
+{
+  "title": "Friends",
+  "loading": "Loading friends...",
+  "tabs": {
+    "friends": "Friends",
+    "requests": "Requests"
+  },
+  "noFriends": "No friends yet",
+  "noFriendsSubtext": "Search for friends to connect with!",
+  "noRequests": "No pending requests",
+  "noRequestsSubtext": "When someone sends you a friend request, it will appear here.",
+  "findFriends": "+ Find Friends",
+  "friendsSince": "Friends since {{date}}",
+  "sent": "Sent {{date}}",
+  "indexBuilding": {
+    "title": "Setting up friends feature...",
+    "subtitle": "The database index is being created. This usually takes 1-2 minutes. Please refresh in a moment."
+  },
+  "actions": {
+    "accept": "Accept",
+    "reject": "Reject",
+    "remove": "Remove",
+    "rejectRequest": "Reject Request",
+    "rejectConfirm": "Reject friend request from {{name}}?",
+    "removeFriend": "Remove Friend",
+    "removeConfirm": "Are you sure you want to remove {{name}} as a friend?"
+  },
+  "success": {
+    "requestAccepted": "Friend request accepted!",
+    "requestRejected": "Friend request rejected",
+    "friendRemoved": "Friend removed"
+  },
+  "errors": {
+    "failedToLoad": "Failed to load friends",
+    "failedToAccept": "Failed to accept request",
+    "failedToReject": "Failed to reject request",
+    "failedToRemove": "Failed to remove friend"
+  },
+  "search": {
+    "title": "Find Friends",
+    "placeholder": "Search by email...",
+    "noResults": "No users found",
+    "sendRequest": "Send Request",
+    "requestSent": "Request Sent",
+    "alreadyFriends": "Already Friends",
+    "requestPending": "Request Pending"
+  },
+  "profile": {
+    "publicEnvironments": "Public Environments",
+    "noPublicEnvironments": "No public environments",
+    "viewPlants": "View Plants"
+  }
+}
+

@@ -1,0 +1,102 @@
+{
+  "title": "Logs",
+  "subtitle": "Track your growing activities",
+  "plantActivityLog": {
+    "title": "Plant Activity Log",
+    "subtitle": "Detailed logging: nutrients, training, defoliation, treatments & more",
+    "perPlant": "Per Plant",
+    "new": "NEW"
+  },
+  "quickWateringLog": {
+    "title": "Quick Watering Log",
+    "subtitle": "Simple watering log with ingredients",
+    "perPlant": "Per Plant"
+  },
+  "environmentLogs": {
+    "title": "Environment Logs",
+    "subtitle": "Temperature, humidity, lighting & bulk plant updates",
+    "perEnvironment": "Per Environment",
+    "bulkUpdates": "Bulk Updates"
+  },
+  "aboutLogTypes": "About Log Types",
+  "plantActivityDescription": "Comprehensive logging for individual plants. Track nutrients, pH/EC levels, training techniques (LST, HST, topping), defoliation, transplanting, pest treatments, and more.",
+  "quickWateringDescription": "Simple and fast watering logs. Just select a plant, add ingredients, and optional notes. Good for quick daily tracking.",
+  "environmentDescription": "Two modes: (1) Log environmental conditions like temperature, humidity, and light hours. (2) Bulk plant updates - apply the same activity to all plants in an environment at once.",
+  "proTips": "Pro Tips",
+  "tip1": "Use <bold>Bulk Updates</bold> when watering or feeding all plants in an environment with the same solution.",
+  "tip2": "Track <bold>pH and EC</bold> of your runoff to monitor nutrient uptake and salt buildup.",
+  "tip3": "Log <bold>training activities</bold> to track how your plants respond to different techniques.",
+  "logTypes": {
+    "watering": "Watering",
+    "nutrient_feed": "Nutrient Feed",
+    "soil_add": "Soil/Medium Add",
+    "defoliation": "Defoliation",
+    "lollipopping": "Lollipopping",
+    "lst": "LST",
+    "hst": "HST",
+    "topping": "Topping",
+    "fimming": "FIMming",
+    "supercropping": "Supercropping",
+    "transplant": "Transplant",
+    "pest_treatment": "Pest Treatment",
+    "disease_treatment": "Disease Treatment",
+    "ph_adjustment": "pH Adjustment",
+    "flush": "Flush",
+    "foliar_spray": "Foliar Spray",
+    "clone_cut": "Clone Cut",
+    "observation": "Observation",
+    "other": "Other"
+  },
+  "form": {
+    "selectPlant": "Select Plant",
+    "selectEnvironment": "Select Environment",
+    "logType": "Log Type",
+    "date": "Date",
+    "waterAmount": "Water Amount (ml)",
+    "phLevel": "pH Level",
+    "ecPpm": "EC (PPM)",
+    "runoffPh": "Runoff pH",
+    "runoffEc": "Runoff EC",
+    "nutrients": "Nutrients",
+    "addNutrient": "+ Add Nutrient",
+    "nutrientName": "Nutrient Name",
+    "nutrientBrand": "Brand",
+    "nutrientAmount": "Amount (ml)",
+    "npkRatio": "NPK Ratio",
+    "training": "Training",
+    "trainingMethod": "Training Method",
+    "branchesAffected": "Branches Affected",
+    "leavesRemoved": "Leaves Removed",
+    "fanLeaves": "Fan Leaves",
+    "sugarLeaves": "Sugar Leaves",
+    "transplant": "Transplant",
+    "fromPotSize": "From Pot Size",
+    "toPotSize": "To Pot Size",
+    "rootBound": "Root Bound",
+    "pestType": "Pest Type",
+    "diseaseType": "Disease Type",
+    "treatmentProduct": "Treatment Product",
+    "applicationMethod": "Application Method",
+    "createLog": "Create Log",
+    "creating": "Creating..."
+  },
+  "environment": {
+    "temperature": "Temperature (°C)",
+    "humidity": "Humidity (%)",
+    "lightHours": "Light Hours",
+    "environmentLog": "Environment Log",
+    "bulkPlantUpdate": "Bulk Plant Update",
+    "selectPlantsToUpdate": "Select plants to update",
+    "allPlants": "All Plants",
+    "applyToAllPlants": "Apply to all plants in environment"
+  },
+  "success": {
+    "logCreated": "Log created successfully!"
+  },
+  "errors": {
+    "selectPlant": "Please select a plant",
+    "selectEnvironment": "Please select an environment",
+    "failedToCreate": "Failed to create log"
+  }
+}
+

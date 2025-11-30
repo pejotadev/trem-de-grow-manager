@@ -1,0 +1,28 @@
+{
+  "title": "Perfil",
+  "avatarHint": "Suas iniciais são geradas a partir do seu nome",
+  "sections": {
+    "personalInfo": "Informações Pessoais",
+    "accountInfo": "Informações da Conta",
+    "language": "Idioma"
+  },
+  "form": {
+    "displayName": "Nome de Exibição",
+    "displayNamePlaceholder": "Digite seu nome",
+    "email": "Email",
+    "emailCannotChange": "Não pode ser alterado",
+    "userId": "ID do Usuário"
+  },
+  "language": {
+    "title": "Idioma",
+    "selectLanguage": "Selecione seu idioma preferido"
+  },
+  "success": {
+    "profileUpdated": "Perfil atualizado com sucesso!"
+  },
+  "errors": {
+    "enterName": "Por favor, digite seu nome",
+    "failedToUpdate": "Falha ao atualizar perfil"
+  }
+}
+

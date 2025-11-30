@@ -13,6 +13,7 @@ import {
   Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import { createPlant, createStage, getUserEnvironments, getUserPlants, generateControlNumber } from '../../../firebase/firestore';
 import { StageName, Environment, Plant, PlantSourceType, GeneticInfo, Chemotype } from '../../../types';
@@ -24,12 +25,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 const STAGES: StageName[] = ['Seedling', 'Veg', 'Flower', 'Drying', 'Curing'];
 
-const SOURCE_TYPES: { type: PlantSourceType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { type: 'seed', label: 'Seed', icon: 'ellipse' },
-  { type: 'clone', label: 'Clone', icon: 'git-branch' },
-  { type: 'cutting', label: 'Cutting', icon: 'cut' },
-  { type: 'tissue_culture', label: 'Tissue', icon: 'flask' },
-];
+const SOURCE_TYPE_ICONS: Record<PlantSourceType, keyof typeof Ionicons.glyphMap> = {
+  seed: 'ellipse',
+  clone: 'git-branch',
+  cutting: 'cut',
+  tissue_culture: 'flask',
+};
 
 const ENVIRONMENT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   indoor: 'home',
@@ -44,6 +45,7 @@ const ENVIRONMENT_COLORS: Record<string, string> = {
 };
 
 export default function NewPlantScreen() {
+  const { t } = useTranslation(['plants', 'common']);
   // Basic plant info
   const [name, setName] = useState('');
   const [strain, setStrain] = useState('');
@@ -78,6 +80,8 @@ export default function NewPlantScreen() {
   const { userData } = useAuth();
   const router = useRouter();
 
+  const SOURCE_TYPES: PlantSourceType[] = ['seed', 'clone', 'cutting', 'tissue_culture'];
+
   useEffect(() => {
     loadEnvironments();
     loadPlants();
@@ -102,7 +106,7 @@ export default function NewPlantScreen() {
       }
     } catch (error) {
       console.error('[NewPlant] Error loading environments:', error);
-      Alert.alert('Error', 'Failed to load environments');
+      Alert.alert(t('common:error'), t('plants:loadingEnvironments'));
     } finally {
       setLoadingEnvs(false);
     }
@@ -137,17 +141,17 @@ export default function NewPlantScreen() {
 
   const handleSubmit = async () => {
     if (!name || !strain) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      Alert.alert(t('common:error'), t('common:validation.fillAllFields'));
       return;
     }
 
     if (!selectedEnvironment) {
-      Alert.alert('Error', 'Please select an environment for this plant');
+      Alert.alert(t('common:error'), t('plants:form.selectEnvironment'));
       return;
     }
 
     if (!userData || !userData.uid) {
-      Alert.alert('Error', 'User not authenticated');
+      Alert.alert(t('common:error'), t('common:validation.userNotAuthenticated'));
       return;
     }
 
@@ -213,22 +217,22 @@ export default function NewPlantScreen() {
       });
       console.log('[NewPlant] Stage created successfully');
 
-      Alert.alert('Success', 'Plant created successfully!', [
+      Alert.alert(t('common:success'), t('plants:form.createPlant') + '!', [
         {
-          text: 'OK',
+          text: t('common:ok'),
           onPress: () => router.back(),
         },
       ]);
     } catch (error: any) {
       console.error('[NewPlant] Error creating plant:', error);
-      Alert.alert('Error', 'Failed to create plant: ' + (error.message || 'Unknown error'));
+      Alert.alert(t('common:error'), error.message || 'Unknown error');
     } finally {
       setLoading(false);
     }
   };
 
   if (loadingEnvs) {
-    return <Loading message="Loading environments..." />;
+    return <Loading message={t('plants:loadingEnvironments')} />;
   }
 
   if (environments.length === 0) {
@@ -236,12 +240,12 @@ export default function NewPlantScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyState}>
           <Ionicons name="cube-outline" size={64} color="#ccc" />
-          <Text style={styles.emptyText}>No environments yet</Text>
+          <Text style={styles.emptyText}>{t('plants:detail.noEnvironments')}</Text>
           <Text style={styles.emptySubtext}>
-            Create an environment first before adding plants
+            {t('plants:detail.createEnvironmentFirst')}
           </Text>
           <Button
-            title="Create Environment"
+            title={t('plants:createEnvironment')}
             onPress={() => router.push('/(tabs)/environments/new')}
             style={styles.createEnvButton}
           />
@@ -266,7 +270,7 @@ export default function NewPlantScreen() {
           <View style={styles.content}>
             {/* Environment Selection */}
             <View style={styles.section}>
-              <Text style={styles.label}>Environment *</Text>
+              <Text style={styles.label}>{t('plants:form.environmentLabel')} *</Text>
               <TouchableOpacity
                 style={styles.envSelector}
                 onPress={() => setEnvModalVisible(true)}
@@ -287,7 +291,7 @@ export default function NewPlantScreen() {
                     </View>
                     <View style={styles.envSelectorText}>
                       <Text style={styles.envSelectorName}>{selectedEnvironment.name}</Text>
-                      <Text style={styles.envSelectorType}>{selectedEnvironment.type}</Text>
+                      <Text style={styles.envSelectorType}>{t(`common:environmentTypes.${selectedEnvironment.type}`)}</Text>
                     </View>
                   </View>
                 )}
@@ -299,63 +303,63 @@ export default function NewPlantScreen() {
             <View style={styles.controlNumberPreview}>
               <View style={styles.controlNumberHeader}>
                 <Ionicons name="barcode-outline" size={20} color="#4CAF50" />
-                <Text style={styles.controlNumberLabel}>Control Number</Text>
+                <Text style={styles.controlNumberLabel}>{t('plants:form.controlNumber')}</Text>
                 <View style={styles.autoBadge}>
-                  <Text style={styles.autoBadgeText}>AUTO</Text>
+                  <Text style={styles.autoBadgeText}>{t('plants:form.autoGenerated')}</Text>
                 </View>
               </View>
               <Text style={styles.controlNumberValue}>{getNextControlNumberPreview()}</Text>
               <Text style={styles.controlNumberHint}>
-                Generated automatically: A-{'{initials}'}-{'{year}'}-{'{sequence}'}
+                {t('plants:form.controlNumberHint')}
               </Text>
             </View>
 
             <Input
-              label="Plant Name *"
+              label={`${t('plants:form.plantNameLabel')} *`}
               value={name}
               onChangeText={setName}
-              placeholder="e.g., Northern Lights #1"
+              placeholder={t('plants:form.plantNamePlaceholder')}
             />
 
             <Input
-              label="Strain *"
+              label={`${t('plants:form.strainLabel')} *`}
               value={strain}
               onChangeText={setStrain}
-              placeholder="e.g., Northern Lights"
+              placeholder={t('plants:form.strainPlaceholder')}
             />
 
             {/* Source Type Selector */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Ionicons name="leaf-outline" size={18} color="#2E7D32" />
-                <Text style={styles.label}>Source Type *</Text>
+                <Text style={styles.label}>{t('plants:form.sourceTypeLabel')} *</Text>
               </View>
               <View style={styles.sourceTypeGrid}>
-                {SOURCE_TYPES.map((source) => (
+                {SOURCE_TYPES.map((type) => (
                   <TouchableOpacity
-                    key={source.type}
+                    key={type}
                     style={[
                       styles.sourceTypeButton,
-                      sourceType === source.type && styles.sourceTypeButtonActive,
+                      sourceType === type && styles.sourceTypeButtonActive,
                     ]}
                     onPress={() => {
-                      setSourceType(source.type);
+                      setSourceType(type);
                       setSelectedParentPlant(null);
                       setManualParentInfo('');
                     }}
                   >
                     <Ionicons
-                      name={source.icon}
+                      name={SOURCE_TYPE_ICONS[type]}
                       size={20}
-                      color={sourceType === source.type ? '#fff' : '#4CAF50'}
+                      color={sourceType === type ? '#fff' : '#4CAF50'}
                     />
                     <Text
                       style={[
                         styles.sourceTypeText,
-                        sourceType === source.type && styles.sourceTypeTextActive,
+                        sourceType === type && styles.sourceTypeTextActive,
                       ]}
                     >
-                      {source.label}
+                      {t(`common:sourceTypes.${type}`)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -366,22 +370,22 @@ export default function NewPlantScreen() {
             {sourceType === 'seed' && (
               <View style={styles.conditionalSection}>
                 <Input
-                  label="Breeder (optional)"
+                  label={`${t('plants:form.breederLabel')} (${t('common:optional')})`}
                   value={breeder}
                   onChangeText={setBreeder}
-                  placeholder="e.g., Sensi Seeds, Barneys Farm"
+                  placeholder={t('plants:form.breederPlaceholder')}
                 />
                 <Input
-                  label="Seed Bank / Source (optional)"
+                  label={`${t('plants:form.seedBankLabel')} (${t('common:optional')})`}
                   value={seedBank}
                   onChangeText={setSeedBank}
-                  placeholder="e.g., Seedsman, local dispensary"
+                  placeholder={t('plants:form.seedBankPlaceholder')}
                 />
                 <Input
-                  label="Genetic Lineage (optional)"
+                  label={`${t('plants:form.geneticLineageLabel')} (${t('common:optional')})`}
                   value={geneticLineage}
                   onChangeText={setGeneticLineage}
-                  placeholder="e.g., Northern Lights x Big Bud"
+                  placeholder={t('plants:form.geneticLineagePlaceholder')}
                 />
               </View>
             )}
@@ -389,7 +393,7 @@ export default function NewPlantScreen() {
             {/* Clone/Cutting-specific fields */}
             {showParentSelector && (
               <View style={styles.conditionalSection}>
-                <Text style={styles.label}>Parent Plant</Text>
+                <Text style={styles.label}>{t('plants:form.parentPlant')}</Text>
                 
                 {parentOptions.length > 0 ? (
                   <>
@@ -397,7 +401,7 @@ export default function NewPlantScreen() {
                       <View style={styles.infoBox}>
                         <Ionicons name="information-circle-outline" size={16} color="#FF9800" />
                         <Text style={styles.infoText}>
-                          No mother plants found. Showing all plants as options.
+                          {t('plants:form.noMotherPlantsFound')}
                         </Text>
                       </View>
                     )}
@@ -414,12 +418,12 @@ export default function NewPlantScreen() {
                           </View>
                           {selectedParentPlant.isMotherPlant && (
                             <View style={styles.motherBadge}>
-                              <Text style={styles.motherBadgeText}>Mother</Text>
+                              <Text style={styles.motherBadgeText}>{t('plants:detail.mother')}</Text>
                             </View>
                           )}
                         </View>
                       ) : (
-                        <Text style={styles.parentPlaceholder}>Select parent plant...</Text>
+                        <Text style={styles.parentPlaceholder}>{t('plants:form.selectParentPlant')}</Text>
                       )}
                       <Ionicons name="chevron-down" size={20} color="#666" />
                     </TouchableOpacity>
@@ -427,22 +431,22 @@ export default function NewPlantScreen() {
                 ) : (
                   <View style={styles.noParentsBox}>
                     <Ionicons name="alert-circle-outline" size={20} color="#666" />
-                    <Text style={styles.noParentsText}>No plants available as parent</Text>
+                    <Text style={styles.noParentsText}>{t('plants:form.noParentPlants')}</Text>
                   </View>
                 )}
 
                 <Input
-                  label="Or enter parent info manually"
+                  label={t('plants:form.orEnterManually')}
                   value={manualParentInfo}
                   onChangeText={setManualParentInfo}
-                  placeholder="e.g., Clone from dispensary, friend's plant"
+                  placeholder={t('plants:form.manualParentPlaceholder')}
                 />
 
                 <Input
-                  label="Genetic Lineage"
+                  label={t('plants:form.geneticLineageLabel')}
                   value={geneticLineage}
                   onChangeText={setGeneticLineage}
-                  placeholder={selectedParentPlant ? 'Auto-filled from parent' : 'e.g., OG Kush x Purple Punch'}
+                  placeholder={selectedParentPlant ? t('plants:form.autoFilledFromParent') : t('plants:form.geneticLineagePlaceholder')}
                 />
               </View>
             )}
@@ -451,23 +455,23 @@ export default function NewPlantScreen() {
             {sourceType === 'tissue_culture' && (
               <View style={styles.conditionalSection}>
                 <Input
-                  label="Source / Lab (optional)"
+                  label={`${t('plants:form.seedBankLabel')} (${t('common:optional')})`}
                   value={seedBank}
                   onChangeText={setSeedBank}
-                  placeholder="e.g., TC lab name, research facility"
+                  placeholder={t('plants:form.sourceLabPlaceholder')}
                 />
                 <Input
-                  label="Genetic Lineage (optional)"
+                  label={`${t('plants:form.geneticLineageLabel')} (${t('common:optional')})`}
                   value={geneticLineage}
                   onChangeText={setGeneticLineage}
-                  placeholder="e.g., Northern Lights x Big Bud"
+                  placeholder={t('plants:form.geneticLineagePlaceholder')}
                 />
               </View>
             )}
 
             {/* Stage Selector */}
             <View style={styles.stageSection}>
-              <Text style={styles.label}>Starting Stage</Text>
+              <Text style={styles.label}>{t('plants:form.startingStage')}</Text>
               <View style={styles.stageGrid}>
                 <View style={styles.stageRow}>
                   {STAGES.slice(0, 3).map((stage) => (
@@ -485,7 +489,7 @@ export default function NewPlantScreen() {
                           selectedStage === stage ? styles.stageButtonTextActive : styles.stageButtonTextInactive,
                         ]}
                       >
-                        {stage}
+                        {t(`common:stages.${stage.toLowerCase()}`)}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -506,7 +510,7 @@ export default function NewPlantScreen() {
                           selectedStage === stage ? styles.stageButtonTextActive : styles.stageButtonTextInactive,
                         ]}
                       >
-                        {stage}
+                        {t(`common:stages.${stage.toLowerCase()}`)}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -519,7 +523,7 @@ export default function NewPlantScreen() {
               <View style={styles.motherPlantHeader}>
                 <View style={styles.motherPlantLabel}>
                   <Ionicons name="git-network-outline" size={20} color="#4CAF50" />
-                  <Text style={styles.motherPlantTitle}>Mark as Mother Plant</Text>
+                  <Text style={styles.motherPlantTitle}>{t('plants:form.markAsMother')}</Text>
                 </View>
                 <Switch
                   value={isMotherPlant}
@@ -529,7 +533,7 @@ export default function NewPlantScreen() {
                 />
               </View>
               <Text style={styles.motherPlantHint}>
-                Mother plants can be used to create clones and cuttings
+                {t('plants:form.motherPlantHint')}
               </Text>
             </View>
 
@@ -540,7 +544,7 @@ export default function NewPlantScreen() {
             >
               <View style={styles.expandableTitle}>
                 <Ionicons name="flask-outline" size={20} color="#2E7D32" />
-                <Text style={styles.expandableTitleText}>Chemotype Data (Optional)</Text>
+                <Text style={styles.expandableTitleText}>{t('plants:form.chemotypeData')}</Text>
               </View>
               <Ionicons
                 name={showChemotype ? 'chevron-up' : 'chevron-down'}
@@ -554,7 +558,7 @@ export default function NewPlantScreen() {
                 <View style={styles.chemotypeRow}>
                   <View style={styles.chemotypeInput}>
                     <Input
-                      label="THC %"
+                      label={t('plants:form.thcPercent')}
                       value={thcPercent}
                       onChangeText={setThcPercent}
                       placeholder="0.0"
@@ -563,7 +567,7 @@ export default function NewPlantScreen() {
                   </View>
                   <View style={styles.chemotypeInput}>
                     <Input
-                      label="CBD %"
+                      label={t('plants:form.cbdPercent')}
                       value={cbdPercent}
                       onChangeText={setCbdPercent}
                       placeholder="0.0"
@@ -572,23 +576,23 @@ export default function NewPlantScreen() {
                   </View>
                 </View>
                 <Input
-                  label="Lab Name"
+                  label={t('plants:form.labName')}
                   value={labName}
                   onChangeText={setLabName}
-                  placeholder="e.g., SC Labs, Steep Hill"
+                  placeholder={t('plants:form.labNamePlaceholder')}
                 />
                 <DatePicker
-                  label="Analysis Date"
+                  label={t('plants:form.analysisDate')}
                   value={analysisDate}
                   onChange={setAnalysisDate}
-                  placeholder="Select analysis date"
+                  placeholder={t('plants:form.selectAnalysisDate')}
                   maximumDate={new Date()}
                 />
               </View>
             )}
 
             <Button
-              title="Create Plant"
+              title={t('plants:form.createPlant')}
               onPress={handleSubmit}
               disabled={loading}
               style={styles.submitButton}
@@ -606,7 +610,7 @@ export default function NewPlantScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Environment</Text>
+            <Text style={styles.modalTitle}>{t('plants:form.selectEnvironment')}</Text>
             <ScrollView>
               {environments.map((env) => (
                 <TouchableOpacity
@@ -631,7 +635,7 @@ export default function NewPlantScreen() {
                   </View>
                   <View style={styles.envOptionText}>
                     <Text style={styles.envOptionName}>{env.name}</Text>
-                    <Text style={styles.envOptionType}>{env.type}</Text>
+                    <Text style={styles.envOptionType}>{t(`common:environmentTypes.${env.type}`)}</Text>
                   </View>
                   {selectedEnvironment?.id === env.id && (
                     <Ionicons name="checkmark" size={24} color="#4CAF50" />
@@ -640,7 +644,7 @@ export default function NewPlantScreen() {
               ))}
             </ScrollView>
             <Button
-              title="Cancel"
+              title={t('common:cancel')}
               onPress={() => setEnvModalVisible(false)}
               variant="secondary"
             />
@@ -657,11 +661,11 @@ export default function NewPlantScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Parent Plant</Text>
+            <Text style={styles.modalTitle}>{t('plants:clone.selectTargetEnvironment')}</Text>
             {hasMotherPlants && (
               <View style={styles.modalSubtitle}>
                 <Ionicons name="star" size={14} color="#4CAF50" />
-                <Text style={styles.modalSubtitleText}>Showing mother plants</Text>
+                <Text style={styles.modalSubtitleText}>{t('plants:clone.showingMotherPlants')}</Text>
               </View>
             )}
             <ScrollView>
@@ -696,7 +700,7 @@ export default function NewPlantScreen() {
               ))}
             </ScrollView>
             <Button
-              title="Cancel"
+              title={t('common:cancel')}
               onPress={() => setParentModalVisible(false)}
               variant="secondary"
             />

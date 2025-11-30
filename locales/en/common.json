@@ -1,0 +1,94 @@
+{
+  "appName": "GrowControl",
+  "loading": "Loading...",
+  "error": "Error",
+  "success": "Success",
+  "cancel": "Cancel",
+  "save": "Save",
+  "saveChanges": "Save Changes",
+  "saving": "Saving...",
+  "delete": "Delete",
+  "edit": "Edit",
+  "create": "Create",
+  "update": "Update",
+  "confirm": "Confirm",
+  "yes": "Yes",
+  "no": "No",
+  "ok": "OK",
+  "done": "Done",
+  "goBack": "Go Back",
+  "viewAll": "View All",
+  "search": "Search",
+  "filter": "Filter",
+  "all": "All",
+  "refresh": "Refresh",
+  "noResults": "No results found",
+  "optional": "optional",
+  "required": "required",
+  "notes": "Notes",
+  "notesPlaceholder": "Any additional notes...",
+  "version": "Version",
+  "features": "Features",
+  "dates": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgo": "{{count}} days ago",
+    "memberSince": "Member Since",
+    "created": "Created",
+    "started": "Started",
+    "joined": "Joined"
+  },
+  "units": {
+    "grams": "g",
+    "milliliters": "ml",
+    "meters": "Meters",
+    "feet": "Feet",
+    "units": "units"
+  },
+  "tabs": {
+    "plants": "Plants",
+    "environments": "Environments",
+    "logs": "Logs",
+    "friends": "Friends",
+    "menu": "Menu"
+  },
+  "stages": {
+    "seedling": "Seedling",
+    "veg": "Veg",
+    "flower": "Flower",
+    "drying": "Drying",
+    "curing": "Curing"
+  },
+  "environmentTypes": {
+    "indoor": "Indoor",
+    "outdoor": "Outdoor",
+    "greenhouse": "Greenhouse"
+  },
+  "sourceTypes": {
+    "seed": "Seed",
+    "clone": "Clone",
+    "cutting": "Cutting",
+    "tissue_culture": "Tissue"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Invalid email address",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "passwordsDontMatch": "Passwords do not match",
+    "fillAllFields": "Please fill in all fields",
+    "enterName": "Please enter a name",
+    "enterValidNumber": "Please enter a valid number",
+    "userNotAuthenticated": "User not authenticated"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "fresh": "Fresh",
+    "drying": "Drying",
+    "curing": "Curing",
+    "processed": "Processed",
+    "distributed": "Distributed"
+  }
+}
+

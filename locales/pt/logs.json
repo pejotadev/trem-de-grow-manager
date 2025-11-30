@@ -1,0 +1,102 @@
+{
+  "title": "Registros",
+  "subtitle": "Acompanhe suas atividades de cultivo",
+  "plantActivityLog": {
+    "title": "Registro de Atividade da Planta",
+    "subtitle": "Registro detalhado: nutrientes, treinamento, desfolhação, tratamentos e mais",
+    "perPlant": "Por Planta",
+    "new": "NOVO"
+  },
+  "quickWateringLog": {
+    "title": "Registro Rápido de Rega",
+    "subtitle": "Registro simples de rega com ingredientes",
+    "perPlant": "Por Planta"
+  },
+  "environmentLogs": {
+    "title": "Registros do Ambiente",
+    "subtitle": "Temperatura, umidade, iluminação e atualizações em lote de plantas",
+    "perEnvironment": "Por Ambiente",
+    "bulkUpdates": "Atualizações em Lote"
+  },
+  "aboutLogTypes": "Sobre os Tipos de Registro",
+  "plantActivityDescription": "Registro abrangente para plantas individuais. Acompanhe nutrientes, níveis de pH/EC, técnicas de treinamento (LST, HST, topping), desfolhação, transplante, tratamentos de pragas e mais.",
+  "quickWateringDescription": "Registros de rega simples e rápidos. Basta selecionar uma planta, adicionar ingredientes e notas opcionais. Bom para acompanhamento diário rápido.",
+  "environmentDescription": "Dois modos: (1) Registrar condições ambientais como temperatura, umidade e horas de luz. (2) Atualizações em lote de plantas - aplicar a mesma atividade a todas as plantas em um ambiente de uma vez.",
+  "proTips": "Dicas Pro",
+  "tip1": "Use <bold>Atualizações em Lote</bold> ao regar ou alimentar todas as plantas em um ambiente com a mesma solução.",
+  "tip2": "Acompanhe <bold>pH e EC</bold> do escoamento para monitorar a absorção de nutrientes e acúmulo de sais.",
+  "tip3": "Registre <bold>atividades de treinamento</bold> para acompanhar como suas plantas respondem a diferentes técnicas.",
+  "logTypes": {
+    "watering": "Rega",
+    "nutrient_feed": "Alimentação com Nutrientes",
+    "soil_add": "Adição de Solo/Substrato",
+    "defoliation": "Desfolhação",
+    "lollipopping": "Lollipopping",
+    "lst": "LST",
+    "hst": "HST",
+    "topping": "Topping",
+    "fimming": "FIMming",
+    "supercropping": "Supercropping",
+    "transplant": "Transplante",
+    "pest_treatment": "Tratamento de Pragas",
+    "disease_treatment": "Tratamento de Doenças",
+    "ph_adjustment": "Ajuste de pH",
+    "flush": "Lavagem",
+    "foliar_spray": "Pulverização Foliar",
+    "clone_cut": "Corte de Clone",
+    "observation": "Observação",
+    "other": "Outro"
+  },
+  "form": {
+    "selectPlant": "Selecionar Planta",
+    "selectEnvironment": "Selecionar Ambiente",
+    "logType": "Tipo de Registro",
+    "date": "Data",
+    "waterAmount": "Quantidade de Água (ml)",
+    "phLevel": "Nível de pH",
+    "ecPpm": "EC (PPM)",
+    "runoffPh": "pH do Escoamento",
+    "runoffEc": "EC do Escoamento",
+    "nutrients": "Nutrientes",
+    "addNutrient": "+ Adicionar Nutriente",
+    "nutrientName": "Nome do Nutriente",
+    "nutrientBrand": "Marca",
+    "nutrientAmount": "Quantidade (ml)",
+    "npkRatio": "Proporção NPK",
+    "training": "Treinamento",
+    "trainingMethod": "Método de Treinamento",
+    "branchesAffected": "Galhos Afetados",
+    "leavesRemoved": "Folhas Removidas",
+    "fanLeaves": "Folhas de Ventilação",
+    "sugarLeaves": "Folhas de Açúcar",
+    "transplant": "Transplante",
+    "fromPotSize": "Do Tamanho do Vaso",
+    "toPotSize": "Para Tamanho do Vaso",
+    "rootBound": "Raízes Enroladas",
+    "pestType": "Tipo de Praga",
+    "diseaseType": "Tipo de Doença",
+    "treatmentProduct": "Produto de Tratamento",
+    "applicationMethod": "Método de Aplicação",
+    "createLog": "Criar Registro",
+    "creating": "Criando..."
+  },
+  "environment": {
+    "temperature": "Temperatura (°C)",
+    "humidity": "Umidade (%)",
+    "lightHours": "Horas de Luz",
+    "environmentLog": "Registro do Ambiente",
+    "bulkPlantUpdate": "Atualização em Lote de Plantas",
+    "selectPlantsToUpdate": "Selecionar plantas para atualizar",
+    "allPlants": "Todas as Plantas",
+    "applyToAllPlants": "Aplicar a todas as plantas no ambiente"
+  },
+  "success": {
+    "logCreated": "Registro criado com sucesso!"
+  },
+  "errors": {
+    "selectPlant": "Por favor, selecione uma planta",
+    "selectEnvironment": "Por favor, selecione um ambiente",
+    "failedToCreate": "Falha ao criar registro"
+  }
+}
+
