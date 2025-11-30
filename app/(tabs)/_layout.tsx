@@ -110,6 +110,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="genetics"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
         name="admin"
         options={{
           href: null,

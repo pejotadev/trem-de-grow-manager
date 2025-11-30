@@ -79,6 +79,7 @@ export type PlantSourceType = "seed" | "clone" | "cutting" | "tissue_culture";
 
 export interface GeneticInfo {
   sourceType: PlantSourceType;
+  seedGeneticId?: string;     // Reference to SeedGenetic library entry
   breeder?: string;           // Seed breeder name
   seedBank?: string;          // Where acquired
   parentPlantId?: string;     // For clones, reference to mother plant
@@ -98,6 +99,49 @@ export interface Chemotype {
   analysisDate?: number;
   labName?: string;
   reportUrl?: string;
+}
+
+// ==================== SEED GENETICS LIBRARY ====================
+
+// Genetic generation types (breeding terminology)
+export type GeneticGeneration = 'S1' | 'F1' | 'F2' | 'F3' | 'F4' | 'F5' | 'IBL' | 'BX1' | 'BX2' | 'BX3' | 'polyhybrid' | 'unknown';
+
+// Seed type classification
+export type SeedType = 'regular' | 'feminized' | 'autoflower' | 'fast_version' | 'cbd' | 'cbg';
+
+// Plant genetic dominance
+export type PlantDominance = 'indica' | 'sativa' | 'hybrid' | 'indica_dominant' | 'sativa_dominant' | 'balanced';
+
+// Flowering type
+export type FloweringType = 'photoperiod' | 'autoflower';
+
+// Seed Genetic Library Entry - reusable genetics catalog
+export interface SeedGenetic {
+  id: string;
+  userId: string;
+  name: string;                          // Strain name, e.g., "Northern Lights"
+  breeder?: string;                      // Breeder name, e.g., "Sensi Seeds"
+  seedBank?: string;                     // Where acquired, e.g., "Seedsman"
+  geneticGeneration?: GeneticGeneration; // S1, F1, F2, IBL, etc.
+  seedType?: SeedType;                   // Regular, feminized, auto, etc.
+  floweringType?: FloweringType;         // Photoperiod or autoflower
+  dominance?: PlantDominance;            // Indica, sativa, hybrid
+  lineage?: string;                      // Genetic parentage, e.g., "Thai x Afghan"
+  floweringTime?: string;                // e.g., "8-10 weeks"
+  expectedThcPercent?: number;           // Expected THC %
+  expectedCbdPercent?: number;           // Expected CBD %
+  terpenes?: string[];                   // Terpene profile, e.g., ["myrcene", "limonene", "caryophyllene"]
+  description?: string;                  // Detailed description
+  aromas?: string[];                     // Aroma profile, e.g., ["earthy", "pine", "citrus"]
+  effects?: string[];                    // Effect profile, e.g., ["relaxing", "euphoric"]
+  growDifficulty?: 'beginner' | 'intermediate' | 'advanced';
+  yieldIndoor?: string;                  // e.g., "400-500g/m²"
+  yieldOutdoor?: string;                 // e.g., "500-600g/plant"
+  heightIndoor?: string;                 // e.g., "80-120cm"
+  heightOutdoor?: string;                // e.g., "150-200cm"
+  notes?: string;
+  createdAt: number;
+  updatedAt?: number;
 }
 
 export interface Plant {

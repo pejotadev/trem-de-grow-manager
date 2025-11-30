@@ -49,7 +49,14 @@
     "selectAnalysisDate": "Selecionar data da análise",
     "createPlant": "Criar Planta",
     "selectEnvironment": "Selecionar Ambiente",
-    "sourceLabPlaceholder": "ex: Nome do laboratório TC, instalação de pesquisa"
+    "sourceLabPlaceholder": "ex: Nome do laboratório TC, instalação de pesquisa",
+    "selectFromLibrary": "Selecionar da Biblioteca de Genéticas",
+    "selectGenetic": "Toque para selecionar uma genética...",
+    "noBreeder": "Criador não especificado",
+    "autoFilledFromGenetic": "Campos preenchidos automaticamente da genética selecionada",
+    "createGeneticFirst": "Adicione genéticas à sua biblioteca primeiro",
+    "selectGeneticTitle": "Selecionar Genética",
+    "selectGeneticSubtitle": "Escolha das suas genéticas de sementes salvas"
   },
   "detail": {
     "geneticInfo": "Informações Genéticas",

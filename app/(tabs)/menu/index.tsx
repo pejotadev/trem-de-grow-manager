@@ -22,6 +22,12 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
   {
+    id: 'genetics',
+    icon: 'leaf',
+    color: '#8BC34A',
+    route: '/(tabs)/genetics',
+  },
+  {
     id: 'inventory',
     icon: 'cube',
     color: '#388E3C',

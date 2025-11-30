@@ -49,7 +49,14 @@
     "selectAnalysisDate": "Select analysis date",
     "createPlant": "Create Plant",
     "selectEnvironment": "Select Environment",
-    "sourceLabPlaceholder": "e.g., TC lab name, research facility"
+    "sourceLabPlaceholder": "e.g., TC lab name, research facility",
+    "selectFromLibrary": "Select from Genetics Library",
+    "selectGenetic": "Tap to select a genetic...",
+    "noBreeder": "No breeder specified",
+    "autoFilledFromGenetic": "Fields auto-filled from selected genetic",
+    "createGeneticFirst": "Add genetics to your library first",
+    "selectGeneticTitle": "Select Genetic",
+    "selectGeneticSubtitle": "Choose from your saved seed genetics"
   },
   "detail": {
     "geneticInfo": "Genetic Info",

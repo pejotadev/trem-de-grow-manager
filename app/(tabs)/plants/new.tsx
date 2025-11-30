@@ -15,8 +15,8 @@ import {
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
-import { createPlant, createStage, getUserEnvironments, getUserPlants, generateControlNumber } from '../../../firebase/firestore';
-import { StageName, Environment, Plant, PlantSourceType, GeneticInfo, Chemotype } from '../../../types';
+import { createPlant, createStage, getUserEnvironments, getUserPlants, generateControlNumber, getUserSeedGenetics } from '../../../firebase/firestore';
+import { StageName, Environment, Plant, PlantSourceType, GeneticInfo, Chemotype, SeedGenetic, SeedType } from '../../../types';
 import { Input } from '../../../components/Input';
 import { DatePicker } from '../../../components/DatePicker';
 import { Button } from '../../../components/Button';
@@ -44,8 +44,17 @@ const ENVIRONMENT_COLORS: Record<string, string> = {
   greenhouse: '#4CAF50',
 };
 
+const SEED_TYPE_COLORS: Record<SeedType, string> = {
+  regular: '#9E9E9E',
+  feminized: '#E91E63',
+  autoflower: '#FF9800',
+  fast_version: '#03A9F4',
+  cbd: '#4CAF50',
+  cbg: '#8BC34A',
+};
+
 export default function NewPlantScreen() {
-  const { t } = useTranslation(['plants', 'common']);
+  const { t } = useTranslation(['plants', 'common', 'genetics']);
   // Basic plant info
   const [name, setName] = useState('');
   const [strain, setStrain] = useState('');
@@ -53,6 +62,11 @@ export default function NewPlantScreen() {
   const [environments, setEnvironments] = useState<Environment[]>([]);
   const [selectedEnvironment, setSelectedEnvironment] = useState<Environment | null>(null);
   const [envModalVisible, setEnvModalVisible] = useState(false);
+  
+  // Genetics Library Integration
+  const [seedGenetics, setSeedGenetics] = useState<SeedGenetic[]>([]);
+  const [selectedGenetic, setSelectedGenetic] = useState<SeedGenetic | null>(null);
+  const [geneticsModalVisible, setGeneticsModalVisible] = useState(false);
   
   // Genetic origin fields
   const [sourceType, setSourceType] = useState<PlantSourceType>('seed');
@@ -85,6 +99,7 @@ export default function NewPlantScreen() {
   useEffect(() => {
     loadEnvironments();
     loadPlants();
+    loadSeedGenetics();
   }, [userData]);
 
   // Auto-fill genetic lineage when parent plant is selected
@@ -94,6 +109,22 @@ export default function NewPlantScreen() {
       setGeneticLineage(parentLineage);
     }
   }, [selectedParentPlant]);
+
+  // Auto-fill fields when a genetic is selected from library
+  useEffect(() => {
+    if (selectedGenetic) {
+      setStrain(selectedGenetic.name);
+      setBreeder(selectedGenetic.breeder || '');
+      setSeedBank(selectedGenetic.seedBank || '');
+      setGeneticLineage(selectedGenetic.lineage || '');
+      // Pre-fill chemotype if available
+      if (selectedGenetic.expectedThcPercent || selectedGenetic.expectedCbdPercent) {
+        setShowChemotype(true);
+        setThcPercent(selectedGenetic.expectedThcPercent?.toString() || '');
+        setCbdPercent(selectedGenetic.expectedCbdPercent?.toString() || '');
+      }
+    }
+  }, [selectedGenetic]);
 
   const loadEnvironments = async () => {
     if (!userData) return;
@@ -121,6 +152,26 @@ export default function NewPlantScreen() {
     } catch (error) {
       console.error('[NewPlant] Error loading plants:', error);
     }
+  };
+
+  const loadSeedGenetics = async () => {
+    if (!userData) return;
+    
+    try {
+      const genetics = await getUserSeedGenetics(userData.uid);
+      setSeedGenetics(genetics);
+    } catch (error) {
+      console.error('[NewPlant] Error loading seed genetics:', error);
+    }
+  };
+
+  // Clear selected genetic and reset auto-filled fields
+  const clearSelectedGenetic = () => {
+    setSelectedGenetic(null);
+    setStrain('');
+    setBreeder('');
+    setSeedBank('');
+    setGeneticLineage('');
   };
 
   // Filter plants that can be used as parents (preferably mother plants)
@@ -167,6 +218,7 @@ export default function NewPlantScreen() {
       };
 
       if (sourceType === 'seed') {
+        if (selectedGenetic) genetics.seedGeneticId = selectedGenetic.id;
         if (breeder) genetics.breeder = breeder;
         if (seedBank) genetics.seedBank = seedBank;
       } else if (sourceType === 'clone' || sourceType === 'cutting') {
@@ -320,6 +372,69 @@ export default function NewPlantScreen() {
               onChangeText={setName}
               placeholder={t('plants:form.plantNamePlaceholder')}
             />
+
+            {/* Genetics Library Selector */}
+            {sourceType === 'seed' && seedGenetics.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Ionicons name="library-outline" size={18} color="#8BC34A" />
+                  <Text style={styles.label}>{t('plants:form.selectFromLibrary')}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.geneticSelector}
+                  onPress={() => setGeneticsModalVisible(true)}
+                >
+                  {selectedGenetic ? (
+                    <View style={styles.selectedGenetic}>
+                      <View style={[
+                        styles.geneticIconSmall,
+                        { backgroundColor: selectedGenetic.seedType ? SEED_TYPE_COLORS[selectedGenetic.seedType] + '20' : '#8BC34A20' },
+                      ]}>
+                        <Ionicons
+                          name="leaf"
+                          size={20}
+                          color={selectedGenetic.seedType ? SEED_TYPE_COLORS[selectedGenetic.seedType] : '#8BC34A'}
+                        />
+                      </View>
+                      <View style={styles.geneticSelectorText}>
+                        <Text style={styles.geneticSelectorName}>{selectedGenetic.name}</Text>
+                        <Text style={styles.geneticSelectorBreeder}>
+                          {selectedGenetic.breeder || t('plants:form.noBreeder')}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.clearGeneticButton}
+                        onPress={clearSelectedGenetic}
+                      >
+                        <Ionicons name="close-circle" size={24} color="#999" />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={styles.geneticPlaceholder}>
+                      <Ionicons name="add-circle-outline" size={24} color="#8BC34A" />
+                      <Text style={styles.geneticPlaceholderText}>{t('plants:form.selectGenetic')}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+                {selectedGenetic && (
+                  <View style={styles.geneticAutoFillNote}>
+                    <Ionicons name="information-circle-outline" size={14} color="#8BC34A" />
+                    <Text style={styles.geneticAutoFillText}>{t('plants:form.autoFilledFromGenetic')}</Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Link to create genetics if none exist */}
+            {sourceType === 'seed' && seedGenetics.length === 0 && (
+              <TouchableOpacity
+                style={styles.createGeneticsLink}
+                onPress={() => router.push('/(tabs)/genetics/new')}
+              >
+                <Ionicons name="add-circle-outline" size={20} color="#8BC34A" />
+                <Text style={styles.createGeneticsText}>{t('plants:form.createGeneticFirst')}</Text>
+              </TouchableOpacity>
+            )}
 
             <Input
               label={`${t('plants:form.strainLabel')} *`}
@@ -646,6 +761,70 @@ export default function NewPlantScreen() {
             <Button
               title={t('common:cancel')}
               onPress={() => setEnvModalVisible(false)}
+              variant="secondary"
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Genetics Library Selection Modal */}
+      <Modal
+        visible={geneticsModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setGeneticsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{t('plants:form.selectGeneticTitle')}</Text>
+            <Text style={styles.modalSubtitleText}>{t('plants:form.selectGeneticSubtitle')}</Text>
+            <ScrollView style={styles.geneticsModalScroll}>
+              {seedGenetics.map((genetic) => (
+                <TouchableOpacity
+                  key={genetic.id}
+                  style={styles.geneticOption}
+                  onPress={() => {
+                    setSelectedGenetic(genetic);
+                    setGeneticsModalVisible(false);
+                  }}
+                >
+                  <View style={[
+                    styles.geneticOptionIcon,
+                    { backgroundColor: genetic.seedType ? SEED_TYPE_COLORS[genetic.seedType] + '20' : '#8BC34A20' },
+                  ]}>
+                    <Ionicons
+                      name="leaf"
+                      size={20}
+                      color={genetic.seedType ? SEED_TYPE_COLORS[genetic.seedType] : '#8BC34A'}
+                    />
+                  </View>
+                  <View style={styles.geneticOptionInfo}>
+                    <Text style={styles.geneticOptionName}>{genetic.name}</Text>
+                    {genetic.breeder && (
+                      <Text style={styles.geneticOptionBreeder}>{genetic.breeder}</Text>
+                    )}
+                    <View style={styles.geneticOptionTags}>
+                      {genetic.seedType && (
+                        <View style={[styles.geneticTag, { backgroundColor: SEED_TYPE_COLORS[genetic.seedType] }]}>
+                          <Text style={styles.geneticTagText}>{t(`genetics:seedTypes.${genetic.seedType}`)}</Text>
+                        </View>
+                      )}
+                      {genetic.dominance && (
+                        <View style={[styles.geneticTag, { backgroundColor: '#9E9E9E' }]}>
+                          <Text style={styles.geneticTagText}>{t(`genetics:dominance.${genetic.dominance}`)}</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                  {selectedGenetic?.id === genetic.id && (
+                    <Ionicons name="checkmark" size={24} color="#8BC34A" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <Button
+              title={t('common:cancel')}
+              onPress={() => setGeneticsModalVisible(false)}
               variant="secondary"
             />
           </View>
@@ -1155,5 +1334,130 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     marginTop: 2,
+  },
+  // Genetics Library Selector
+  geneticSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#8BC34A',
+    borderStyle: 'dashed',
+  },
+  selectedGenetic: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  geneticIconSmall: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  geneticSelectorText: {
+    flex: 1,
+  },
+  geneticSelectorName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  geneticSelectorBreeder: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  clearGeneticButton: {
+    padding: 4,
+  },
+  geneticPlaceholder: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  geneticPlaceholderText: {
+    fontSize: 14,
+    color: '#8BC34A',
+    fontWeight: '500',
+  },
+  geneticAutoFillNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 4,
+  },
+  geneticAutoFillText: {
+    fontSize: 12,
+    color: '#8BC34A',
+    fontStyle: 'italic',
+  },
+  createGeneticsLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    backgroundColor: '#f1f8e9',
+    borderRadius: 10,
+    marginBottom: 16,
+  },
+  createGeneticsText: {
+    fontSize: 14,
+    color: '#8BC34A',
+    fontWeight: '500',
+  },
+  // Genetics Modal
+  geneticsModalScroll: {
+    maxHeight: 400,
+  },
+  geneticOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  geneticOptionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  geneticOptionInfo: {
+    flex: 1,
+  },
+  geneticOptionName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  geneticOptionBreeder: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+  },
+  geneticOptionTags: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 6,
+  },
+  geneticTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  geneticTagText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#fff',
   },
 });

@@ -1,0 +1,125 @@
+{
+  "title": "Biblioteca de Genéticas",
+  "addGenetic": "+ Adicionar Genética",
+  "noGenetics": "Nenhuma genética salva ainda",
+  "noResults": "Nenhuma genética corresponde à sua busca",
+  "createFirst": "Adicione sua primeira genética de semente para começar!",
+  "tryAdjusting": "Tente ajustar sua busca ou filtros",
+  "searchPlaceholder": "Buscar por nome, criador ou linhagem...",
+  "filters": {
+    "all": "Todas",
+    "feminized": "Fem",
+    "autoflower": "Auto",
+    "regular": "Reg"
+  },
+  "form": {
+    "basicInfo": "Informações Básicas",
+    "nameLabel": "Nome da Cepa",
+    "namePlaceholder": "ex: Northern Lights",
+    "breederLabel": "Criador",
+    "breederPlaceholder": "ex: Sensi Seeds, Barney's Farm",
+    "seedBankLabel": "Banco de Sementes / Origem",
+    "seedBankPlaceholder": "ex: Seedsman, dispensário local",
+    "lineageLabel": "Linhagem / Parentesco",
+    "lineagePlaceholder": "ex: Thai x Afghan",
+    "geneticClassification": "Classificação Genética",
+    "geneticGenerationLabel": "Geração Genética",
+    "seedTypeLabel": "Tipo de Semente",
+    "floweringTypeLabel": "Tipo de Floração",
+    "dominanceLabel": "Dominância",
+    "characteristics": "Características",
+    "floweringTimeLabel": "Tempo de Floração",
+    "floweringTimePlaceholder": "ex: 8-10 semanas",
+    "expectedThcLabel": "THC Esperado %",
+    "expectedCbdLabel": "CBD Esperado %",
+    "terpenesLabel": "Perfil de Terpenos",
+    "terpenesHint": "Selecione os terpenos dominantes",
+    "growDifficultyLabel": "Dificuldade de Cultivo",
+    "yieldInfo": "Rendimento e Altura",
+    "yieldIndoorLabel": "Rendimento Indoor",
+    "yieldOutdoorLabel": "Rendimento Outdoor",
+    "yieldPlaceholder": "ex: 400-500g/m²",
+    "heightIndoorLabel": "Altura Indoor",
+    "heightOutdoorLabel": "Altura Outdoor",
+    "heightPlaceholder": "ex: 80-120cm",
+    "descriptionSection": "Descrição e Notas",
+    "descriptionLabel": "Descrição",
+    "descriptionPlaceholder": "Descrição detalhada da cepa...",
+    "notesLabel": "Notas Pessoais",
+    "notesPlaceholder": "Suas notas sobre esta genética...",
+    "createGenetic": "Salvar Genética",
+    "createSuccess": "Genética salva com sucesso!"
+  },
+  "detail": {
+    "title": "Detalhes da Genética",
+    "notFound": "Genética não encontrada",
+    "updateSuccess": "Genética atualizada com sucesso!",
+    "deleteTitle": "Excluir Genética",
+    "deleteMessage": "Tem certeza que deseja excluir esta genética? Esta ação não pode ser desfeita. Plantas criadas com esta genética não serão afetadas.",
+    "deleteSuccess": "Genética excluída com sucesso"
+  },
+  "generations": {
+    "S1": "S1",
+    "F1": "F1",
+    "F2": "F2",
+    "F3": "F3",
+    "F4": "F4",
+    "F5": "F5",
+    "IBL": "IBL",
+    "BX1": "BX1",
+    "BX2": "BX2",
+    "BX3": "BX3",
+    "polyhybrid": "Polihibrido",
+    "unknown": "Desconhecido"
+  },
+  "seedTypes": {
+    "regular": "Regular",
+    "feminized": "Feminizada",
+    "autoflower": "Automática",
+    "fast_version": "Fast Version",
+    "cbd": "CBD",
+    "cbg": "CBG"
+  },
+  "floweringTypes": {
+    "photoperiod": "Fotoperíodo",
+    "autoflower": "Automática"
+  },
+  "dominance": {
+    "indica": "Indica",
+    "sativa": "Sativa",
+    "hybrid": "Híbrida",
+    "indica_dominant": "Indica Dominante",
+    "sativa_dominant": "Sativa Dominante",
+    "balanced": "Balanceada"
+  },
+  "difficulty": {
+    "beginner": "Iniciante",
+    "intermediate": "Intermediário",
+    "advanced": "Avançado"
+  },
+  "terpenes": {
+    "myrcene": "Mirceno",
+    "limonene": "Limoneno",
+    "caryophyllene": "Cariofileno",
+    "pinene": "Pineno",
+    "linalool": "Linalol",
+    "humulene": "Humuleno",
+    "terpinolene": "Terpinoleno",
+    "ocimene": "Ocimeno",
+    "bisabolol": "Bisabolol",
+    "valencene": "Valenceno",
+    "geraniol": "Geraniol",
+    "camphene": "Canfeno",
+    "borneol": "Borneol",
+    "eucalyptol": "Eucaliptol",
+    "nerolidol": "Nerolidol"
+  },
+  "errors": {
+    "nameRequired": "Nome da cepa é obrigatório",
+    "failedToCreate": "Falha ao salvar genética",
+    "failedToLoad": "Falha ao carregar genética",
+    "failedToUpdate": "Falha ao atualizar genética",
+    "failedToDelete": "Falha ao excluir genética"
+  }
+}
+

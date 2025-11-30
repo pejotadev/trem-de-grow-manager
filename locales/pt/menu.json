@@ -7,6 +7,10 @@
     "version": "Versão {{version}}"
   },
   "items": {
+    "genetics": {
+      "title": "Biblioteca de Genéticas",
+      "subtitle": "Gerencie cepas e genéticas de sementes"
+    },
     "inventory": {
       "title": "Inventário",
       "subtitle": "Acompanhe colheitas e estoque disponível"

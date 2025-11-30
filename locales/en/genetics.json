@@ -1,0 +1,125 @@
+{
+  "title": "Genetics Library",
+  "addGenetic": "+ Add Genetic",
+  "noGenetics": "No genetics saved yet",
+  "noResults": "No genetics match your search",
+  "createFirst": "Add your first seed genetic to get started!",
+  "tryAdjusting": "Try adjusting your search or filters",
+  "searchPlaceholder": "Search by name, breeder, or lineage...",
+  "filters": {
+    "all": "All",
+    "feminized": "Fem",
+    "autoflower": "Auto",
+    "regular": "Reg"
+  },
+  "form": {
+    "basicInfo": "Basic Information",
+    "nameLabel": "Strain Name",
+    "namePlaceholder": "e.g., Northern Lights",
+    "breederLabel": "Breeder",
+    "breederPlaceholder": "e.g., Sensi Seeds, Barney's Farm",
+    "seedBankLabel": "Seed Bank / Source",
+    "seedBankPlaceholder": "e.g., Seedsman, local dispensary",
+    "lineageLabel": "Lineage / Parentage",
+    "lineagePlaceholder": "e.g., Thai x Afghan",
+    "geneticClassification": "Genetic Classification",
+    "geneticGenerationLabel": "Genetic Generation",
+    "seedTypeLabel": "Seed Type",
+    "floweringTypeLabel": "Flowering Type",
+    "dominanceLabel": "Dominance",
+    "characteristics": "Characteristics",
+    "floweringTimeLabel": "Flowering Time",
+    "floweringTimePlaceholder": "e.g., 8-10 weeks",
+    "expectedThcLabel": "Expected THC %",
+    "expectedCbdLabel": "Expected CBD %",
+    "terpenesLabel": "Terpene Profile",
+    "terpenesHint": "Select dominant terpenes",
+    "growDifficultyLabel": "Grow Difficulty",
+    "yieldInfo": "Yield & Height",
+    "yieldIndoorLabel": "Yield Indoor",
+    "yieldOutdoorLabel": "Yield Outdoor",
+    "yieldPlaceholder": "e.g., 400-500g/m²",
+    "heightIndoorLabel": "Height Indoor",
+    "heightOutdoorLabel": "Height Outdoor",
+    "heightPlaceholder": "e.g., 80-120cm",
+    "descriptionSection": "Description & Notes",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Detailed description of the strain...",
+    "notesLabel": "Personal Notes",
+    "notesPlaceholder": "Your notes about this genetic...",
+    "createGenetic": "Save Genetic",
+    "createSuccess": "Genetic saved successfully!"
+  },
+  "detail": {
+    "title": "Genetic Details",
+    "notFound": "Genetic not found",
+    "updateSuccess": "Genetic updated successfully!",
+    "deleteTitle": "Delete Genetic",
+    "deleteMessage": "Are you sure you want to delete this genetic? This action cannot be undone. Plants created with this genetic will not be affected.",
+    "deleteSuccess": "Genetic deleted successfully"
+  },
+  "generations": {
+    "S1": "S1",
+    "F1": "F1",
+    "F2": "F2",
+    "F3": "F3",
+    "F4": "F4",
+    "F5": "F5",
+    "IBL": "IBL",
+    "BX1": "BX1",
+    "BX2": "BX2",
+    "BX3": "BX3",
+    "polyhybrid": "Polyhybrid",
+    "unknown": "Unknown"
+  },
+  "seedTypes": {
+    "regular": "Regular",
+    "feminized": "Feminized",
+    "autoflower": "Autoflower",
+    "fast_version": "Fast Version",
+    "cbd": "CBD",
+    "cbg": "CBG"
+  },
+  "floweringTypes": {
+    "photoperiod": "Photoperiod",
+    "autoflower": "Autoflower"
+  },
+  "dominance": {
+    "indica": "Indica",
+    "sativa": "Sativa",
+    "hybrid": "Hybrid",
+    "indica_dominant": "Indica Dominant",
+    "sativa_dominant": "Sativa Dominant",
+    "balanced": "Balanced"
+  },
+  "difficulty": {
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced"
+  },
+  "terpenes": {
+    "myrcene": "Myrcene",
+    "limonene": "Limonene",
+    "caryophyllene": "Caryophyllene",
+    "pinene": "Pinene",
+    "linalool": "Linalool",
+    "humulene": "Humulene",
+    "terpinolene": "Terpinolene",
+    "ocimene": "Ocimene",
+    "bisabolol": "Bisabolol",
+    "valencene": "Valencene",
+    "geraniol": "Geraniol",
+    "camphene": "Camphene",
+    "borneol": "Borneol",
+    "eucalyptol": "Eucalyptol",
+    "nerolidol": "Nerolidol"
+  },
+  "errors": {
+    "nameRequired": "Strain name is required",
+    "failedToCreate": "Failed to save genetic",
+    "failedToLoad": "Failed to load genetic",
+    "failedToUpdate": "Failed to update genetic",
+    "failedToDelete": "Failed to delete genetic"
+  }
+}
+

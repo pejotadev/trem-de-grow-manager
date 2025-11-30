@@ -7,6 +7,10 @@
     "version": "Version {{version}}"
   },
   "items": {
+    "genetics": {
+      "title": "Genetics Library",
+      "subtitle": "Manage seed strains and genetics"
+    },
     "inventory": {
       "title": "Inventory",
       "subtitle": "Track harvests and available stock"

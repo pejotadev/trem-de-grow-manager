@@ -1,7 +1,7 @@
 // Using Firebase Compat SDK for React Native compatibility
 import { db } from './firebaseConfig';
 import firebase from 'firebase/compat/app';
-import { Plant, Stage, WaterRecord, EnvironmentRecord, Environment, StageName, User, FriendRequest, Friendship, FriendRequestStatus, GeneticInfo, Harvest, Patient, Distribution, Extract, Order, OrderStatus, PlantLog, BulkPlantLog, PlantLogType } from '../types';
+import { Plant, Stage, WaterRecord, EnvironmentRecord, Environment, StageName, User, FriendRequest, Friendship, FriendRequestStatus, GeneticInfo, Harvest, Patient, Distribution, Extract, Order, OrderStatus, PlantLog, BulkPlantLog, PlantLogType, SeedGenetic } from '../types';
 
 // ==================== UTILITIES ====================
 
@@ -1869,4 +1869,155 @@ export const getAllLogsForPlant = async (
   }
   
   return combined;
+};
+
+// ==================== SEED GENETICS LIBRARY ====================
+
+/**
+ * Creates a new seed genetic entry in the user's genetics library
+ */
+export const createSeedGenetic = async (geneticData: Omit<SeedGenetic, 'id'>): Promise<string> => {
+  if (!geneticData.userId) {
+    throw new Error('userId is required to create a seed genetic');
+  }
+  
+  if (!geneticData.name) {
+    throw new Error('name is required to create a seed genetic');
+  }
+  
+  const now = Date.now();
+  const dataWithTimestamps = {
+    ...geneticData,
+    createdAt: now,
+    updatedAt: now,
+  };
+  
+  const docRef = await db.collection('seedGenetics').add(dataWithTimestamps);
+  
+  console.log('[Firestore] Created seed genetic with ID:', docRef.id);
+  return docRef.id;
+};
+
+/**
+ * Gets a specific seed genetic by ID
+ */
+export const getSeedGenetic = async (geneticId: string): Promise<SeedGenetic | null> => {
+  console.log('[Firestore] Getting seed genetic with ID:', geneticId);
+  const docSnap = await db.collection('seedGenetics').doc(geneticId).get();
+  
+  if (docSnap.exists) {
+    const genetic = { id: docSnap.id, ...docSnap.data() } as SeedGenetic;
+    console.log('[Firestore] Seed genetic found:', genetic.name);
+    return genetic;
+  }
+  console.log('[Firestore] Seed genetic not found');
+  return null;
+};
+
+/**
+ * Gets all seed genetics for a user, sorted by name
+ */
+export const getUserSeedGenetics = async (userId: string): Promise<SeedGenetic[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getUserSeedGenetics called with undefined/null userId');
+    return [];
+  }
+  
+  const querySnapshot = await db
+    .collection('seedGenetics')
+    .where('userId', '==', userId)
+    .orderBy('name', 'asc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as SeedGenetic));
+};
+
+/**
+ * Searches seed genetics by name or breeder
+ */
+export const searchSeedGenetics = async (userId: string, query: string): Promise<SeedGenetic[]> => {
+  // Firestore doesn't support full-text search, so we fetch all user's genetics
+  // and filter in memory
+  const allGenetics = await getUserSeedGenetics(userId);
+  
+  const lowerQuery = query.toLowerCase();
+  return allGenetics.filter(genetic => 
+    genetic.name.toLowerCase().includes(lowerQuery) ||
+    (genetic.breeder && genetic.breeder.toLowerCase().includes(lowerQuery)) ||
+    (genetic.seedBank && genetic.seedBank.toLowerCase().includes(lowerQuery)) ||
+    (genetic.lineage && genetic.lineage.toLowerCase().includes(lowerQuery))
+  );
+};
+
+/**
+ * Updates a seed genetic entry
+ */
+export const updateSeedGenetic = async (geneticId: string, data: Partial<SeedGenetic>): Promise<void> => {
+  await db.collection('seedGenetics').doc(geneticId).update({
+    ...data,
+    updatedAt: Date.now(),
+  });
+  console.log('[Firestore] Updated seed genetic:', geneticId);
+};
+
+/**
+ * Deletes a seed genetic entry
+ * Note: This does not affect plants that were created using this genetic
+ */
+export const deleteSeedGenetic = async (geneticId: string): Promise<void> => {
+  await db.collection('seedGenetics').doc(geneticId).delete();
+  console.log('[Firestore] Deleted seed genetic:', geneticId);
+};
+
+/**
+ * Gets seed genetics filtered by type (e.g., feminized, autoflower)
+ */
+export const getSeedGeneticsByType = async (
+  userId: string,
+  seedType: SeedGenetic['seedType']
+): Promise<SeedGenetic[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getSeedGeneticsByType called with undefined/null userId');
+    return [];
+  }
+  
+  const querySnapshot = await db
+    .collection('seedGenetics')
+    .where('userId', '==', userId)
+    .where('seedType', '==', seedType)
+    .orderBy('name', 'asc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as SeedGenetic));
+};
+
+/**
+ * Gets seed genetics filtered by breeder
+ */
+export const getSeedGeneticsByBreeder = async (
+  userId: string,
+  breeder: string
+): Promise<SeedGenetic[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getSeedGeneticsByBreeder called with undefined/null userId');
+    return [];
+  }
+  
+  const querySnapshot = await db
+    .collection('seedGenetics')
+    .where('userId', '==', userId)
+    .where('breeder', '==', breeder)
+    .orderBy('name', 'asc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as SeedGenetic));
 };
