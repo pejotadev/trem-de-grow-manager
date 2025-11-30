@@ -36,6 +36,7 @@ import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
 import { DatePicker } from '../../../components/DatePicker';
 import { Loading } from '../../../components/Loading';
+import { AuditHistoryModal } from '../../../components/AuditHistoryModal';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -127,6 +128,9 @@ export default function PlantDetailScreen() {
   const [curingWasteNotes, setCuringWasteNotes] = useState('');
   const [selectedHarvestForCuring, setSelectedHarvestForCuring] = useState<Harvest | null>(null);
   const [updatingCuring, setUpdatingCuring] = useState(false);
+  
+  // Audit history modal state
+  const [auditHistoryVisible, setAuditHistoryVisible] = useState(false);
   
   const { userData } = useAuth();
   const router = useRouter();
@@ -229,22 +233,22 @@ export default function PlantDetailScreen() {
 
   const handleDelete = () => {
     Alert.alert(
-      'Delete Plant',
-      'Are you sure you want to delete this plant? This action cannot be undone.',
+      'Archive Plant',
+      'Are you sure you want to archive this plant? The plant will be hidden from your list but can still be accessed from related harvest records.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Archive',
           style: 'destructive',
           onPress: async () => {
             if (!id || typeof id !== 'string') return;
             try {
               await deletePlant(id);
-              Alert.alert('Success', 'Plant deleted', [
+              Alert.alert('Success', 'Plant archived successfully', [
                 { text: 'OK', onPress: () => router.back() },
               ]);
             } catch (error) {
-              Alert.alert('Error', 'Failed to delete plant');
+              Alert.alert('Error', 'Failed to archive plant');
             }
           },
         },
@@ -686,20 +690,40 @@ export default function PlantDetailScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
+        {/* Archived Notice (for soft-deleted plants) */}
+        {plant.deletedAt && (
+          <View style={styles.archivedNotice}>
+            <Ionicons name="archive-outline" size={20} color="#fff" />
+            <View style={styles.archivedNoticeContent}>
+              <Text style={styles.archivedNoticeTitle}>Archived Plant</Text>
+              <Text style={styles.archivedNoticeText}>
+                This plant was archived on {format(new Date(plant.deletedAt), 'MMM dd, yyyy')}. 
+                You can view it from related harvest records.
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Plant Info */}
         <Card>
           <View style={styles.plantHeader}>
             <View style={styles.plantHeaderContent}>
               <View style={styles.nameRow}>
-                <Text style={styles.plantName}>{plant.name}</Text>
+                <Text style={[styles.plantName, plant.deletedAt && styles.plantNameArchived]}>{plant.name}</Text>
                 <View style={styles.controlBadge}>
                   <Text style={styles.controlText}>#{plant.controlNumber}</Text>
                 </View>
               </View>
               <Text style={styles.plantStrain}>{plant.strain}</Text>
               <View style={styles.badgeRow}>
+                {plant.deletedAt && (
+                  <View style={styles.archivedBadge}>
+                    <Ionicons name="archive-outline" size={12} color="#fff" />
+                    <Text style={styles.archivedBadgeText}>Archived</Text>
+                  </View>
+                )}
                 {plant.currentStage && (
-                  <View style={styles.badge}>
+                  <View style={[styles.badge, plant.deletedAt && styles.badgeArchived]}>
                     <Text style={styles.badgeText}>{plant.currentStage}</Text>
                   </View>
                 )}
@@ -714,9 +738,11 @@ export default function PlantDetailScreen() {
                 Started: {format(new Date(plant.startDate), 'MMM dd, yyyy')}
               </Text>
             </View>
-            <TouchableOpacity onPress={handleEditPress} style={styles.editButton}>
-              <Ionicons name="pencil" size={24} color="#4CAF50" />
-            </TouchableOpacity>
+            {!plant.deletedAt && (
+              <TouchableOpacity onPress={handleEditPress} style={styles.editButton}>
+                <Ionicons name="pencil" size={24} color="#4CAF50" />
+              </TouchableOpacity>
+            )}
           </View>
         </Card>
 
@@ -1071,17 +1097,40 @@ export default function PlantDetailScreen() {
           )}
         </Card>
 
-        {/* Harvest Button - show if in harvestable stage */}
-        {canHarvest && (
-          <Button
-            title="🌿 Harvest This Plant"
-            onPress={navigateToHarvest}
-            variant="primary"
-          />
-        )}
+        {/* Action Buttons - Hide for archived plants */}
+        {!plant.deletedAt && (
+          <>
+            {/* Harvest Button - show if in harvestable stage */}
+            {canHarvest && (
+              <Button
+                title="🌿 Harvest This Plant"
+                onPress={navigateToHarvest}
+                variant="primary"
+              />
+            )}
 
-        <Button title="Clone Plant" onPress={handleClonePress} variant="secondary" />
-        <Button title="Delete Plant" onPress={handleDelete} variant="danger" />
+            <Button title="Clone Plant" onPress={handleClonePress} variant="secondary" />
+          </>
+        )}
+        
+        {/* View History Button */}
+        <TouchableOpacity
+          style={styles.historyButton}
+          onPress={() => setAuditHistoryVisible(true)}
+        >
+          <Ionicons name="time-outline" size={20} color="#607D8B" />
+          <Text style={styles.historyButtonText}>View Change History</Text>
+        </TouchableOpacity>
+        
+        {/* Delete button - only show for active plants */}
+        {!plant.deletedAt && (
+          <Button title="Archive Plant" onPress={handleDelete} variant="danger" />
+        )}
+        
+        {/* Go Back button for archived plants */}
+        {plant.deletedAt && (
+          <Button title="Go Back" onPress={() => router.back()} variant="secondary" />
+        )}
       </ScrollView>
 
       {/* Edit Plant Modal */}
@@ -1505,6 +1554,15 @@ export default function PlantDetailScreen() {
         </View>
       </Modal>
 
+      {/* Audit History Modal */}
+      <AuditHistoryModal
+        visible={auditHistoryVisible}
+        onClose={() => setAuditHistoryVisible(false)}
+        entityType="plant"
+        entityId={id as string}
+        entityDisplayName={plant?.name}
+      />
+
       {/* Curing Transition Modal - Collect Dry Weight */}
       <Modal
         visible={curingModalVisible}
@@ -1632,6 +1690,51 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#999',
     marginBottom: 16,
+  },
+  // Archived Plant Notice
+  archivedNotice: {
+    flexDirection: 'row',
+    backgroundColor: '#9E9E9E',
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 12,
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  archivedNoticeContent: {
+    flex: 1,
+  },
+  archivedNoticeTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  archivedNoticeText: {
+    fontSize: 13,
+    color: '#fff',
+    opacity: 0.9,
+    lineHeight: 18,
+  },
+  archivedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#9E9E9E',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  archivedBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  plantNameArchived: {
+    color: '#999',
+  },
+  badgeArchived: {
+    backgroundColor: '#BDBDBD',
   },
   plantHeader: {
     flexDirection: 'row',
@@ -2422,5 +2525,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1565C0',
     fontWeight: 'bold',
+  },
+  // History Button
+  historyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#fff',
+    padding: 14,
+    borderRadius: 10,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  historyButtonText: {
+    fontSize: 15,
+    color: '#607D8B',
+    fontWeight: '500',
   },
 });

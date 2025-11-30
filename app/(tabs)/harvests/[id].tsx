@@ -27,6 +27,7 @@ import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
 import { Loading } from '../../../components/Loading';
+import { AuditHistoryModal } from '../../../components/AuditHistoryModal';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -65,6 +66,9 @@ export default function HarvestDetailScreen() {
 
   // Update status modal
   const [statusModalVisible, setStatusModalVisible] = useState(false);
+  
+  // Audit history modal
+  const [auditHistoryVisible, setAuditHistoryVisible] = useState(false);
 
   const { userData } = useAuth();
   const router = useRouter();
@@ -280,12 +284,20 @@ export default function HarvestDetailScreen() {
           <TouchableOpacity onPress={() => router.push(`/(tabs)/plants/${plant.id}`)}>
             <Card>
               <View style={styles.plantRow}>
-                <View style={styles.plantIcon}>
-                  <Ionicons name="leaf" size={24} color="#4CAF50" />
+                <View style={[styles.plantIcon, plant.deletedAt && styles.plantIconDeleted]}>
+                  <Ionicons name="leaf" size={24} color={plant.deletedAt ? '#999' : '#4CAF50'} />
                 </View>
                 <View style={styles.plantInfo}>
-                  <Text style={styles.plantLabel}>Source Plant</Text>
-                  <Text style={styles.plantName}>{plant.name}</Text>
+                  <View style={styles.plantLabelRow}>
+                    <Text style={styles.plantLabel}>Source Plant</Text>
+                    {plant.deletedAt && (
+                      <View style={styles.deletedBadge}>
+                        <Ionicons name="archive-outline" size={12} color="#fff" />
+                        <Text style={styles.deletedBadgeText}>Archived</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={[styles.plantName, plant.deletedAt && styles.plantNameDeleted]}>{plant.name}</Text>
                   <Text style={styles.plantStrain}>{plant.strain}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#999" />
@@ -511,9 +523,27 @@ export default function HarvestDetailScreen() {
           </Card>
         )}
 
+        {/* View History Button */}
+        <TouchableOpacity
+          style={styles.historyButton}
+          onPress={() => setAuditHistoryVisible(true)}
+        >
+          <Ionicons name="time-outline" size={20} color="#607D8B" />
+          <Text style={styles.historyButtonText}>View Change History</Text>
+        </TouchableOpacity>
+
         {/* Delete Button */}
         <Button title="Delete Harvest" onPress={handleDelete} variant="danger" />
       </ScrollView>
+
+      {/* Audit History Modal */}
+      <AuditHistoryModal
+        visible={auditHistoryVisible}
+        onClose={() => setAuditHistoryVisible(false)}
+        entityType="harvest"
+        entityId={id as string}
+        entityDisplayName={harvest?.controlNumber}
+      />
 
       {/* Weight Update Modal */}
       <Modal
@@ -710,17 +740,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
+  plantIconDeleted: {
+    backgroundColor: '#f0f0f0',
+  },
   plantInfo: {
     flex: 1,
+  },
+  plantLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   plantLabel: {
     fontSize: 12,
     color: '#999',
   },
+  deletedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#9E9E9E',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    gap: 4,
+  },
+  deletedBadgeText: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: '600',
+  },
   plantName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
+  },
+  plantNameDeleted: {
+    color: '#999',
   },
   plantStrain: {
     fontSize: 13,
@@ -1014,6 +1069,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
     marginTop: 2,
+  },
+  // History Button
+  historyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#fff',
+    padding: 14,
+    borderRadius: 10,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  historyButtonText: {
+    fontSize: 15,
+    color: '#607D8B',
+    fontWeight: '500',
   },
 });
 

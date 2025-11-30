@@ -25,6 +25,7 @@ import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
 import { Loading } from '../../../components/Loading';
+import { AuditHistoryModal } from '../../../components/AuditHistoryModal';
 import { format, differenceInDays } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -55,6 +56,7 @@ export default function ExtractDetailScreen() {
   const [distributions, setDistributions] = useState<Distribution[]>([]);
   const [loading, setLoading] = useState(true);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [auditHistoryVisible, setAuditHistoryVisible] = useState(false);
 
   // Edit form state
   const [editName, setEditName] = useState('');
@@ -425,6 +427,15 @@ export default function ExtractDetailScreen() {
           </View>
         </Card>
 
+        {/* View History Button */}
+        <TouchableOpacity
+          style={styles.historyButton}
+          onPress={() => setAuditHistoryVisible(true)}
+        >
+          <Ionicons name="time-outline" size={20} color="#607D8B" />
+          <Text style={styles.historyButtonText}>View Change History</Text>
+        </TouchableOpacity>
+
         {/* Actions */}
         <View style={styles.actions}>
           <Button
@@ -448,6 +459,15 @@ export default function ExtractDetailScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Audit History Modal */}
+      <AuditHistoryModal
+        visible={auditHistoryVisible}
+        onClose={() => setAuditHistoryVisible(false)}
+        entityType="extract"
+        entityId={id as string}
+        entityDisplayName={extract?.controlNumber || extract?.name}
+      />
 
       {/* Edit Modal */}
       <Modal
@@ -805,6 +825,24 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: '#FF5722',
+  },
+  // History Button
+  historyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#fff',
+    padding: 14,
+    borderRadius: 10,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  historyButtonText: {
+    fontSize: 15,
+    color: '#607D8B',
+    fontWeight: '500',
   },
 });
 

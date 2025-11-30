@@ -15,6 +15,7 @@ import { Distribution, ProductType, Patient } from '../../../types';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { Loading } from '../../../components/Loading';
+import { AuditHistoryModal } from '../../../components/AuditHistoryModal';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -32,6 +33,7 @@ export default function DistributionDetailScreen() {
   const [distribution, setDistribution] = useState<Distribution | null>(null);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
+  const [auditHistoryVisible, setAuditHistoryVisible] = useState(false);
   const { userData } = useAuth();
   const router = useRouter();
 
@@ -267,6 +269,15 @@ export default function DistributionDetailScreen() {
           </View>
         </Card>
 
+        {/* View History Button */}
+        <TouchableOpacity
+          style={styles.historyButton}
+          onPress={() => setAuditHistoryVisible(true)}
+        >
+          <Ionicons name="time-outline" size={20} color="#607D8B" />
+          <Text style={styles.historyButtonText}>View Change History</Text>
+        </TouchableOpacity>
+
         {/* Delete Button */}
         <Button
           title="Delete Distribution"
@@ -274,6 +285,15 @@ export default function DistributionDetailScreen() {
           variant="danger"
         />
       </ScrollView>
+
+      {/* Audit History Modal */}
+      <AuditHistoryModal
+        visible={auditHistoryVisible}
+        onClose={() => setAuditHistoryVisible(false)}
+        entityType="distribution"
+        entityId={id as string}
+        entityDisplayName={distribution?.distributionNumber}
+      />
     </SafeAreaView>
   );
 }
@@ -468,6 +488,24 @@ const styles = StyleSheet.create({
   metadataValue: {
     fontSize: 13,
     color: '#666',
+  },
+  // History Button
+  historyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#fff',
+    padding: 14,
+    borderRadius: 10,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  historyButtonText: {
+    fontSize: 15,
+    color: '#607D8B',
+    fontWeight: '500',
   },
 });
 

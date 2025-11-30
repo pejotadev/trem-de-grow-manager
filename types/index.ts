@@ -5,6 +5,24 @@ export interface User {
   createdAt: number;
 }
 
+// Audit Log Types
+export type AuditAction = 'create' | 'update' | 'delete';
+
+export interface AuditLog {
+  id: string;
+  userId: string;
+  userEmail: string;
+  action: AuditAction;
+  entityType: string; // e.g., 'plant', 'harvest', 'patient', 'distribution', 'extract'
+  entityId: string;
+  entityDisplayName?: string;
+  previousValue?: string; // JSON stringified
+  newValue?: string; // JSON stringified
+  changedFields?: string[];
+  timestamp: number;
+  notes?: string;
+}
+
 // Friend System Types
 export type FriendRequestStatus = 'pending' | 'accepted' | 'rejected';
 
@@ -97,6 +115,8 @@ export interface Plant {
   chemotype?: Chemotype;
   isMotherPlant?: boolean;    // Mark plants used for cloning
   motherPlantId?: string;     // Back-reference for clones (same as genetics.parentPlantId)
+  // Soft delete - plant is hidden but can still be accessed from related records
+  deletedAt?: number;
 }
 
 export interface Stage {
@@ -265,5 +285,56 @@ export interface Order {
   processedAt?: number;
   processedBy?: string;
   distributionId?: string; // Reference to created distribution when fulfilled
+  createdAt: number;
+}
+
+// Institutional Document Types
+export type ProtocolCategory = 'cultivation' | 'security' | 'hygiene' | 'extraction' | 'distribution' | 'disposal' | 'emergency' | 'other';
+
+export type DocumentType = 'protocol' | 'statute' | 'regulation' | 'consent_template' | 'meeting_minutes' | 'other';
+
+export type DocumentStatus = 'draft' | 'active' | 'archived';
+
+export interface InstitutionalDocument {
+  id: string;
+  userId: string;
+  documentType: DocumentType;
+  category?: ProtocolCategory;
+  title: string;
+  version: string;
+  content?: string; // Rich text or markdown
+  fileUrl?: string;
+  effectiveDate: number;
+  expirationDate?: number;
+  approvedBy?: string;
+  status: DocumentStatus;
+  createdAt: number;
+  updatedAt: number;
+}
+
+// Waste Disposal Types
+export type WasteMaterialType = 'plant_material' | 'extraction_waste' | 'contaminated' | 'expired_product' | 'packaging' | 'other';
+
+export type DisposalMethod = 'incineration' | 'composting' | 'licensed_disposal' | 'other';
+
+export type WasteSourceEntityType = 'plant' | 'harvest' | 'extract';
+
+export interface WasteDisposal {
+  id: string;
+  userId: string;
+  disposalDate: number;
+  materialType: WasteMaterialType;
+  description: string;
+  sourceEntityType?: WasteSourceEntityType;
+  sourceEntityId?: string;
+  sourceControlNumber?: string; // Denormalized for display
+  quantityGrams: number;
+  disposalMethod: DisposalMethod;
+  disposalCompany?: string;
+  manifestNumber?: string; // For licensed disposal
+  witnessName?: string;
+  witnessSignature?: boolean;
+  photoUrl?: string;
+  notes?: string;
   createdAt: number;
 }

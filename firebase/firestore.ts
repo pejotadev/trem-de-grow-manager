@@ -199,7 +199,7 @@ export const getPlant = async (plantId: string): Promise<Plant | null> => {
   return null;
 };
 
-export const getUserPlants = async (userId: string): Promise<Plant[]> => {
+export const getUserPlants = async (userId: string, includeDeleted: boolean = false): Promise<Plant[]> => {
   if (!userId) {
     console.warn('[Firestore] getUserPlants called with undefined/null userId');
     return [];
@@ -211,13 +211,19 @@ export const getUserPlants = async (userId: string): Promise<Plant[]> => {
     .orderBy('startDate', 'desc')
     .get();
   
-  return querySnapshot.docs.map(doc => ({
+  const plants = querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
   } as Plant));
+  
+  // Filter out soft-deleted plants unless includeDeleted is true
+  if (includeDeleted) {
+    return plants;
+  }
+  return plants.filter(plant => !plant.deletedAt);
 };
 
-export const getEnvironmentPlants = async (environmentId: string, userId: string): Promise<Plant[]> => {
+export const getEnvironmentPlants = async (environmentId: string, userId: string, includeDeleted: boolean = false): Promise<Plant[]> => {
   if (!userId || !environmentId) {
     console.warn('[Firestore] getEnvironmentPlants called with undefined/null userId or environmentId');
     return [];
@@ -230,30 +236,37 @@ export const getEnvironmentPlants = async (environmentId: string, userId: string
     .orderBy('startDate', 'desc')
     .get();
   
-  return querySnapshot.docs.map(doc => ({
+  const plants = querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
   } as Plant));
+  
+  // Filter out soft-deleted plants unless includeDeleted is true
+  if (includeDeleted) {
+    return plants;
+  }
+  return plants.filter(plant => !plant.deletedAt);
 };
 
 export const updatePlant = async (plantId: string, data: Partial<Plant>): Promise<void> => {
   await db.collection('plants').doc(plantId).update(data);
 };
 
+/**
+ * Soft deletes a plant by setting deletedAt timestamp.
+ * The plant remains in the database but is hidden from normal views.
+ * Related records (harvests, distributions, extracts) can still reference the plant.
+ */
 export const deletePlant = async (plantId: string): Promise<void> => {
-  // Delete the plant
-  await db.collection('plants').doc(plantId).delete();
+  // Soft delete - set deletedAt timestamp instead of actually deleting
+  await db.collection('plants').doc(plantId).update({
+    deletedAt: Date.now(),
+  });
   
-  // Delete all related stages
-  const stagesSnapshot = await db.collection('stages').where('plantId', '==', plantId).get();
-  const stageDeletes = stagesSnapshot.docs.map(doc => doc.ref.delete());
+  console.log('[Firestore] Soft deleted plant:', plantId);
   
-  // Delete all related watering logs
-  const waterSnapshot = await db.collection('wateringLogs').where('plantId', '==', plantId).get();
-  const waterDeletes = waterSnapshot.docs.map(doc => doc.ref.delete());
-  
-  // Execute all deletes in parallel (environment logs are no longer tied to plants)
-  await Promise.all([...stageDeletes, ...waterDeletes]);
+  // Note: We keep stages and watering logs for historical purposes
+  // They won't be visible since the plant is hidden
 };
 
 // ==================== CLONE PLANTS ====================
@@ -814,10 +827,13 @@ export const getFriendEnvironmentPlants = async (
     .orderBy('startDate', 'desc')
     .get();
   
-  return querySnapshot.docs.map(doc => ({
+  const plants = querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
   } as Plant));
+  
+  // Filter out soft-deleted plants
+  return plants.filter(plant => !plant.deletedAt);
 };
 
 // ==================== HARVESTS ====================

@@ -27,6 +27,7 @@ import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
 import { DatePicker } from '../../../components/DatePicker';
 import { Loading } from '../../../components/Loading';
+import { AuditHistoryModal } from '../../../components/AuditHistoryModal';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -96,6 +97,7 @@ export default function PatientDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [statusModalVisible, setStatusModalVisible] = useState(false);
+  const [auditHistoryVisible, setAuditHistoryVisible] = useState(false);
 
   // Edit form state
   const [editName, setEditName] = useState('');
@@ -623,6 +625,15 @@ export default function PatientDetailScreen() {
           </View>
         </Card>
 
+        {/* View History Button */}
+        <TouchableOpacity
+          style={styles.historyButton}
+          onPress={() => setAuditHistoryVisible(true)}
+        >
+          <Ionicons name="time-outline" size={20} color="#607D8B" />
+          <Text style={styles.historyButtonText}>View Change History</Text>
+        </TouchableOpacity>
+
         {/* Action Buttons */}
         {patient.status !== 'inactive' && (
           <Button
@@ -638,6 +649,15 @@ export default function PatientDetailScreen() {
           variant="danger"
         />
       </ScrollView>
+
+      {/* Audit History Modal */}
+      <AuditHistoryModal
+        visible={auditHistoryVisible}
+        onClose={() => setAuditHistoryVisible(false)}
+        entityType="patient"
+        entityId={id as string}
+        entityDisplayName={patient?.name}
+      />
 
       {/* Edit Modal */}
       <Modal
@@ -1253,6 +1273,24 @@ const styles = StyleSheet.create({
   },
   allowanceInput: {
     flex: 1,
+  },
+  // History Button
+  historyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#fff',
+    padding: 14,
+    borderRadius: 10,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  historyButtonText: {
+    fontSize: 15,
+    color: '#607D8B',
+    fontWeight: '500',
   },
 });
 
