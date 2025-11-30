@@ -5,6 +5,7 @@ import {
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Card } from '../../../components/Card';
@@ -15,10 +16,38 @@ export default function LogsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Logs</Text>
         <Text style={styles.subtitle}>Track your growing activities</Text>
 
+        {/* Plant Activity Logs - NEW */}
+        <TouchableOpacity onPress={() => router.push('/(tabs)/logs/plant-log')}>
+          <Card style={styles.card}>
+            <View style={styles.cardContent}>
+              <View style={[styles.iconContainer, { backgroundColor: '#4CAF5020' }]}>
+                <Ionicons name="leaf" size={32} color="#4CAF50" />
+              </View>
+              <View style={styles.cardText}>
+                <Text style={styles.cardTitle}>Plant Activity Log</Text>
+                <Text style={styles.cardSubtitle}>
+                  Detailed logging: nutrients, training, defoliation, treatments & more
+                </Text>
+                <View style={styles.badgeRow}>
+                  <View style={styles.scopeBadge}>
+                    <Ionicons name="leaf" size={12} color="#4CAF50" />
+                    <Text style={styles.scopeText}>Per Plant</Text>
+                  </View>
+                  <View style={[styles.scopeBadge, styles.newBadge]}>
+                    <Text style={styles.newBadgeText}>NEW</Text>
+                  </View>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#999" />
+            </View>
+          </Card>
+        </TouchableOpacity>
+
+        {/* Legacy Watering Logs */}
         <TouchableOpacity onPress={() => router.push('/(tabs)/logs/watering')}>
           <Card style={styles.card}>
             <View style={styles.cardContent}>
@@ -26,9 +55,9 @@ export default function LogsScreen() {
                 <Ionicons name="water" size={32} color="#2196F3" />
               </View>
               <View style={styles.cardText}>
-                <Text style={styles.cardTitle}>Watering Logs</Text>
+                <Text style={styles.cardTitle}>Quick Watering Log</Text>
                 <Text style={styles.cardSubtitle}>
-                  Track watering schedule and nutrients per plant
+                  Simple watering log with ingredients
                 </Text>
                 <View style={styles.scopeBadge}>
                   <Ionicons name="leaf" size={12} color="#4CAF50" />
@@ -40,6 +69,7 @@ export default function LogsScreen() {
           </Card>
         </TouchableOpacity>
 
+        {/* Environment Logs - Updated */}
         <TouchableOpacity onPress={() => router.push('/(tabs)/logs/environment')}>
           <Card style={styles.card}>
             <View style={styles.cardContent}>
@@ -49,11 +79,17 @@ export default function LogsScreen() {
               <View style={styles.cardText}>
                 <Text style={styles.cardTitle}>Environment Logs</Text>
                 <Text style={styles.cardSubtitle}>
-                  Record temperature, humidity, and lighting
+                  Temperature, humidity, lighting & bulk plant updates
                 </Text>
-                <View style={styles.scopeBadge}>
-                  <Ionicons name="cube" size={12} color="#2E7D32" />
-                  <Text style={styles.scopeText}>Per Environment</Text>
+                <View style={styles.badgeRow}>
+                  <View style={styles.scopeBadge}>
+                    <Ionicons name="cube" size={12} color="#2E7D32" />
+                    <Text style={styles.scopeText}>Per Environment</Text>
+                  </View>
+                  <View style={[styles.scopeBadge, { backgroundColor: '#E1BEE7' }]}>
+                    <Ionicons name="layers" size={12} color="#7B1FA2" />
+                    <Text style={[styles.scopeText, { color: '#7B1FA2' }]}>Bulk Updates</Text>
+                  </View>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={24} color="#999" />
@@ -61,14 +97,81 @@ export default function LogsScreen() {
           </Card>
         </TouchableOpacity>
 
-        {/* Info Card */}
-        <View style={styles.infoCard}>
-          <Ionicons name="information-circle" size={20} color="#666" />
-          <Text style={styles.infoText}>
-            Watering logs are tracked per plant, while environment logs apply to all plants in the same environment.
-          </Text>
+        {/* Info Cards */}
+        <View style={styles.infoSection}>
+          <Text style={styles.infoSectionTitle}>About Log Types</Text>
+          
+          <View style={styles.infoCard}>
+            <View style={styles.infoIconContainer}>
+              <Ionicons name="leaf" size={20} color="#4CAF50" />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoTitle}>Plant Activity Log</Text>
+              <Text style={styles.infoText}>
+                Comprehensive logging for individual plants. Track nutrients, pH/EC levels, 
+                training techniques (LST, HST, topping), defoliation, transplanting, pest 
+                treatments, and more.
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.infoCard}>
+            <View style={styles.infoIconContainer}>
+              <Ionicons name="water" size={20} color="#2196F3" />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoTitle}>Quick Watering Log</Text>
+              <Text style={styles.infoText}>
+                Simple and fast watering logs. Just select a plant, add ingredients, 
+                and optional notes. Good for quick daily tracking.
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.infoCard}>
+            <View style={styles.infoIconContainer}>
+              <Ionicons name="thermometer" size={20} color="#FF9800" />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoTitle}>Environment Logs</Text>
+              <Text style={styles.infoText}>
+                Two modes: (1) Log environmental conditions like temperature, humidity, 
+                and light hours. (2) Bulk plant updates - apply the same activity to 
+                all plants in an environment at once.
+              </Text>
+            </View>
+          </View>
         </View>
-      </View>
+
+        {/* Quick Tips */}
+        <View style={styles.tipsCard}>
+          <View style={styles.tipsHeader}>
+            <Ionicons name="bulb" size={20} color="#FFC107" />
+            <Text style={styles.tipsTitle}>Pro Tips</Text>
+          </View>
+          <View style={styles.tipItem}>
+            <Text style={styles.tipBullet}>•</Text>
+            <Text style={styles.tipText}>
+              Use <Text style={styles.tipBold}>Bulk Updates</Text> when watering or feeding 
+              all plants in an environment with the same solution.
+            </Text>
+          </View>
+          <View style={styles.tipItem}>
+            <Text style={styles.tipBullet}>•</Text>
+            <Text style={styles.tipText}>
+              Track <Text style={styles.tipBold}>pH and EC</Text> of your runoff to monitor 
+              nutrient uptake and salt buildup.
+            </Text>
+          </View>
+          <View style={styles.tipItem}>
+            <Text style={styles.tipBullet}>•</Text>
+            <Text style={styles.tipText}>
+              Log <Text style={styles.tipBold}>training activities</Text> to track how your 
+              plants respond to different techniques.
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -121,6 +224,11 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 8,
   },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   scopeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -136,19 +244,97 @@ const styles = StyleSheet.create({
     color: '#666',
     fontWeight: '500',
   },
+  newBadge: {
+    backgroundColor: '#4CAF50',
+  },
+  newBadgeText: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: '700',
+  },
+  // Info Section
+  infoSection: {
+    marginTop: 32,
+    marginBottom: 16,
+  },
+  infoSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
+  },
   infoCard: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#e8f5e9',
+    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
-    marginTop: 24,
-    gap: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  infoIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 6,
   },
   infoText: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 19,
+  },
+  // Tips Card
+  tipsCard: {
+    backgroundColor: '#FFFDE7',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#FFF9C4',
+  },
+  tipsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  tipsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#F9A825',
+  },
+  tipItem: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  tipBullet: {
+    fontSize: 14,
+    color: '#666',
+    marginRight: 8,
+  },
+  tipText: {
     flex: 1,
     fontSize: 13,
     color: '#666',
-    lineHeight: 18,
+    lineHeight: 19,
+  },
+  tipBold: {
+    fontWeight: '600',
+    color: '#333',
   },
 });

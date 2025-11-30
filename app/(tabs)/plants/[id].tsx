@@ -29,8 +29,10 @@ import {
   clonePlants,
   getPlantHarvests,
   updateHarvest,
+  getPlantLogs,
 } from '../../../firebase/firestore';
-import { Plant, Stage, WaterRecord, StageName, Environment, PlantSourceType, GeneticInfo, Chemotype, Harvest, HarvestStatus, HarvestPurpose } from '../../../types';
+import { Plant, Stage, WaterRecord, StageName, Environment, PlantSourceType, GeneticInfo, Chemotype, Harvest, HarvestStatus, HarvestPurpose, PlantLog } from '../../../types';
+import { getLogTypeInfo } from '../../../components/LogTypeSelector';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
@@ -89,6 +91,7 @@ export default function PlantDetailScreen() {
   const [allPlants, setAllPlants] = useState<Plant[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
   const [waterRecords, setWaterRecords] = useState<WaterRecord[]>([]);
+  const [plantLogs, setPlantLogs] = useState<PlantLog[]>([]);
   const [harvests, setHarvests] = useState<Harvest[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -162,12 +165,21 @@ export default function PlantDetailScreen() {
         getPlantWaterRecords(id),
         getPlantHarvests(id),
       ]);
+      
+      // Load plant logs separately - may fail if index is still building
+      let plantLogsData: any[] = [];
+      try {
+        plantLogsData = await getPlantLogs(id, undefined, 10);
+      } catch (logError: any) {
+        console.warn('[PlantDetail] Failed to load plant logs (index may be building):', logError.message);
+      }
 
       console.log('[PlantDetail] Plant data loaded:', plantData);
       setPlant(plantData);
       setEnvironment(envData);
       setStages(stagesData);
       setWaterRecords(waterData);
+      setPlantLogs(plantLogsData);
       setHarvests(harvestsData);
 
       // Load parent plant if this is a clone
@@ -547,7 +559,7 @@ export default function PlantDetailScreen() {
 
       // Build updated chemotype - only include if there's data
       let updatedChemotype: Chemotype | undefined;
-      const hasChemotypeData = editThcPercent.trim() || editCbdPercent.trim() || editCbgPercent.trim() || editLabName.trim() || editAnalysisDate.trim();
+      const hasChemotypeData = editThcPercent.trim() || editCbdPercent.trim() || editCbgPercent.trim() || editLabName.trim() || editAnalysisDate;
       
       if (hasChemotypeData) {
         updatedChemotype = {
@@ -1021,38 +1033,110 @@ export default function PlantDetailScreen() {
           )}
         </Card>
 
-        {/* Recent Watering Logs */}
+        {/* Recent Activity Logs */}
         <Card>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
-              Recent Watering ({waterRecords.length})
+              Recent Activity ({plantLogs.length})
             </Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/logs/watering')}>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/logs/plant-log')}>
               <Text style={styles.viewAll}>View All</Text>
             </TouchableOpacity>
           </View>
-          {waterRecords.slice(0, 3).map((record) => (
-            <View key={record.id} style={styles.logItem}>
-              <View style={styles.logIcon}>
-                <Ionicons name="water" size={20} color="#2196F3" />
+          {plantLogs.slice(0, 5).map((log) => {
+            const typeInfo = getLogTypeInfo(log.logType);
+            return (
+              <View key={log.id} style={styles.logItem}>
+                <View style={[styles.activityLogIcon, { backgroundColor: typeInfo.color + '20' }]}>
+                  <Ionicons name={typeInfo.icon as any} size={18} color={typeInfo.color} />
+                </View>
+                <View style={styles.logContent}>
+                  <View style={styles.logTitleRow}>
+                    <View style={styles.logTitleWithBadge}>
+                      <Text style={styles.logTitle}>{typeInfo.label}</Text>
+                      {log.fromBulkUpdate && (
+                        <View style={styles.bulkUpdateBadge}>
+                          <Ionicons name="layers" size={10} color="#7B1FA2" />
+                          <Text style={styles.bulkUpdateBadgeText}>Bulk</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.logDate}>
+                      {format(new Date(log.date), 'MMM dd')}
+                    </Text>
+                  </View>
+                  {/* Show relevant details */}
+                  <View style={styles.logDetailsRow}>
+                    {log.waterAmountMl && (
+                      <Text style={styles.logDetailBadge}>💧 {log.waterAmountMl}ml</Text>
+                    )}
+                    {log.phLevel && (
+                      <Text style={styles.logDetailBadge}>pH {log.phLevel}</Text>
+                    )}
+                    {log.nutrients && log.nutrients.length > 0 && (
+                      <Text style={styles.logDetailBadge}>
+                        🧪 {log.nutrients.length} nutrient{log.nutrients.length > 1 ? 's' : ''}
+                      </Text>
+                    )}
+                    {log.leavesRemoved && (
+                      <Text style={styles.logDetailBadge}>🍃 {log.leavesRemoved} leaves</Text>
+                    )}
+                    {log.trainingMethod && (
+                      <Text style={styles.logDetailBadge}>📐 {log.trainingMethod}</Text>
+                    )}
+                  </View>
+                  {log.notes && (
+                    <Text style={styles.logNotes} numberOfLines={1}>{log.notes}</Text>
+                  )}
+                </View>
               </View>
-              <View style={styles.logContent}>
-                <Text style={styles.logTitle}>
-                  {record.ingredients.length} ingredient(s)
-                </Text>
-                <Text style={styles.logDate}>
-                  {format(new Date(record.date), 'MMM dd, yyyy')}
-                </Text>
-                {record.notes && (
-                  <Text style={styles.logNotes}>{record.notes}</Text>
-                )}
-              </View>
+            );
+          })}
+          {plantLogs.length === 0 && (
+            <View style={styles.emptyLogsContainer}>
+              <Ionicons name="document-text-outline" size={32} color="#ccc" />
+              <Text style={styles.emptyText}>No activity logs yet</Text>
+              <TouchableOpacity 
+                style={styles.addLogButton}
+                onPress={() => router.push('/(tabs)/logs/plant-log')}
+              >
+                <Text style={styles.addLogButtonText}>+ Add Activity Log</Text>
+              </TouchableOpacity>
             </View>
-          ))}
-          {waterRecords.length === 0 && (
-            <Text style={styles.emptyText}>No watering logs</Text>
           )}
         </Card>
+
+        {/* Quick Watering Logs (Legacy) */}
+        {waterRecords.length > 0 && (
+          <Card>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                Quick Watering ({waterRecords.length})
+              </Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/logs/watering')}>
+                <Text style={styles.viewAll}>View All</Text>
+              </TouchableOpacity>
+            </View>
+            {waterRecords.slice(0, 3).map((record) => (
+              <View key={record.id} style={styles.logItem}>
+                <View style={styles.logIcon}>
+                  <Ionicons name="water" size={20} color="#2196F3" />
+                </View>
+                <View style={styles.logContent}>
+                  <Text style={styles.logTitle}>
+                    {record.ingredients.length} ingredient(s)
+                  </Text>
+                  <Text style={styles.logDate}>
+                    {format(new Date(record.date), 'MMM dd, yyyy')}
+                  </Text>
+                  {record.notes && (
+                    <Text style={styles.logNotes}>{record.notes}</Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </Card>
+        )}
 
         {/* Harvests Section */}
         <Card>
@@ -2139,8 +2223,27 @@ const styles = StyleSheet.create({
     marginRight: 12,
     marginTop: 2,
   },
+  activityLogIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
   logContent: {
     flex: 1,
+  },
+  logTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  logTitleWithBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   logTitle: {
     fontSize: 14,
@@ -2148,9 +2251,37 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 2,
   },
+  bulkUpdateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#E1BEE7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  bulkUpdateBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#7B1FA2',
+  },
   logDate: {
     fontSize: 12,
     color: '#999',
+  },
+  logDetailsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  logDetailBadge: {
+    fontSize: 11,
+    color: '#666',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   logNotes: {
     fontSize: 12,
@@ -2158,11 +2289,27 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontStyle: 'italic',
   },
+  emptyLogsContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
   emptyText: {
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
     paddingVertical: 12,
+  },
+  addLogButton: {
+    backgroundColor: '#e8f5e9',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  addLogButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4CAF50',
   },
   modalOverlay: {
     flex: 1,

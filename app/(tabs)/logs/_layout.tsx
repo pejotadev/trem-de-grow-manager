@@ -14,8 +14,9 @@ export default function LogsLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ title: 'Logs' }} />
-      <Stack.Screen name="watering" options={{ title: 'Watering Logs' }} />
-      <Stack.Screen name="environment" options={{ title: 'Environment Logs' }} />
+      <Stack.Screen name="plant-log" options={{ title: 'Plant Activity Log' }} />
+      <Stack.Screen name="watering" options={{ title: 'Quick Watering' }} />
+      <Stack.Screen name="environment" options={{ title: 'Environment & Bulk Logs' }} />
     </Stack>
   );
 }

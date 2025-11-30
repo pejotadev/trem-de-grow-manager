@@ -1,7 +1,7 @@
 // Using Firebase Compat SDK for React Native compatibility
 import { db } from './firebaseConfig';
 import firebase from 'firebase/compat/app';
-import { Plant, Stage, WaterRecord, EnvironmentRecord, Environment, StageName, User, FriendRequest, Friendship, FriendRequestStatus, GeneticInfo, Harvest, Patient, Distribution, Extract, Order, OrderStatus } from '../types';
+import { Plant, Stage, WaterRecord, EnvironmentRecord, Environment, StageName, User, FriendRequest, Friendship, FriendRequestStatus, GeneticInfo, Harvest, Patient, Distribution, Extract, Order, OrderStatus, PlantLog, BulkPlantLog, PlantLogType } from '../types';
 
 // ==================== UTILITIES ====================
 
@@ -1536,4 +1536,337 @@ export const cancelOrder = async (orderId: string): Promise<void> => {
 
 export const deleteOrder = async (orderId: string): Promise<void> => {
   await db.collection('orders').doc(orderId).delete();
+};
+
+// ==================== PLANT LOGS (Enhanced Logging System) ====================
+
+/**
+ * Helper function to remove undefined values from an object
+ * Firestore doesn't accept undefined values
+ */
+const removeUndefinedFields = <T extends Record<string, any>>(obj: T): Partial<T> => {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      // Recursively handle nested objects (but not arrays)
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        const cleaned = removeUndefinedFields(value);
+        if (Object.keys(cleaned).length > 0) {
+          result[key] = cleaned;
+        }
+      } else {
+        result[key] = value;
+      }
+    }
+  }
+  return result as Partial<T>;
+};
+
+/**
+ * Creates a detailed plant log entry
+ */
+export const createPlantLog = async (logData: Omit<PlantLog, 'id'>): Promise<string> => {
+  if (!logData.userId) {
+    throw new Error('userId is required to create a plant log');
+  }
+  if (!logData.plantId) {
+    throw new Error('plantId is required to create a plant log');
+  }
+  
+  // Remove undefined values - Firestore doesn't accept them
+  const cleanedData = removeUndefinedFields({
+    ...logData,
+    createdAt: Date.now(),
+  });
+  
+  const docRef = await db.collection('plantLogs').add(cleanedData);
+  
+  console.log('[Firestore] Created plant log with ID:', docRef.id);
+  return docRef.id;
+};
+
+/**
+ * Gets a specific plant log by ID
+ */
+export const getPlantLog = async (logId: string): Promise<PlantLog | null> => {
+  const docSnap = await db.collection('plantLogs').doc(logId).get();
+  
+  if (docSnap.exists) {
+    return { id: docSnap.id, ...docSnap.data() } as PlantLog;
+  }
+  return null;
+};
+
+/**
+ * Gets all plant logs for a specific plant
+ */
+export const getPlantLogs = async (
+  plantId: string, 
+  logType?: PlantLogType,
+  limit?: number
+): Promise<PlantLog[]> => {
+  let query = db.collection('plantLogs')
+    .where('plantId', '==', plantId)
+    .orderBy('date', 'desc');
+  
+  if (logType) {
+    query = query.where('logType', '==', logType);
+  }
+  
+  if (limit) {
+    query = query.limit(limit);
+  }
+  
+  const querySnapshot = await query.get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as PlantLog));
+};
+
+/**
+ * Gets all plant logs for a user
+ */
+export const getUserPlantLogs = async (
+  userId: string,
+  logType?: PlantLogType,
+  limit?: number
+): Promise<PlantLog[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getUserPlantLogs called with undefined/null userId');
+    return [];
+  }
+  
+  let query = db.collection('plantLogs')
+    .where('userId', '==', userId)
+    .orderBy('date', 'desc');
+  
+  if (logType) {
+    query = query.where('logType', '==', logType);
+  }
+  
+  if (limit) {
+    query = query.limit(limit);
+  }
+  
+  const querySnapshot = await query.get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as PlantLog));
+};
+
+/**
+ * Updates a plant log
+ */
+export const updatePlantLog = async (logId: string, data: Partial<PlantLog>): Promise<void> => {
+  await db.collection('plantLogs').doc(logId).update(data);
+};
+
+/**
+ * Deletes a plant log
+ */
+export const deletePlantLog = async (logId: string): Promise<void> => {
+  await db.collection('plantLogs').doc(logId).delete();
+};
+
+// ==================== BULK PLANT LOGS ====================
+
+/**
+ * Creates a bulk plant log that applies to multiple plants.
+ * Also creates individual PlantLog entries for each plant for full traceability.
+ */
+export const createBulkPlantLog = async (logData: Omit<BulkPlantLog, 'id'>): Promise<string> => {
+  if (!logData.userId) {
+    throw new Error('userId is required to create a bulk plant log');
+  }
+  if (!logData.environmentId) {
+    throw new Error('environmentId is required to create a bulk plant log');
+  }
+  if (!logData.plantIds || logData.plantIds.length === 0) {
+    throw new Error('At least one plantId is required to create a bulk plant log');
+  }
+  
+  const now = Date.now();
+  
+  // Remove undefined values - Firestore doesn't accept them
+  const cleanedBulkData = removeUndefinedFields({
+    ...logData,
+    plantCount: logData.plantIds.length,
+    createdAt: now,
+  });
+  
+  // Create the bulk log entry (for environment-level tracking)
+  const docRef = await db.collection('bulkPlantLogs').add(cleanedBulkData);
+  const bulkLogId = docRef.id;
+  
+  console.log('[Firestore] Created bulk plant log with ID:', bulkLogId, 'for', logData.plantIds.length, 'plants');
+  
+  // Create individual PlantLog entries for each plant
+  // This ensures each plant's history shows all activities applied to it
+  const { plantIds, environmentId, plantCount, ...logDataWithoutBulkFields } = logData;
+  
+  const individualLogPromises = plantIds.map(async (plantId) => {
+    const individualLogData = removeUndefinedFields({
+      ...logDataWithoutBulkFields,
+      plantId,
+      userId: logData.userId,
+      date: logData.date,
+      createdAt: now,
+      bulkLogId, // Reference to the parent bulk log
+      fromBulkUpdate: true, // Flag to indicate this came from a bulk update
+    });
+    
+    return db.collection('plantLogs').add(individualLogData);
+  });
+  
+  try {
+    await Promise.all(individualLogPromises);
+    console.log('[Firestore] Created', plantIds.length, 'individual plant logs from bulk update');
+  } catch (error) {
+    console.error('[Firestore] Error creating individual plant logs:', error);
+    // Don't throw - the bulk log was created successfully
+  }
+  
+  return bulkLogId;
+};
+
+/**
+ * Gets a specific bulk plant log by ID
+ */
+export const getBulkPlantLog = async (logId: string): Promise<BulkPlantLog | null> => {
+  const docSnap = await db.collection('bulkPlantLogs').doc(logId).get();
+  
+  if (docSnap.exists) {
+    return { id: docSnap.id, ...docSnap.data() } as BulkPlantLog;
+  }
+  return null;
+};
+
+/**
+ * Gets all bulk plant logs for an environment
+ */
+export const getEnvironmentBulkLogs = async (
+  environmentId: string,
+  logType?: PlantLogType,
+  limit?: number
+): Promise<BulkPlantLog[]> => {
+  let query = db.collection('bulkPlantLogs')
+    .where('environmentId', '==', environmentId)
+    .orderBy('date', 'desc');
+  
+  if (logType) {
+    query = query.where('logType', '==', logType);
+  }
+  
+  if (limit) {
+    query = query.limit(limit);
+  }
+  
+  const querySnapshot = await query.get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as BulkPlantLog));
+};
+
+/**
+ * Gets all bulk plant logs that include a specific plant
+ */
+export const getPlantBulkLogs = async (
+  plantId: string,
+  limit?: number
+): Promise<BulkPlantLog[]> => {
+  let query = db.collection('bulkPlantLogs')
+    .where('plantIds', 'array-contains', plantId)
+    .orderBy('date', 'desc');
+  
+  if (limit) {
+    query = query.limit(limit);
+  }
+  
+  const querySnapshot = await query.get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as BulkPlantLog));
+};
+
+/**
+ * Gets all bulk plant logs for a user
+ */
+export const getUserBulkPlantLogs = async (
+  userId: string,
+  logType?: PlantLogType,
+  limit?: number
+): Promise<BulkPlantLog[]> => {
+  if (!userId) {
+    console.warn('[Firestore] getUserBulkPlantLogs called with undefined/null userId');
+    return [];
+  }
+  
+  let query = db.collection('bulkPlantLogs')
+    .where('userId', '==', userId)
+    .orderBy('date', 'desc');
+  
+  if (logType) {
+    query = query.where('logType', '==', logType);
+  }
+  
+  if (limit) {
+    query = query.limit(limit);
+  }
+  
+  const querySnapshot = await query.get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as BulkPlantLog));
+};
+
+/**
+ * Updates a bulk plant log
+ */
+export const updateBulkPlantLog = async (logId: string, data: Partial<BulkPlantLog>): Promise<void> => {
+  await db.collection('bulkPlantLogs').doc(logId).update(data);
+};
+
+/**
+ * Deletes a bulk plant log
+ */
+export const deleteBulkPlantLog = async (logId: string): Promise<void> => {
+  await db.collection('bulkPlantLogs').doc(logId).delete();
+};
+
+/**
+ * Gets combined logs for a plant (both individual and bulk logs that include this plant)
+ * Returns them sorted by date, newest first
+ */
+export const getAllLogsForPlant = async (
+  plantId: string,
+  limit?: number
+): Promise<{ type: 'individual' | 'bulk'; log: PlantLog | BulkPlantLog }[]> => {
+  const [individualLogs, bulkLogs] = await Promise.all([
+    getPlantLogs(plantId, undefined, limit),
+    getPlantBulkLogs(plantId, limit),
+  ]);
+  
+  // Combine and sort by date
+  const combined: { type: 'individual' | 'bulk'; log: PlantLog | BulkPlantLog }[] = [
+    ...individualLogs.map(log => ({ type: 'individual' as const, log })),
+    ...bulkLogs.map(log => ({ type: 'bulk' as const, log })),
+  ];
+  
+  combined.sort((a, b) => b.log.date - a.log.date);
+  
+  if (limit) {
+    return combined.slice(0, limit);
+  }
+  
+  return combined;
 };

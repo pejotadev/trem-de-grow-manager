@@ -126,7 +126,7 @@ export interface Stage {
   startDate: number;
 }
 
-// Log Types
+// Log Types (Legacy - kept for backward compatibility)
 export interface WaterRecord {
   id: string;
   plantId: string;
@@ -143,6 +143,153 @@ export interface EnvironmentRecord {
   humidity: number;
   lightHours: number;
   notes: string;
+}
+
+// ==================== ENHANCED PLANT LOG TYPES ====================
+
+// Plant Log Types for Cannabis Growing
+export type PlantLogType = 
+  | 'watering'           // Plain water
+  | 'nutrient_feed'      // Nutrient solution feeding
+  | 'soil_add'           // Adding soil/medium/amendments
+  | 'defoliation'        // Removing leaves
+  | 'lollipopping'       // Bottom trimming
+  | 'lst'                // Low Stress Training (bending, tying)
+  | 'hst'                // High Stress Training
+  | 'topping'            // Cutting main cola
+  | 'fimming'            // FIM technique
+  | 'supercropping'      // Stem crushing/bending
+  | 'transplant'         // Moving to new pot/medium
+  | 'pest_treatment'     // Pest control
+  | 'disease_treatment'  // Disease treatment
+  | 'ph_adjustment'      // pH correction
+  | 'flush'              // Pre-harvest or salt buildup flush
+  | 'foliar_spray'       // Leaf feeding/treatment
+  | 'clone_cut'          // Taking cuttings
+  | 'observation'        // General observation/note
+  | 'other';
+
+// Nutrient entry for detailed feeding logs
+export interface NutrientEntry {
+  name: string;
+  brand?: string;
+  amountMl?: number;
+  npkRatio?: string;    // e.g., "3-1-2"
+}
+
+// Medium types for soil/transplant logs
+export type MediumType = 'soil' | 'coco' | 'perlite' | 'vermiculite' | 'rockwool' | 'clay_pebbles' | 'dwc' | 'nft' | 'other';
+
+// Comprehensive Plant Log
+export interface PlantLog {
+  id: string;
+  plantId: string;
+  userId: string;
+  logType: PlantLogType;
+  date: number;
+  
+  // Watering/Feeding specifics
+  waterAmountMl?: number;
+  phLevel?: number;
+  ecPpm?: number;           // EC in PPM
+  runoffPh?: number;
+  runoffEc?: number;
+  nutrients?: NutrientEntry[];
+  
+  // Soil/Medium additions
+  mediumType?: MediumType;
+  mediumBrand?: string;
+  mediumAmount?: string;    // e.g., "2 liters"
+  amendmentsAdded?: string[];
+  
+  // Training specifics (LST/HST/Topping/etc)
+  trainingMethod?: string;
+  branchesAffected?: number;
+  trainingNotes?: string;
+  
+  // Defoliation/Lollipopping
+  leavesRemoved?: number;
+  fanLeaves?: boolean;
+  sugarLeaves?: boolean;
+  
+  // Transplant specifics
+  fromPotSize?: string;
+  toPotSize?: string;
+  rootBound?: boolean;
+  
+  // Pest/Disease treatment
+  pestType?: string;
+  diseaseType?: string;
+  treatmentProduct?: string;
+  treatmentBrand?: string;
+  applicationMethod?: string;  // spray, drench, etc.
+  
+  // Foliar spray
+  foliarProduct?: string;
+  foliarDilution?: string;
+  
+  // Common fields
+  notes?: string;
+  photoUrl?: string;
+  createdAt: number;
+  
+  // Bulk update tracking (set when log was created from a bulk update)
+  bulkLogId?: string;          // Reference to parent BulkPlantLog
+  fromBulkUpdate?: boolean;    // Flag indicating this came from a bulk operation
+}
+
+// Bulk Log for applying to multiple plants at once
+export interface BulkPlantLog {
+  id: string;
+  environmentId: string;
+  userId: string;
+  plantIds: string[];         // Plants this was applied to
+  plantCount: number;         // Quick reference count
+  logType: PlantLogType;
+  date: number;
+  
+  // Same optional fields as PlantLog
+  waterAmountMl?: number;
+  phLevel?: number;
+  ecPpm?: number;
+  runoffPh?: number;
+  runoffEc?: number;
+  nutrients?: NutrientEntry[];
+  
+  mediumType?: MediumType;
+  mediumBrand?: string;
+  mediumAmount?: string;
+  amendmentsAdded?: string[];
+  
+  trainingMethod?: string;
+  branchesAffected?: number;
+  trainingNotes?: string;
+  
+  leavesRemoved?: number;
+  fanLeaves?: boolean;
+  sugarLeaves?: boolean;
+  
+  pestType?: string;
+  diseaseType?: string;
+  treatmentProduct?: string;
+  treatmentBrand?: string;
+  applicationMethod?: string;
+  
+  foliarProduct?: string;
+  foliarDilution?: string;
+  
+  notes?: string;
+  createdAt: number;
+}
+
+// Log type display info for UI
+export interface PlantLogTypeInfo {
+  type: PlantLogType;
+  label: string;
+  icon: string;
+  color: string;
+  category: 'feeding' | 'training' | 'maintenance' | 'treatment' | 'other';
+  description: string;
 }
 
 // Harvest Types
