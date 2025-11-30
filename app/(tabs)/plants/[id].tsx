@@ -30,8 +30,9 @@ import {
   getPlantHarvests,
   updateHarvest,
   getPlantLogs,
+  getSeedGenetic,
 } from '../../../firebase/firestore';
-import { Plant, Stage, StageName, Environment, PlantSourceType, GeneticInfo, Chemotype, Harvest, HarvestStatus, HarvestPurpose, PlantLog } from '../../../types';
+import { Plant, Stage, StageName, Environment, PlantSourceType, GeneticInfo, Chemotype, Harvest, HarvestStatus, HarvestPurpose, PlantLog, SeedGenetic, SeedType, PlantDominance } from '../../../types';
 import { getLogTypeInfo } from '../../../components/LogTypeSelector';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
@@ -81,11 +82,39 @@ const ENVIRONMENT_COLORS: Record<string, string> = {
   greenhouse: '#4CAF50',
 };
 
+const SEED_TYPE_COLORS: Record<SeedType, string> = {
+  regular: '#9E9E9E',
+  feminized: '#E91E63',
+  autoflower: '#FF9800',
+  fast_version: '#03A9F4',
+  cbd: '#4CAF50',
+  cbg: '#8BC34A',
+};
+
+const DOMINANCE_COLORS: Record<PlantDominance, string> = {
+  indica: '#7B1FA2',
+  sativa: '#FF5722',
+  hybrid: '#4CAF50',
+  indica_dominant: '#9C27B0',
+  sativa_dominant: '#FF7043',
+  balanced: '#66BB6A',
+};
+
+const DOMINANCE_LABELS: Record<PlantDominance, string> = {
+  indica: 'Indica',
+  sativa: 'Sativa',
+  hybrid: 'Hybrid',
+  indica_dominant: 'Indica Dom.',
+  sativa_dominant: 'Sativa Dom.',
+  balanced: 'Balanced',
+};
+
 export default function PlantDetailScreen() {
   const { t } = useTranslation(['plants', 'common']);
   const { id } = useLocalSearchParams();
   const [plant, setPlant] = useState<Plant | null>(null);
   const [parentPlant, setParentPlant] = useState<Plant | null>(null);
+  const [seedGenetic, setSeedGenetic] = useState<SeedGenetic | null>(null);
   const [cloneChildren, setCloneChildren] = useState<Plant[]>([]);
   const [environment, setEnvironment] = useState<Environment | null>(null);
   const [environments, setEnvironments] = useState<Environment[]>([]);
@@ -187,6 +216,18 @@ export default function PlantDetailScreen() {
           const parent = await getPlant(parentId);
           setParentPlant(parent);
         }
+      }
+
+      // Load seed genetic library entry if linked
+      if (plantData.genetics?.seedGeneticId) {
+        try {
+          const genetic = await getSeedGenetic(plantData.genetics.seedGeneticId);
+          setSeedGenetic(genetic);
+        } catch (error) {
+          console.warn('[PlantDetail] Failed to load seed genetic:', error);
+        }
+      } else {
+        setSeedGenetic(null);
       }
     } catch (error: any) {
       console.error('[PlantDetail] Error loading plant data:', error);
@@ -657,6 +698,12 @@ export default function PlantDetailScreen() {
     }
   };
 
+  const navigateToSeedGenetic = () => {
+    if (seedGenetic) {
+      router.push(`/(tabs)/genetics/${seedGenetic.id}`);
+    }
+  };
+
   const navigateToClone = (cloneId: string) => {
     router.push(`/(tabs)/plants/${cloneId}`);
   };
@@ -785,6 +832,51 @@ export default function PlantDetailScreen() {
                   <Text style={styles.parentControlText}>#{parentPlant.controlNumber}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#999" />
+              </TouchableOpacity>
+            )}
+
+            {/* Seed Genetic Library Link */}
+            {seedGenetic && (
+              <TouchableOpacity style={styles.seedGeneticLink} onPress={navigateToSeedGenetic}>
+                <View style={styles.seedGeneticHeader}>
+                  <Ionicons name="library" size={18} color="#8BC34A" />
+                  <Text style={styles.seedGeneticLabel}>From Genetics Library:</Text>
+                </View>
+                <View style={styles.seedGeneticContent}>
+                  <View style={[
+                    styles.seedGeneticIcon,
+                    { backgroundColor: seedGenetic.seedType ? SEED_TYPE_COLORS[seedGenetic.seedType] + '20' : '#8BC34A20' },
+                  ]}>
+                    <Ionicons
+                      name="leaf"
+                      size={22}
+                      color={seedGenetic.seedType ? SEED_TYPE_COLORS[seedGenetic.seedType] : '#8BC34A'}
+                    />
+                  </View>
+                  <View style={styles.seedGeneticInfo}>
+                    <Text style={styles.seedGeneticName}>{seedGenetic.name}</Text>
+                    {seedGenetic.breeder && (
+                      <Text style={styles.seedGeneticBreeder}>by {seedGenetic.breeder}</Text>
+                    )}
+                    <View style={styles.seedGeneticBadges}>
+                      {seedGenetic.seedType && (
+                        <View style={[styles.seedTypeBadgeSmall, { backgroundColor: SEED_TYPE_COLORS[seedGenetic.seedType] }]}>
+                          <Text style={styles.seedTypeBadgeSmallText}>
+                            {seedGenetic.seedType.replace('_', ' ')}
+                          </Text>
+                        </View>
+                      )}
+                      {seedGenetic.dominance && (
+                        <View style={[styles.dominanceBadge, { backgroundColor: DOMINANCE_COLORS[seedGenetic.dominance] }]}>
+                          <Text style={styles.dominanceBadgeText}>
+                            {DOMINANCE_LABELS[seedGenetic.dominance]}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#999" />
+                </View>
               </TouchableOpacity>
             )}
 
@@ -1914,6 +2006,80 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#2E7D32',
     fontWeight: '500',
+  },
+  // Seed Genetic Link styles
+  seedGeneticLink: {
+    backgroundColor: '#F1F8E9',
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#C5E1A5',
+  },
+  seedGeneticHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  seedGeneticLabel: {
+    fontSize: 12,
+    color: '#558B2F',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  seedGeneticContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  seedGeneticIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  seedGeneticInfo: {
+    flex: 1,
+  },
+  seedGeneticName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#33691E',
+    marginBottom: 2,
+  },
+  seedGeneticBreeder: {
+    fontSize: 13,
+    color: '#689F38',
+    marginBottom: 6,
+  },
+  seedGeneticBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  seedTypeBadgeSmall: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  seedTypeBadgeSmallText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#fff',
+    textTransform: 'capitalize',
+  },
+  dominanceBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  dominanceBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#fff',
   },
   geneticInfoRow: {
     flexDirection: 'row',
