@@ -32,6 +32,12 @@ export default function FriendsLayout() {
           title: 'Friend Profile',
         }}
       />
+      <Stack.Screen
+        name="plant"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

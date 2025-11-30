@@ -836,6 +836,113 @@ export const getFriendEnvironmentPlants = async (
   return plants.filter(plant => !plant.deletedAt);
 };
 
+/**
+ * Gets a friend's plant with access control verification.
+ * Only allows access if:
+ * 1. Users are friends
+ * 2. The plant's environment is public
+ */
+export const getFriendPlant = async (
+  plantId: string,
+  friendId: string,
+  currentUserId: string
+): Promise<Plant | null> => {
+  if (!plantId || !friendId || !currentUserId) {
+    console.warn('[Firestore] getFriendPlant called with undefined/null parameters');
+    return null;
+  }
+  
+  // First verify they are friends
+  const areFriends = await isFriend(currentUserId, friendId);
+  
+  if (!areFriends) {
+    throw new Error('You are not friends with this user');
+  }
+
+  // Get the plant
+  const plantDoc = await db.collection('plants').doc(plantId).get();
+  
+  if (!plantDoc.exists) {
+    return null;
+  }
+
+  const plant = { id: plantDoc.id, ...plantDoc.data() } as Plant;
+  
+  // Verify the plant belongs to the friend
+  if (plant.userId !== friendId) {
+    throw new Error('Plant does not belong to this user');
+  }
+
+  // Verify the plant's environment is public
+  const envDoc = await db.collection('environments').doc(plant.environmentId).get();
+  
+  if (!envDoc.exists) {
+    throw new Error('Environment not found');
+  }
+
+  const env = envDoc.data() as Environment;
+  
+  if (!env.isPublic) {
+    throw new Error('This plant is in a private environment');
+  }
+
+  return plant;
+};
+
+/**
+ * Gets stage history for a friend's plant with access control verification.
+ */
+export const getFriendPlantStages = async (
+  plantId: string,
+  friendId: string,
+  currentUserId: string
+): Promise<Stage[]> => {
+  // First verify access to the plant (this does all necessary checks)
+  const plant = await getFriendPlant(plantId, friendId, currentUserId);
+  
+  if (!plant) {
+    return [];
+  }
+
+  const querySnapshot = await db
+    .collection('stages')
+    .where('plantId', '==', plantId)
+    .orderBy('startDate', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Stage));
+};
+
+/**
+ * Gets watering records for a friend's plant with access control verification.
+ */
+export const getFriendPlantWaterRecords = async (
+  plantId: string,
+  friendId: string,
+  currentUserId: string
+): Promise<WaterRecord[]> => {
+  // First verify access to the plant (this does all necessary checks)
+  const plant = await getFriendPlant(plantId, friendId, currentUserId);
+  
+  if (!plant) {
+    return [];
+  }
+
+  const querySnapshot = await db
+    .collection('wateringLogs')
+    .where('plantId', '==', plantId)
+    .orderBy('date', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as WaterRecord));
+};
+
 // ==================== HARVESTS ====================
 
 export const createHarvest = async (harvestData: Omit<Harvest, 'id' | 'controlNumber'>): Promise<string> => {

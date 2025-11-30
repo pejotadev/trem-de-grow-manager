@@ -266,30 +266,46 @@ export default function FriendProfileScreen() {
                   </Card>
                 ) : (
                   plants.map((plant) => (
-                    <Card key={plant.id}>
-                      <View style={styles.plantCard}>
-                        <View style={styles.plantIcon}>
-                          <Ionicons name="leaf" size={24} color="#4CAF50" />
-                        </View>
-                        <View style={styles.plantInfo}>
-                          <View style={styles.plantHeader}>
-                            <Text style={styles.plantName}>{plant.name}</Text>
-                            <View style={styles.controlBadge}>
-                              <Text style={styles.controlText}>#{plant.controlNumber}</Text>
+                    <TouchableOpacity
+                      key={plant.id}
+                      onPress={() => router.push({
+                        pathname: '/(tabs)/friends/plant/[id]',
+                        params: { id: plant.id, friendId: id as string }
+                      })}
+                      activeOpacity={0.7}
+                    >
+                      <Card>
+                        <View style={styles.plantCard}>
+                          <View style={styles.plantIcon}>
+                            <Ionicons name="leaf" size={24} color="#4CAF50" />
+                          </View>
+                          <View style={styles.plantInfo}>
+                            <View style={styles.plantHeader}>
+                              <Text style={styles.plantName}>{plant.name}</Text>
+                              <View style={styles.controlBadge}>
+                                <Text style={styles.controlText}>#{plant.controlNumber}</Text>
+                              </View>
+                            </View>
+                            <Text style={styles.plantStrain}>{plant.strain}</Text>
+                            {plant.currentStage && (
+                              <View style={styles.stageBadge}>
+                                <Text style={styles.stageBadgeText}>{plant.currentStage}</Text>
+                              </View>
+                            )}
+                            <View style={styles.plantFooter}>
+                              <Text style={styles.plantDate}>
+                                Started: {format(new Date(plant.startDate), 'MMM dd, yyyy')}
+                              </Text>
+                              <View style={styles.viewTimelineHint}>
+                                <Ionicons name="time-outline" size={14} color="#4CAF50" />
+                                <Text style={styles.viewTimelineText}>View timeline</Text>
+                                <Ionicons name="chevron-forward" size={14} color="#4CAF50" />
+                              </View>
                             </View>
                           </View>
-                          <Text style={styles.plantStrain}>{plant.strain}</Text>
-                          {plant.currentStage && (
-                            <View style={styles.stageBadge}>
-                              <Text style={styles.stageBadgeText}>{plant.currentStage}</Text>
-                            </View>
-                          )}
-                          <Text style={styles.plantDate}>
-                            Started: {format(new Date(plant.startDate), 'MMM dd, yyyy')}
-                          </Text>
                         </View>
-                      </View>
-                    </Card>
+                      </Card>
+                    </TouchableOpacity>
                   ))
                 )}
               </View>
@@ -545,6 +561,22 @@ const styles = StyleSheet.create({
   plantDate: {
     fontSize: 11,
     color: '#999',
+  },
+  plantFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  viewTimelineHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewTimelineText: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontWeight: '500',
   },
 });
 
