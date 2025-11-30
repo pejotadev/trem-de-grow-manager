@@ -19,7 +19,6 @@ import { useAuth } from '../../../contexts/AuthContext';
 import {
   getPlant,
   getPlantStages,
-  getPlantWaterRecords,
   getEnvironment,
   deletePlant,
   createStage,
@@ -31,7 +30,7 @@ import {
   updateHarvest,
   getPlantLogs,
 } from '../../../firebase/firestore';
-import { Plant, Stage, WaterRecord, StageName, Environment, PlantSourceType, GeneticInfo, Chemotype, Harvest, HarvestStatus, HarvestPurpose, PlantLog } from '../../../types';
+import { Plant, Stage, StageName, Environment, PlantSourceType, GeneticInfo, Chemotype, Harvest, HarvestStatus, HarvestPurpose, PlantLog } from '../../../types';
 import { getLogTypeInfo } from '../../../components/LogTypeSelector';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
@@ -90,7 +89,6 @@ export default function PlantDetailScreen() {
   const [environments, setEnvironments] = useState<Environment[]>([]);
   const [allPlants, setAllPlants] = useState<Plant[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
-  const [waterRecords, setWaterRecords] = useState<WaterRecord[]>([]);
   const [plantLogs, setPlantLogs] = useState<PlantLog[]>([]);
   const [harvests, setHarvests] = useState<Harvest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,9 +158,8 @@ export default function PlantDetailScreen() {
         envData = await getEnvironment(plantData.environmentId);
       }
 
-      const [stagesData, waterData, harvestsData] = await Promise.all([
+      const [stagesData, harvestsData] = await Promise.all([
         getPlantStages(id),
-        getPlantWaterRecords(id),
         getPlantHarvests(id),
       ]);
       
@@ -178,7 +175,6 @@ export default function PlantDetailScreen() {
       setPlant(plantData);
       setEnvironment(envData);
       setStages(stagesData);
-      setWaterRecords(waterData);
       setPlantLogs(plantLogsData);
       setHarvests(harvestsData);
 
@@ -1105,38 +1101,6 @@ export default function PlantDetailScreen() {
             </View>
           )}
         </Card>
-
-        {/* Quick Watering Logs (Legacy) */}
-        {waterRecords.length > 0 && (
-          <Card>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                Quick Watering ({waterRecords.length})
-              </Text>
-              <TouchableOpacity onPress={() => router.push('/(tabs)/logs/watering')}>
-                <Text style={styles.viewAll}>View All</Text>
-              </TouchableOpacity>
-            </View>
-            {waterRecords.slice(0, 3).map((record) => (
-              <View key={record.id} style={styles.logItem}>
-                <View style={styles.logIcon}>
-                  <Ionicons name="water" size={20} color="#2196F3" />
-                </View>
-                <View style={styles.logContent}>
-                  <Text style={styles.logTitle}>
-                    {record.ingredients.length} ingredient(s)
-                  </Text>
-                  <Text style={styles.logDate}>
-                    {format(new Date(record.date), 'MMM dd, yyyy')}
-                  </Text>
-                  {record.notes && (
-                    <Text style={styles.logNotes}>{record.notes}</Text>
-                  )}
-                </View>
-              </View>
-            ))}
-          </Card>
-        )}
 
         {/* Harvests Section */}
         <Card>

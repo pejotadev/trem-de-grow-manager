@@ -95,12 +95,8 @@ export default function NewEnvironmentScreen() {
       const environmentId = await createEnvironment(environmentData);
       console.log('[NewEnvironment] Environment created with ID:', environmentId);
 
-      Alert.alert(t('common:success'), t('environments:success.created'), [
-        {
-          text: t('common:ok'),
-          onPress: () => router.back(),
-        },
-      ]);
+      // Navigate directly to the newly created environment
+      router.replace(`/(tabs)/environments/${environmentId}`);
     } catch (error: any) {
       console.error('[NewEnvironment] Error creating environment:', error);
       Alert.alert(t('common:error'), t('environments:errors.failedToCreate'));

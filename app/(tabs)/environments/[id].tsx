@@ -76,6 +76,19 @@ export default function EnvironmentDetailScreen() {
       const envData = await getEnvironment(id);
       console.log('[EnvironmentDetail] Environment data loaded:', envData);
       console.log('[EnvironmentDetail] Environment userId:', envData?.userId, '| Current user:', userData?.uid);
+      
+      // Verify the environment belongs to the current user
+      if (envData && userData && envData.userId !== userData.uid) {
+        console.warn('[EnvironmentDetail] Environment does not belong to current user');
+        Alert.alert(
+          t('common:error'),
+          t('environments:detail.accessDenied'),
+          [{ text: t('common:ok'), onPress: () => router.back() }]
+        );
+        setLoading(false);
+        return;
+      }
+      
       setEnvironment(envData);
       
       // Load plants and records separately to handle errors gracefully

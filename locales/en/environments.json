@@ -37,7 +37,8 @@
     "failedToLoad": "Failed to load environment data",
     "failedToDelete": "Failed to delete environment",
     "failedToUpdate": "Failed to update environment",
-    "noEnvironmentLogs": "No environment logs"
+    "noEnvironmentLogs": "No environment logs",
+    "accessDenied": "You don't have permission to access this environment"
   },
   "success": {
     "created": "Environment created successfully!"

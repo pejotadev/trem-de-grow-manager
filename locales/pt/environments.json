@@ -37,7 +37,8 @@
     "failedToLoad": "Falha ao carregar dados do ambiente",
     "failedToDelete": "Falha ao excluir ambiente",
     "failedToUpdate": "Falha ao atualizar ambiente",
-    "noEnvironmentLogs": "Nenhum registro de ambiente"
+    "noEnvironmentLogs": "Nenhum registro de ambiente",
+    "accessDenied": "Você não tem permissão para acessar este ambiente"
   },
   "success": {
     "created": "Ambiente criado com sucesso!"
