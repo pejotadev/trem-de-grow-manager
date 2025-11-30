@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../../contexts/AuthContext';
 import {
   getFriendPlant,
@@ -61,6 +62,7 @@ interface TimelineItem {
 }
 
 export default function FriendPlantTimelineScreen() {
+  const { t } = useTranslation(['common']);
   const { id, friendId } = useLocalSearchParams();
   const [plant, setPlant] = useState<Plant | null>(null);
   const [friend, setFriend] = useState<User | null>(null);
@@ -173,7 +175,7 @@ export default function FriendPlantTimelineScreen() {
           <View style={styles.timelineContent}>
             <View style={[styles.stageCard, { borderLeftColor: stageColor }]}>
               <View style={styles.stageHeader}>
-                <Text style={[styles.stageName, { color: stageColor }]}>{stage.name}</Text>
+                <Text style={[styles.stageName, { color: stageColor }]}>{t(`common:stages.${stage.name.toLowerCase()}`)}</Text>
                 <View style={[styles.stageBadge, { backgroundColor: stageColor }]}>
                   <Text style={styles.stageBadgeText}>Stage</Text>
                 </View>
@@ -299,7 +301,7 @@ export default function FriendPlantTimelineScreen() {
                     size={14}
                     color="#fff"
                   />
-                  <Text style={styles.stageBadgeLargeText}>{plant.currentStage}</Text>
+                  <Text style={styles.stageBadgeLargeText}>{t(`common:stages.${plant.currentStage.toLowerCase()}`)}</Text>
                 </View>
               )}
               <Text style={styles.date}>

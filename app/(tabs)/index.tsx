@@ -161,7 +161,7 @@ export default function HomeScreen() {
             <Text style={styles.plantStrain}>{item.strain}</Text>
             {item.currentStage && (
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>{t(`common:stages.${item.currentStage}`)}</Text>
+                <Text style={styles.badgeText}>{t(`common:stages.${item.currentStage.toLowerCase()}`)}</Text>
               </View>
             )}
             <Text style={styles.plantDate}>

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   getUser,
@@ -37,6 +38,7 @@ const ENVIRONMENT_COLORS: Record<string, string> = {
 };
 
 export default function FriendProfileScreen() {
+  const { t } = useTranslation(['common']);
   const { id } = useLocalSearchParams();
   const [friend, setFriend] = useState<User | null>(null);
   const [environments, setEnvironments] = useState<Environment[]>([]);
@@ -289,7 +291,7 @@ export default function FriendProfileScreen() {
                             <Text style={styles.plantStrain}>{plant.strain}</Text>
                             {plant.currentStage && (
                               <View style={styles.stageBadge}>
-                                <Text style={styles.stageBadgeText}>{plant.currentStage}</Text>
+                                <Text style={styles.stageBadgeText}>{t(`common:stages.${plant.currentStage.toLowerCase()}`)}</Text>
                               </View>
                             )}
                             <View style={styles.plantFooter}>

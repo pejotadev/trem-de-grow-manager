@@ -15,6 +15,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   getPlant,
@@ -81,6 +82,7 @@ const ENVIRONMENT_COLORS: Record<string, string> = {
 };
 
 export default function PlantDetailScreen() {
+  const { t } = useTranslation(['plants', 'common']);
   const { id } = useLocalSearchParams();
   const [plant, setPlant] = useState<Plant | null>(null);
   const [parentPlant, setParentPlant] = useState<Plant | null>(null);
@@ -717,7 +719,7 @@ export default function PlantDetailScreen() {
           <View style={styles.plantHeader}>
             <View style={styles.plantHeaderContent}>
               <View style={styles.nameRow}>
-                <Text style={[styles.plantName, plant.deletedAt && styles.plantNameArchived]}>{plant.name}</Text>
+                <Text style={[styles.plantName, plant.deletedAt ? styles.plantNameArchived : undefined]}>{plant.name}</Text>
                 <View style={styles.controlBadge}>
                   <Text style={styles.controlText}>#{plant.controlNumber}</Text>
                 </View>
@@ -731,8 +733,8 @@ export default function PlantDetailScreen() {
                   </View>
                 )}
                 {plant.currentStage && (
-                  <View style={[styles.badge, plant.deletedAt && styles.badgeArchived]}>
-                    <Text style={styles.badgeText}>{plant.currentStage}</Text>
+                  <View style={[styles.badge, plant.deletedAt ? styles.badgeArchived : undefined]}>
+                    <Text style={styles.badgeText}>{t(`common:stages.${plant.currentStage.toLowerCase()}`)}</Text>
                   </View>
                 )}
                 {plant.isMotherPlant && (
@@ -886,7 +888,7 @@ export default function PlantDetailScreen() {
                 </View>
                 {clone.currentStage && (
                   <View style={styles.cloneChildStageBadge}>
-                    <Text style={styles.cloneChildStageText}>{clone.currentStage}</Text>
+                    <Text style={styles.cloneChildStageText}>{t(`common:stages.${clone.currentStage.toLowerCase()}`)}</Text>
                   </View>
                 )}
                 <Ionicons name="chevron-forward" size={18} color="#999" />
@@ -962,7 +964,7 @@ export default function PlantDetailScreen() {
                       plant.currentStage === stage ? styles.stageButtonTextActive : styles.stageButtonTextInactive,
                     ]}
                   >
-                    {stage}
+                    {t(`common:stages.${stage.toLowerCase()}`)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -997,7 +999,7 @@ export default function PlantDetailScreen() {
                           plant.currentStage === stage ? styles.stageButtonTextActive : styles.stageButtonTextInactive,
                         ]}
                       >
-                        {stage}
+                        {t(`common:stages.${stage.toLowerCase()}`)}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -1017,7 +1019,7 @@ export default function PlantDetailScreen() {
                   <Ionicons name="git-branch-outline" size={20} color="#4CAF50" />
                 </View>
                 <View style={styles.logContent}>
-                  <Text style={styles.logTitle}>{stage.name}</Text>
+                  <Text style={styles.logTitle}>{t(`common:stages.${stage.name.toLowerCase()}`)}</Text>
                   <Text style={styles.logDate}>
                     {format(new Date(stage.startDate), 'MMM dd, yyyy')}
                   </Text>

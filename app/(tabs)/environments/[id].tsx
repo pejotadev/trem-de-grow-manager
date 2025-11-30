@@ -329,7 +329,7 @@ export default function EnvironmentDetailScreen() {
                   <Text style={styles.plantStrain}>{plant.strain}</Text>
                   {plant.currentStage && (
                     <View style={styles.stageBadge}>
-                      <Text style={styles.stageBadgeText}>{t(`common:stages.${plant.currentStage}`)}</Text>
+                      <Text style={styles.stageBadgeText}>{t(`common:stages.${plant.currentStage.toLowerCase()}`)}</Text>
                     </View>
                   )}
                 </View>
