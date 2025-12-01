@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +20,35 @@ interface MenuItem {
   route: string;
 }
 
+// Main navigation tabs
+const MAIN_TABS: MenuItem[] = [
+  {
+    id: 'plants',
+    icon: 'leaf',
+    color: '#4CAF50',
+    route: '/(tabs)',
+  },
+  {
+    id: 'environments',
+    icon: 'cube',
+    color: '#2E7D32',
+    route: '/(tabs)/environments',
+  },
+  {
+    id: 'logs',
+    icon: 'clipboard',
+    color: '#1976D2',
+    route: '/(tabs)/logs',
+  },
+  {
+    id: 'friends',
+    icon: 'people',
+    color: '#7B1FA2',
+    route: '/(tabs)/friends',
+  },
+];
+
+// Secondary menu items
 const MENU_ITEMS: MenuItem[] = [
   {
     id: 'genetics',
@@ -85,25 +115,57 @@ export function MenuSidebar({ compact = false }: MenuSidebarProps) {
   const { userData, logout } = useAuth();
   const router = useRouter();
 
-  const handleLogout = () => {
-    Alert.alert(
-      t('auth:logout.title'),
-      t('auth:logout.confirmMessage'),
-      [
-        { text: t('common:cancel'), style: 'cancel' },
-        {
-          text: t('auth:logout.button'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-            } catch (error) {
-              console.error('Logout error:', error);
-            }
+  const handleLogout = async () => {
+    console.log('[MenuSidebar] Logout button clicked');
+    const isWeb = Platform.OS === 'web';
+    
+    if (isWeb) {
+      // On web, use window.confirm as fallback
+      const confirmMessage = t('auth:logout.confirmMessage');
+      console.log('[MenuSidebar] Web logout, showing confirm dialog');
+      
+      const confirmed = typeof window !== 'undefined' && window.confirm 
+        ? window.confirm(confirmMessage)
+        : confirm(confirmMessage);
+      
+      if (confirmed) {
+        console.log('[MenuSidebar] User confirmed logout');
+        try {
+          await logout();
+          console.log('[MenuSidebar] Logout successful');
+        } catch (error) {
+          console.error('[MenuSidebar] Logout error:', error);
+          if (typeof window !== 'undefined' && window.alert) {
+            window.alert('Erro ao fazer logout. Por favor, tente novamente.');
+          } else {
+            alert('Erro ao fazer logout. Por favor, tente novamente.');
+          }
+        }
+      } else {
+        console.log('[MenuSidebar] User cancelled logout');
+      }
+    } else {
+      // On mobile, use Alert.alert
+      Alert.alert(
+        t('auth:logout.title'),
+        t('auth:logout.confirmMessage'),
+        [
+          { text: t('common:cancel'), style: 'cancel' },
+          {
+            text: t('auth:logout.button'),
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await logout();
+              } catch (error) {
+                console.error('Logout error:', error);
+                Alert.alert(t('common:error'), 'Erro ao fazer logout. Por favor, tente novamente.');
+              }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const getInitials = (name?: string, email?: string): string => {
@@ -142,8 +204,18 @@ export function MenuSidebar({ compact = false }: MenuSidebarProps) {
             </Text>
           </TouchableOpacity>
 
-          {/* Menu Items - Icons Only */}
+          {/* Main Tabs - Icons Only */}
           <View style={styles.menuSectionCompact}>
+            {MAIN_TABS.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.menuItemCompact}
+                onPress={() => router.push(item.route as any)}
+              >
+                <Ionicons name={item.icon} size={24} color={item.color} />
+              </TouchableOpacity>
+            ))}
+            {/* Secondary Menu Items */}
             {MENU_ITEMS.map((item) => (
               <TouchableOpacity
                 key={item.id}
@@ -169,7 +241,10 @@ export function MenuSidebar({ compact = false }: MenuSidebarProps) {
 
   return (
     <View style={styles.sidebar}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        style={styles.scrollView}
+      >
         {/* User Header */}
         <View style={styles.userHeader}>
           <View style={styles.avatarContainer}>
@@ -193,7 +268,28 @@ export function MenuSidebar({ compact = false }: MenuSidebarProps) {
           </TouchableOpacity>
         </View>
 
-        {/* Menu Items */}
+        {/* Main Navigation Tabs */}
+        <View style={styles.menuSection}>
+          <Text style={styles.sectionTitle}>{t('menu:mainNavigation')}</Text>
+          {MAIN_TABS.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.menuItem}
+              onPress={() => router.push(item.route as any)}
+            >
+              <View style={[styles.menuIconContainer, { backgroundColor: item.color + '15' }]}>
+                <Ionicons name={item.icon} size={24} color={item.color} />
+              </View>
+              <View style={styles.menuItemContent}>
+                <Text style={styles.menuItemTitle}>{getMenuItemTitle(item.id)}</Text>
+                <Text style={styles.menuItemSubtitle}>{getMenuItemSubtitle(item.id)}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#ccc" />
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Secondary Menu Items */}
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('menu:features')}</Text>
           {MENU_ITEMS.map((item) => (
@@ -222,13 +318,15 @@ export function MenuSidebar({ compact = false }: MenuSidebarProps) {
           <Text style={styles.appName}>{t('menu:appInfo.title')}</Text>
           <Text style={styles.appVersion}>{t('menu:appInfo.version', { version: '1.0.0' })}</Text>
         </View>
-
-        {/* Logout Button */}
+      </ScrollView>
+      
+      {/* Logout Button - Fixed at bottom */}
+      <View style={styles.logoutContainer}>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={22} color="#f44336" />
           <Text style={styles.logoutText}>{t('auth:logout.button')}</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -241,9 +339,15 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: '#e0e0e0',
     height: '100%',
+    overflow: 'hidden',
+    flexDirection: 'column',
+  },
+  scrollView: {
+    flex: 1,
   },
   scrollContent: {
     padding: 16,
+    paddingBottom: 16,
   },
   // User Header
   userHeader: {
@@ -366,6 +470,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   // Logout
+  logoutContainer: {
+    padding: 16,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    backgroundColor: '#f5f5f5',
+  },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -376,6 +487,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FFEBEE',
     gap: 8,
+    cursor: 'pointer',
   },
   logoutText: {
     fontSize: 16,

@@ -1,12 +1,29 @@
 {
   "title": "Menu",
   "user": "User",
+  "mainNavigation": "Main Navigation",
   "features": "Features",
   "appInfo": {
     "title": "Grow Manager",
     "version": "Version {{version}}"
   },
   "items": {
+    "plants": {
+      "title": "Plants",
+      "subtitle": "Manage your plants"
+    },
+    "environments": {
+      "title": "Environments",
+      "subtitle": "Manage your growing environments"
+    },
+    "logs": {
+      "title": "Logs",
+      "subtitle": "View and manage logs"
+    },
+    "friends": {
+      "title": "Friends",
+      "subtitle": "Manage your friends and connections"
+    },
     "genetics": {
       "title": "Genetics Library",
       "subtitle": "Manage seed strains and genetics"

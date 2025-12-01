@@ -1,12 +1,29 @@
 {
   "title": "Menu",
   "user": "Usuário",
+  "mainNavigation": "Navegação Principal",
   "features": "Recursos",
   "appInfo": {
     "title": "Grow Manager",
     "version": "Versão {{version}}"
   },
   "items": {
+    "plants": {
+      "title": "Plantas",
+      "subtitle": "Gerencie suas plantas"
+    },
+    "environments": {
+      "title": "Ambientes",
+      "subtitle": "Gerencie seus ambientes de cultivo"
+    },
+    "logs": {
+      "title": "Registros",
+      "subtitle": "Visualize e gerencie registros"
+    },
+    "friends": {
+      "title": "Amigos",
+      "subtitle": "Gerencie seus amigos e conexões"
+    },
     "genetics": {
       "title": "Biblioteca de Genéticas",
       "subtitle": "Gerencie cepas e genéticas de sementes"

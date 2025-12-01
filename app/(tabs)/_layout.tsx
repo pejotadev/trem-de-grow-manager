@@ -73,6 +73,8 @@ export default function TabsLayout() {
         options={{
           title: t('tabs.menu'),
           headerShown: false,
+          // Hide menu tab on web since sidebar is always visible
+          href: isWeb ? null : undefined,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="menu" size={size} color={color} />
           ),
