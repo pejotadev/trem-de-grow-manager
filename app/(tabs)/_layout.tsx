@@ -1,11 +1,14 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { Platform, View, StyleSheet } from 'react-native';
+import { MenuSidebar } from '../../components/MenuSidebar';
 
 export default function TabsLayout() {
   const { t } = useTranslation('common');
+  const isWeb = Platform.OS === 'web';
 
-  return (
+  const tabsContent = (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#4CAF50',
@@ -16,6 +19,8 @@ export default function TabsLayout() {
         headerTitleStyle: {
           fontWeight: 'bold',
         },
+        // Hide tab bar on web since we have sidebar
+        tabBarStyle: isWeb ? { display: 'none' } : undefined,
       }}
     >
       <Tabs.Screen
@@ -125,4 +130,31 @@ export default function TabsLayout() {
       />
     </Tabs>
   );
+
+  // On web, wrap tabs with sidebar layout
+  if (isWeb) {
+    return (
+      <View style={styles.webContainer}>
+        <MenuSidebar />
+        <View style={styles.webContent}>
+          {tabsContent}
+        </View>
+      </View>
+    );
+  }
+
+  // On mobile, return tabs normally
+  return tabsContent;
 }
+
+const styles = StyleSheet.create({
+  webContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    height: '100vh',
+  },
+  webContent: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+});
