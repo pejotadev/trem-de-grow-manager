@@ -32,9 +32,10 @@ import {
   getPlantHarvests,
   updateHarvest,
   getPlantLogs,
+  getAllLogsForPlant,
   getSeedGenetic,
 } from '../../../firebase/firestore';
-import { Plant, Stage, StageName, Environment, PlantSourceType, GeneticInfo, Chemotype, Harvest, HarvestStatus, HarvestPurpose, PlantLog, SeedGenetic, SeedType, PlantDominance } from '../../../types';
+import { Plant, Stage, StageName, Environment, PlantSourceType, GeneticInfo, Chemotype, Harvest, HarvestStatus, HarvestPurpose, PlantLog, BulkPlantLog, SeedGenetic, SeedType, PlantDominance } from '../../../types';
 import { getLogTypeInfo } from '../../../components/LogTypeSelector';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
@@ -111,6 +112,30 @@ const DOMINANCE_LABELS: Record<PlantDominance, string> = {
   balanced: 'Balanced',
 };
 
+const STAGE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  Seedling: 'leaf-outline',
+  Veg: 'leaf',
+  Flower: 'flower-outline',
+  Drying: 'sunny-outline',
+  Curing: 'time-outline',
+};
+
+const STAGE_COLORS: Record<string, string> = {
+  Seedling: '#8BC34A',
+  Veg: '#4CAF50',
+  Flower: '#E91E63',
+  Drying: '#FF9800',
+  Curing: '#9C27B0',
+};
+
+interface TimelineItem {
+  id: string;
+  type: 'stage' | 'harvest' | 'log';
+  date: number;
+  data: Stage | Harvest | PlantLog | BulkPlantLog;
+  logType?: 'individual' | 'bulk';
+}
+
 export default function PlantDetailScreen() {
   const { t } = useTranslation(['plants', 'common']);
   const { id } = useLocalSearchParams();
@@ -123,6 +148,7 @@ export default function PlantDetailScreen() {
   const [allPlants, setAllPlants] = useState<Plant[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
   const [plantLogs, setPlantLogs] = useState<PlantLog[]>([]);
+  const [allLogs, setAllLogs] = useState<{ type: 'individual' | 'bulk'; log: PlantLog | BulkPlantLog }[]>([]);
   const [harvests, setHarvests] = useState<Harvest[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -202,12 +228,24 @@ export default function PlantDetailScreen() {
         getPlantHarvests(id),
       ]);
       
-      // Load plant logs separately - may fail if index is still building
-      let plantLogsData: any[] = [];
+      // Load all logs (individual + bulk) - may fail if index is still building
+      let allLogsData: { type: 'individual' | 'bulk'; log: PlantLog | BulkPlantLog }[] = [];
+      let plantLogsData: PlantLog[] = [];
       try {
-        plantLogsData = await getPlantLogs(id, undefined, 10);
+        // Get all logs (no limit to show everything in timeline)
+        allLogsData = await getAllLogsForPlant(id);
+        // Also keep individual logs for the recent activity section (backward compatibility)
+        plantLogsData = allLogsData
+          .filter(item => item.type === 'individual')
+          .map(item => item.log as PlantLog);
       } catch (logError: any) {
         console.warn('[PlantDetail] Failed to load plant logs (index may be building):', logError.message);
+        // Fallback to individual logs only
+        try {
+          plantLogsData = await getPlantLogs(id, undefined, 10);
+        } catch (fallbackError: any) {
+          console.warn('[PlantDetail] Failed to load individual logs:', fallbackError.message);
+        }
       }
 
       console.log('[PlantDetail] Plant data loaded:', plantData);
@@ -215,6 +253,7 @@ export default function PlantDetailScreen() {
       setEnvironment(envData);
       setStages(stagesData);
       setPlantLogs(plantLogsData);
+      setAllLogs(allLogsData);
       setHarvests(harvestsData);
 
       // Load parent plant if this is a clone
@@ -722,6 +761,51 @@ export default function PlantDetailScreen() {
 
   const canHarvest = plant?.currentStage && HARVESTABLE_STAGES.includes(plant.currentStage);
 
+  // Build unified timeline from stages, harvests, and all logs
+  const buildTimeline = (): TimelineItem[] => {
+    const timelineItems: TimelineItem[] = [];
+
+    // Add stages
+    stages.forEach(stage => {
+      timelineItems.push({
+        id: `stage-${stage.id}`,
+        type: 'stage',
+        date: stage.startDate,
+        data: stage,
+      });
+    });
+
+    // Add harvests
+    harvests.forEach(harvest => {
+      timelineItems.push({
+        id: `harvest-${harvest.id}`,
+        type: 'harvest',
+        date: harvest.harvestDate,
+        data: harvest,
+      });
+    });
+
+    // Add all logs (individual + bulk)
+    allLogs.forEach(logItem => {
+      timelineItems.push({
+        id: logItem.type === 'individual' 
+          ? `log-${(logItem.log as PlantLog).id}` 
+          : `bulk-log-${(logItem.log as BulkPlantLog).id}`,
+        type: 'log',
+        date: logItem.log.date,
+        data: logItem.log,
+        logType: logItem.type,
+      });
+    });
+
+    // Sort by date descending (newest first)
+    timelineItems.sort((a, b) => b.date - a.date);
+
+    return timelineItems;
+  };
+
+  const timeline = buildTimeline();
+
   // Handle stage edit
   const handleStageEditPress = (stage: Stage) => {
     setSelectedStage(stage);
@@ -1197,75 +1281,183 @@ export default function PlantDetailScreen() {
           )}
         </Card>
 
-        {/* Recent Activity Logs */}
+        {/* Timeline View - All Events */}
         <Card>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              Recent Activity ({plantLogs.length})
-            </Text>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="time-outline" size={20} color="#333" />
+              <Text style={styles.sectionTitle}>Timeline ({timeline.length})</Text>
+            </View>
             <TouchableOpacity onPress={() => router.push('/(tabs)/logs/plant-log')}>
-              <Text style={styles.viewAll}>View All</Text>
+              <Text style={styles.viewAll}>Add Log</Text>
             </TouchableOpacity>
           </View>
-          {plantLogs.slice(0, 5).map((log) => {
-            const typeInfo = getLogTypeInfo(log.logType);
-            return (
-              <View key={log.id} style={styles.logItem}>
-                <View style={[styles.activityLogIcon, { backgroundColor: typeInfo.color + '20' }]}>
-                  <Ionicons name={typeInfo.icon as any} size={18} color={typeInfo.color} />
-                </View>
-                <View style={styles.logContent}>
-                  <View style={styles.logTitleRow}>
-                    <View style={styles.logTitleWithBadge}>
-                      <Text style={styles.logTitle}>{typeInfo.label}</Text>
-                      {log.fromBulkUpdate && (
-                        <View style={styles.bulkUpdateBadge}>
-                          <Ionicons name="layers" size={10} color="#7B1FA2" />
-                          <Text style={styles.bulkUpdateBadgeText}>Bulk</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.logDate}>
-                      {format(new Date(log.date), 'MMM dd')}
-                    </Text>
-                  </View>
-                  {/* Show relevant details */}
-                  <View style={styles.logDetailsRow}>
-                    {log.waterAmountMl && (
-                      <Text style={styles.logDetailBadge}>💧 {log.waterAmountMl}ml</Text>
-                    )}
-                    {log.phLevel && (
-                      <Text style={styles.logDetailBadge}>pH {log.phLevel}</Text>
-                    )}
-                    {log.nutrients && log.nutrients.length > 0 && (
-                      <Text style={styles.logDetailBadge}>
-                        🧪 {log.nutrients.length} nutrient{log.nutrients.length > 1 ? 's' : ''}
-                      </Text>
-                    )}
-                    {log.leavesRemoved && (
-                      <Text style={styles.logDetailBadge}>🍃 {log.leavesRemoved} leaves</Text>
-                    )}
-                    {log.trainingMethod && (
-                      <Text style={styles.logDetailBadge}>📐 {log.trainingMethod}</Text>
-                    )}
-                  </View>
-                  {log.notes && (
-                    <Text style={styles.logNotes} numberOfLines={1}>{log.notes}</Text>
-                  )}
-                </View>
-              </View>
-            );
-          })}
-          {plantLogs.length === 0 && (
-            <View style={styles.emptyLogsContainer}>
-              <Ionicons name="document-text-outline" size={32} color="#ccc" />
-              <Text style={styles.emptyText}>No activity logs yet</Text>
+          
+          {timeline.length === 0 ? (
+            <View style={styles.emptyTimelineContainer}>
+              <Ionicons name="calendar-outline" size={48} color="#ccc" />
+              <Text style={styles.emptyText}>No timeline events yet</Text>
+              <Text style={styles.emptyTimelineSubtext}>
+                Stage changes, harvests, and activity logs will appear here.
+              </Text>
               <TouchableOpacity 
                 style={styles.addLogButton}
                 onPress={() => router.push('/(tabs)/logs/plant-log')}
               >
                 <Text style={styles.addLogButtonText}>+ Add Activity Log</Text>
               </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.timelineContainer}>
+              {timeline.map((item, index) => {
+                const isFirst = index === 0;
+                const isLast = index === timeline.length - 1;
+
+                // Render stage
+                if (item.type === 'stage') {
+                  const stage = item.data as Stage;
+                  const stageColor = STAGE_COLORS[stage.name] || '#4CAF50';
+                  const stageIcon = STAGE_ICONS[stage.name] || 'leaf';
+
+                  return (
+                    <View key={item.id} style={styles.timelineItem}>
+                      <View style={styles.timelineConnector}>
+                        {!isFirst && <View style={styles.connectorLineTop} />}
+                        <View style={[styles.timelineDot, { backgroundColor: stageColor }]}>
+                          <Ionicons name={stageIcon} size={14} color="#fff" />
+                        </View>
+                        {!isLast && <View style={styles.connectorLineBottom} />}
+                      </View>
+                      <View style={styles.timelineContent}>
+                        <View style={[styles.timelineCard, { borderLeftColor: stageColor }]}>
+                          <View style={styles.timelineCardHeader}>
+                            <Text style={[styles.timelineCardTitle, { color: stageColor }]}>
+                              {t(`common:stages.${stage.name.toLowerCase()}`)}
+                            </Text>
+                            <View style={[styles.timelineBadge, { backgroundColor: stageColor }]}>
+                              <Text style={styles.timelineBadgeText}>Stage</Text>
+                            </View>
+                          </View>
+                          <Text style={styles.timelineDate}>
+                            {format(new Date(stage.startDate), 'EEEE, MMM dd, yyyy • h:mm a')}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                }
+
+                // Render harvest
+                if (item.type === 'harvest') {
+                  const harvest = item.data as Harvest;
+
+                  return (
+                    <View key={item.id} style={styles.timelineItem}>
+                      <View style={styles.timelineConnector}>
+                        {!isFirst && <View style={styles.connectorLineTop} />}
+                        <View style={[styles.timelineDot, { backgroundColor: HARVEST_STATUS_COLORS[harvest.status] }]}>
+                          <Ionicons name="cut" size={14} color="#fff" />
+                        </View>
+                        {!isLast && <View style={styles.connectorLineBottom} />}
+                      </View>
+                      <View style={styles.timelineContent}>
+                        <View style={[styles.timelineCard, { borderLeftColor: HARVEST_STATUS_COLORS[harvest.status] }]}>
+                          <View style={styles.timelineCardHeader}>
+                            <Text style={[styles.timelineCardTitle, { color: HARVEST_STATUS_COLORS[harvest.status] }]}>
+                              Harvest #{harvest.controlNumber}
+                            </Text>
+                            <View style={[styles.timelineBadge, { backgroundColor: HARVEST_STATUS_COLORS[harvest.status] }]}>
+                              <Text style={styles.timelineBadgeText}>{harvest.status}</Text>
+                            </View>
+                          </View>
+                          <Text style={styles.timelineDate}>
+                            {format(new Date(harvest.harvestDate), 'EEEE, MMM dd, yyyy • h:mm a')}
+                          </Text>
+                          <View style={styles.timelineDetails}>
+                            <Text style={styles.timelineDetailText}>
+                              {harvest.wetWeightGrams}g wet
+                              {harvest.dryWeightGrams && ` → ${harvest.dryWeightGrams}g dry`}
+                            </Text>
+                            <Text style={styles.timelineDetailSubtext}>
+                              {HARVEST_PURPOSE_LABELS[harvest.purpose]}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                }
+
+                // Render log (individual or bulk)
+                const log = item.data as PlantLog | BulkPlantLog;
+                const isBulk = item.logType === 'bulk';
+                const typeInfo = getLogTypeInfo(log.logType);
+
+                return (
+                  <View key={item.id} style={styles.timelineItem}>
+                    <View style={styles.timelineConnector}>
+                      {!isFirst && <View style={styles.connectorLineTop} />}
+                      <View style={[styles.timelineDot, { backgroundColor: typeInfo.color }]}>
+                        <Ionicons name={typeInfo.icon as any} size={14} color="#fff" />
+                      </View>
+                      {!isLast && <View style={styles.connectorLineBottom} />}
+                    </View>
+                    <View style={styles.timelineContent}>
+                      <View style={[styles.timelineCard, { borderLeftColor: typeInfo.color }]}>
+                        <View style={styles.timelineCardHeader}>
+                          <View style={styles.timelineCardTitleRow}>
+                            <Text style={[styles.timelineCardTitle, { color: typeInfo.color }]}>
+                              {typeInfo.label}
+                            </Text>
+                            {isBulk && (
+                              <View style={styles.bulkTimelineBadge}>
+                                <Ionicons name="layers" size={10} color="#7B1FA2" />
+                                <Text style={styles.bulkTimelineBadgeText}>Bulk</Text>
+                              </View>
+                            )}
+                            {(log as PlantLog).fromBulkUpdate && !isBulk && (
+                              <View style={styles.bulkTimelineBadge}>
+                                <Ionicons name="layers" size={10} color="#7B1FA2" />
+                                <Text style={styles.bulkTimelineBadgeText}>Bulk</Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                        <Text style={styles.timelineDate}>
+                          {format(new Date(log.date), 'EEEE, MMM dd, yyyy • h:mm a')}
+                        </Text>
+                        <View style={styles.timelineDetails}>
+                          {log.waterAmountMl && (
+                            <Text style={styles.timelineDetailBadge}>💧 {log.waterAmountMl}ml</Text>
+                          )}
+                          {log.phLevel && (
+                            <Text style={styles.timelineDetailBadge}>pH {log.phLevel}</Text>
+                          )}
+                          {log.nutrients && log.nutrients.length > 0 && (
+                            <Text style={styles.timelineDetailBadge}>
+                              🧪 {log.nutrients.length} nutrient{log.nutrients.length > 1 ? 's' : ''}
+                            </Text>
+                          )}
+                          {log.leavesRemoved && (
+                            <Text style={styles.timelineDetailBadge}>🍃 {log.leavesRemoved} leaves</Text>
+                          )}
+                          {log.trainingMethod && (
+                            <Text style={styles.timelineDetailBadge}>📐 {log.trainingMethod}</Text>
+                          )}
+                          {isBulk && (
+                            <Text style={styles.timelineDetailBadge}>
+                              🌱 {(log as BulkPlantLog).plantCount} plants
+                            </Text>
+                          )}
+                        </View>
+                        {log.notes && (
+                          <Text style={styles.timelineNotes} numberOfLines={2}>{log.notes}</Text>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
             </View>
           )}
         </Card>
@@ -2395,6 +2587,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -2581,6 +2778,142 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#4CAF50',
+  },
+  // Timeline Styles
+  emptyTimelineContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyTimelineSubtext: {
+    fontSize: 13,
+    color: '#ccc',
+    marginTop: 4,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  timelineContainer: {
+    paddingLeft: 4,
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    marginBottom: 0,
+  },
+  timelineConnector: {
+    width: 40,
+    alignItems: 'center',
+  },
+  connectorLineTop: {
+    width: 2,
+    height: 16,
+    backgroundColor: '#e0e0e0',
+  },
+  connectorLineBottom: {
+    flex: 1,
+    width: 2,
+    backgroundColor: '#e0e0e0',
+  },
+  timelineDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  timelineContent: {
+    flex: 1,
+    paddingBottom: 16,
+    paddingLeft: 8,
+  },
+  timelineCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  timelineCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  timelineCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  timelineCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  timelineBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  timelineBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  bulkTimelineBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#E1BEE7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  bulkTimelineBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#7B1FA2',
+  },
+  timelineDate: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 8,
+  },
+  timelineDetails: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  timelineDetailText: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '500',
+  },
+  timelineDetailSubtext: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
+  },
+  timelineDetailBadge: {
+    fontSize: 11,
+    color: '#666',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  timelineNotes: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 8,
+    fontStyle: 'italic',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
   modalOverlay: {
     flex: 1,
