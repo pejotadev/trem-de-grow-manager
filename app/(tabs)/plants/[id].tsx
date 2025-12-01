@@ -24,6 +24,8 @@ import {
   deletePlant,
   createStage,
   updatePlant,
+  updateStage,
+  deleteStage,
   getUserEnvironments,
   getUserPlants,
   clonePlants,
@@ -163,6 +165,12 @@ export default function PlantDetailScreen() {
   
   // Audit history modal state
   const [auditHistoryVisible, setAuditHistoryVisible] = useState(false);
+  
+  // Stage edit modal state
+  const [stageEditModalVisible, setStageEditModalVisible] = useState(false);
+  const [selectedStage, setSelectedStage] = useState<Stage | null>(null);
+  const [editStageDate, setEditStageDate] = useState<Date | null>(null);
+  const [updatingStage, setUpdatingStage] = useState(false);
   
   const { userData } = useAuth();
   const router = useRouter();
@@ -714,6 +722,59 @@ export default function PlantDetailScreen() {
 
   const canHarvest = plant?.currentStage && HARVESTABLE_STAGES.includes(plant.currentStage);
 
+  // Handle stage edit
+  const handleStageEditPress = (stage: Stage) => {
+    setSelectedStage(stage);
+    setEditStageDate(new Date(stage.startDate));
+    setStageEditModalVisible(true);
+  };
+
+  const handleStageEditSave = async () => {
+    if (!selectedStage || !editStageDate) return;
+    
+    setUpdatingStage(true);
+    try {
+      await updateStage(selectedStage.id, {
+        startDate: editStageDate.getTime(),
+      });
+      setStageEditModalVisible(false);
+      loadPlantData();
+      Alert.alert('Success', 'Stage date updated!');
+    } catch (error: any) {
+      console.error('[PlantDetail] Error updating stage:', error);
+      Alert.alert('Error', 'Failed to update stage: ' + (error.message || 'Unknown error'));
+    } finally {
+      setUpdatingStage(false);
+    }
+  };
+
+  const handleStageDelete = () => {
+    if (!selectedStage) return;
+    
+    Alert.alert(
+      'Delete Stage',
+      `Are you sure you want to delete the "${selectedStage.name}" stage record?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteStage(selectedStage.id);
+              setStageEditModalVisible(false);
+              loadPlantData();
+              Alert.alert('Success', 'Stage record deleted!');
+            } catch (error: any) {
+              console.error('[PlantDetail] Error deleting stage:', error);
+              Alert.alert('Error', 'Failed to delete stage: ' + (error.message || 'Unknown error'));
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const openLabReport = () => {
     if (plant?.chemotype?.reportUrl) {
       Linking.openURL(plant.chemotype.reportUrl);
@@ -1103,20 +1164,33 @@ export default function PlantDetailScreen() {
 
         {/* Stage History */}
         <Card>
-          <Text style={styles.sectionTitle}>Stage History ({stages.length})</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Stage History ({stages.length})</Text>
+            {!plant.deletedAt && stages.length > 0 && (
+              <Text style={styles.tapToEditHint}>Tap to edit dates</Text>
+            )}
+          </View>
           {stages.length > 0 ? (
             stages.map((stage) => (
-              <View key={stage.id} style={styles.logItem}>
-                <View style={styles.logIcon}>
+              <TouchableOpacity 
+                key={stage.id} 
+                style={styles.stageHistoryItem}
+                onPress={() => !plant.deletedAt && handleStageEditPress(stage)}
+                disabled={!!plant.deletedAt}
+              >
+                <View style={styles.stageHistoryIcon}>
                   <Ionicons name="git-branch-outline" size={20} color="#4CAF50" />
                 </View>
-                <View style={styles.logContent}>
-                  <Text style={styles.logTitle}>{t(`common:stages.${stage.name.toLowerCase()}`)}</Text>
-                  <Text style={styles.logDate}>
+                <View style={styles.stageHistoryContent}>
+                  <Text style={styles.stageHistoryTitle}>{t(`common:stages.${stage.name.toLowerCase()}`)}</Text>
+                  <Text style={styles.stageHistoryDate}>
                     {format(new Date(stage.startDate), 'MMM dd, yyyy')}
                   </Text>
                 </View>
-              </View>
+                {!plant.deletedAt && (
+                  <Ionicons name="create-outline" size={18} color="#999" />
+                )}
+              </TouchableOpacity>
             ))
           ) : (
             <Text style={styles.emptyText}>No stage history</Text>
@@ -1805,6 +1879,71 @@ export default function PlantDetailScreen() {
                 onPress={() => setCuringModalVisible(false)}
                 variant="secondary"
                 disabled={updatingCuring}
+              />
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Stage Edit Modal */}
+      <Modal
+        visible={stageEditModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setStageEditModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Stage Date</Text>
+
+            {selectedStage && (
+              <View style={styles.stageEditInfo}>
+                <View style={styles.stageEditBadge}>
+                  <Ionicons name="git-branch-outline" size={18} color="#fff" />
+                  <Text style={styles.stageEditBadgeText}>
+                    {t(`common:stages.${selectedStage.name.toLowerCase()}`)}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            <DatePicker
+              label="Stage Start Date"
+              value={editStageDate}
+              onChange={setEditStageDate}
+              placeholder="Select date"
+              maximumDate={new Date()}
+            />
+
+            <View style={styles.stageEditHint}>
+              <Ionicons name="information-circle-outline" size={16} color="#666" />
+              <Text style={styles.stageEditHintText}>
+                Change the date when this stage started. This affects timeline tracking and reporting.
+              </Text>
+            </View>
+
+            <View style={styles.modalButtons}>
+              <Button
+                title={updatingStage ? 'Saving...' : 'Save Changes'}
+                onPress={handleStageEditSave}
+                disabled={updatingStage}
+              />
+              <TouchableOpacity
+                style={styles.deleteStageButton}
+                onPress={handleStageDelete}
+                disabled={updatingStage}
+              >
+                <Ionicons name="trash-outline" size={18} color="#F44336" />
+                <Text style={styles.deleteStageButtonText}>Delete Stage Record</Text>
+              </TouchableOpacity>
+              <Button
+                title="Cancel"
+                onPress={() => setStageEditModalVisible(false)}
+                variant="secondary"
+                disabled={updatingStage}
               />
             </View>
           </View>
@@ -2821,6 +2960,86 @@ const styles = StyleSheet.create({
   historyButtonText: {
     fontSize: 15,
     color: '#607D8B',
+    fontWeight: '500',
+  },
+  // Stage History styles
+  tapToEditHint: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  stageHistoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  stageHistoryIcon: {
+    marginRight: 12,
+  },
+  stageHistoryContent: {
+    flex: 1,
+  },
+  stageHistoryTitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 2,
+  },
+  stageHistoryDate: {
+    fontSize: 13,
+    color: '#666',
+  },
+  // Stage Edit Modal styles
+  stageEditInfo: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  stageEditBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  stageEditBadgeText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  stageEditHint: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+    gap: 8,
+  },
+  stageEditHintText: {
+    fontSize: 13,
+    color: '#666',
+    flex: 1,
+    lineHeight: 18,
+  },
+  deleteStageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 14,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
+    borderRadius: 10,
+    backgroundColor: '#fff',
+  },
+  deleteStageButtonText: {
+    fontSize: 15,
+    color: '#F44336',
     fontWeight: '500',
   },
 });

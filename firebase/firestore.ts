@@ -379,6 +379,14 @@ export const getPlantStages = async (plantId: string): Promise<Stage[]> => {
   } as Stage));
 };
 
+export const updateStage = async (stageId: string, stageData: Partial<Omit<Stage, 'id'>>): Promise<void> => {
+  await db.collection('stages').doc(stageId).update(stageData);
+};
+
+export const deleteStage = async (stageId: string): Promise<void> => {
+  await db.collection('stages').doc(stageId).delete();
+};
+
 // ==================== WATERING LOGS ====================
 
 export const createWaterRecord = async (waterData: Omit<WaterRecord, 'id'>): Promise<string> => {
