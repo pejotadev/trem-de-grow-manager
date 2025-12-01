@@ -15,11 +15,12 @@ import {
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   getUserPlants,
-  getPlantWaterRecords,
-  createWaterRecord,
-  deleteWaterRecord,
+  getPlantLogs,
+  createPlantLog,
+  deletePlantLog,
 } from '../../../firebase/firestore';
-import { Plant, WaterRecord } from '../../../types';
+import { Plant, PlantLog } from '../../../types';
+import { getLogTypeInfo } from '../../../components/LogTypeSelector';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
@@ -30,7 +31,7 @@ import { Ionicons } from '@expo/vector-icons';
 export default function WateringLogsScreen() {
   const [plants, setPlants] = useState<Plant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
-  const [waterRecords, setWaterRecords] = useState<WaterRecord[]>([]);
+  const [waterLogs, setWaterLogs] = useState<PlantLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [plantSelectModal, setPlantSelectModal] = useState(false);
@@ -54,14 +55,15 @@ export default function WateringLogsScreen() {
     }
   };
 
-  const loadWaterRecords = async () => {
+  const loadWaterLogs = async () => {
     if (!selectedPlant) return;
     
     try {
-      const records = await getPlantWaterRecords(selectedPlant.id);
-      setWaterRecords(records);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to load water records');
+      const logs = await getPlantLogs(selectedPlant.id, 'watering');
+      setWaterLogs(logs);
+    } catch (error: any) {
+      console.warn('[WateringLogs] Failed to load water logs (index may be building):', error.message);
+      setWaterLogs([]);
     }
   };
 
@@ -71,12 +73,12 @@ export default function WateringLogsScreen() {
 
   useEffect(() => {
     if (selectedPlant) {
-      loadWaterRecords();
+      loadWaterLogs();
     }
   }, [selectedPlant]);
 
   const handleAddRecord = async () => {
-    if (!selectedPlant) {
+    if (!selectedPlant || !userData) {
       Alert.alert('Error', 'Please select a plant');
       return;
     }
@@ -87,28 +89,35 @@ export default function WateringLogsScreen() {
     }
 
     try {
+      // Convert ingredients string to nutrients array
       const ingredientList = ingredients.split(',').map((i) => i.trim()).filter(Boolean);
-      await createWaterRecord({
+      const nutrients = ingredientList.map(ingredient => ({
+        name: ingredient,
+      }));
+
+      await createPlantLog({
         plantId: selectedPlant.id,
+        userId: userData.uid,
+        logType: 'watering',
         date: Date.now(),
-        ingredients: ingredientList,
-        notes,
+        nutrients,
+        notes: notes || undefined,
       });
 
       setModalVisible(false);
       setIngredients('');
       setNotes('');
-      loadWaterRecords();
+      loadWaterLogs();
       Alert.alert('Success', 'Watering log added!');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to add watering log');
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to add watering log: ' + (error.message || 'Unknown error'));
     }
   };
 
-  const handleDeleteRecord = (recordId: string) => {
+  const handleDeleteLog = (logId: string) => {
     Alert.alert(
-      'Delete Record',
-      'Are you sure you want to delete this record?',
+      'Delete Log',
+      'Are you sure you want to delete this watering log?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -116,11 +125,11 @@ export default function WateringLogsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteWaterRecord(recordId);
-              loadWaterRecords();
-              Alert.alert('Success', 'Record deleted');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete record');
+              await deletePlantLog(logId);
+              loadWaterLogs();
+              Alert.alert('Success', 'Log deleted');
+            } catch (error: any) {
+              Alert.alert('Error', 'Failed to delete log: ' + (error.message || 'Unknown error'));
             }
           },
         },
@@ -129,7 +138,7 @@ export default function WateringLogsScreen() {
   };
 
   if (loading) {
-    return <Loading message="Loading watering logs..." />;
+    return <Loading message="Loading plants..." />;
   }
 
   if (plants.length === 0) {
@@ -144,29 +153,42 @@ export default function WateringLogsScreen() {
     );
   }
 
-  const renderRecord = ({ item }: { item: WaterRecord }) => (
-    <Card>
-      <View style={styles.recordHeader}>
-        <View style={styles.recordInfo}>
-          <Ionicons name="water" size={24} color="#2196F3" />
-          <View style={styles.recordText}>
-            <Text style={styles.recordTitle}>
-              {item.ingredients.join(', ')}
-            </Text>
-            <Text style={styles.recordDate}>
-              {format(new Date(item.date), 'MMM dd, yyyy - HH:mm')}
-            </Text>
-            {item.notes && (
-              <Text style={styles.recordNotes}>{item.notes}</Text>
-            )}
+  const renderLog = ({ item }: { item: PlantLog }) => {
+    const typeInfo = getLogTypeInfo(item.logType);
+    const nutrientNames = item.nutrients?.map(n => n.name).join(', ') || '';
+    
+    return (
+      <Card>
+        <View style={styles.recordHeader}>
+          <View style={styles.recordInfo}>
+            <View style={[styles.logIcon, { backgroundColor: typeInfo.color + '20' }]}>
+              <Ionicons name={typeInfo.icon as any} size={24} color={typeInfo.color} />
+            </View>
+            <View style={styles.recordText}>
+              <Text style={styles.recordTitle}>
+                {nutrientNames || 'Watering'}
+              </Text>
+              <Text style={styles.recordDate}>
+                {format(new Date(item.date), 'MMM dd, yyyy - HH:mm')}
+              </Text>
+              {item.waterAmountMl && (
+                <Text style={styles.recordDetail}>💧 {item.waterAmountMl}ml</Text>
+              )}
+              {item.phLevel && (
+                <Text style={styles.recordDetail}>pH: {item.phLevel}</Text>
+              )}
+              {item.notes && (
+                <Text style={styles.recordNotes}>{item.notes}</Text>
+              )}
+            </View>
           </View>
+          <TouchableOpacity onPress={() => handleDeleteLog(item.id)}>
+            <Ionicons name="trash-outline" size={24} color="#f44336" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={() => handleDeleteRecord(item.id)}>
-          <Ionicons name="trash-outline" size={24} color="#f44336" />
-        </TouchableOpacity>
-      </View>
-    </Card>
-  );
+      </Card>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -192,9 +214,9 @@ export default function WateringLogsScreen() {
       </View>
 
       <FlatList
-        data={waterRecords}
+        data={waterLogs}
         keyExtractor={(item) => item.id}
-        renderItem={renderRecord}
+        renderItem={renderLog}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -366,13 +388,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
+  logIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
   recordInfo: {
     flexDirection: 'row',
     flex: 1,
   },
   recordText: {
     flex: 1,
-    marginLeft: 12,
+  },
+  recordDetail: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
   },
   recordTitle: {
     fontSize: 16,

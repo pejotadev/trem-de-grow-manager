@@ -205,31 +205,6 @@ export default function PlantLogScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Quick Actions */}
-        <Card>
-          <Text style={styles.sectionTitle}>Quick Log</Text>
-          <View style={styles.quickActions}>
-            {['watering', 'nutrient_feed', 'defoliation', 'lst'].map((type) => {
-              const info = getLogTypeInfo(type as PlantLogType);
-              return (
-                <TouchableOpacity
-                  key={type}
-                  style={[styles.quickActionButton, { borderColor: info.color }]}
-                  onPress={() => {
-                    // Could pre-set the log type here
-                    setModalVisible(true);
-                  }}
-                >
-                  <Ionicons name={info.icon as any} size={24} color={info.color} />
-                  <Text style={[styles.quickActionText, { color: info.color }]}>
-                    {info.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </Card>
-
         {/* Recent Logs */}
         <Card>
           <View style={styles.sectionHeader}>
@@ -428,28 +403,6 @@ const styles = StyleSheet.create({
   logCount: {
     fontSize: 14,
     color: '#666',
-  },
-  // Quick Actions
-  quickActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  quickActionButton: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '23%',
-    aspectRatio: 1,
-    borderRadius: 12,
-    borderWidth: 2,
-    backgroundColor: '#fff',
-  },
-  quickActionText: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 6,
-    textAlign: 'center',
   },
   // Log Items
   logItem: {
