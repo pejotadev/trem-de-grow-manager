@@ -5,7 +5,6 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
@@ -19,6 +18,7 @@ import { EnvironmentType } from '../../../types';
 import { Input } from '../../../components/Input';
 import { Button } from '../../../components/Button';
 import { Ionicons } from '@expo/vector-icons';
+import { showError, showWarning } from '../../../utils/toast';
 
 export default function NewEnvironmentScreen() {
   const { t } = useTranslation(['environments', 'common']);
@@ -44,12 +44,12 @@ export default function NewEnvironmentScreen() {
 
   const handleSubmit = async () => {
     if (!name) {
-      Alert.alert(t('common:error'), t('environments:errors.nameRequired'));
+      showWarning(t('environments:errors.nameRequired'), t('common:error'));
       return;
     }
 
     if (!userData || !userData.uid) {
-      Alert.alert(t('common:error'), t('common:validation.userNotAuthenticated'));
+      showWarning(t('common:validation.userNotAuthenticated'), t('common:error'));
       return;
     }
 
@@ -99,7 +99,7 @@ export default function NewEnvironmentScreen() {
       router.replace(`/(tabs)/environments/${environmentId}`);
     } catch (error: any) {
       console.error('[NewEnvironment] Error creating environment:', error);
-      Alert.alert(t('common:error'), t('environments:errors.failedToCreate'));
+      showError(t('environments:errors.failedToCreate'), t('common:error'));
     } finally {
       setLoading(false);
     }

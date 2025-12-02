@@ -7,7 +7,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { StatusBar } from 'expo-status-bar';
+import { showError, showWarning } from '../../utils/toast';
 
 export default function RegisterScreen() {
   const { t } = useTranslation(['auth', 'common']);
@@ -27,17 +27,17 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword) {
-      Alert.alert(t('common:error'), t('common:validation.fillAllFields'));
+      showWarning(t('common:validation.fillAllFields'), t('common:error'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert(t('common:error'), t('common:validation.passwordsDontMatch'));
+      showWarning(t('common:validation.passwordsDontMatch'), t('common:error'));
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert(t('common:error'), t('common:validation.passwordTooShort'));
+      showWarning(t('common:validation.passwordTooShort'), t('common:error'));
       return;
     }
 
@@ -45,7 +45,7 @@ export default function RegisterScreen() {
     try {
       await register(email, password);
     } catch (error: any) {
-      Alert.alert(t('auth:register.registrationFailed'), error.message);
+      showError(error.message, t('auth:register.registrationFailed'));
     } finally {
       setLoading(false);
     }

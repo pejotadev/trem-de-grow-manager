@@ -5,7 +5,6 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Alert,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
@@ -19,6 +18,7 @@ import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
 import { DatePicker } from '../../../components/DatePicker';
 import { Ionicons } from '@expo/vector-icons';
+import { showSuccess, showError, showWarning } from '../../../utils/toast';
 
 const DOCUMENT_TYPES: { value: PatientDocumentType; label: string }[] = [
   { value: 'cpf', label: 'CPF' },
@@ -69,12 +69,12 @@ export default function NewPatientScreen() {
 
     // Validation
     if (!name.trim()) {
-      Alert.alert('Error', 'Patient name is required');
+      showWarning('Patient name is required');
       return;
     }
 
     if (!documentNumber.trim()) {
-      Alert.alert('Error', 'Document number is required');
+      showWarning('Document number is required');
       return;
     }
 
@@ -115,12 +115,10 @@ export default function NewPatientScreen() {
         updatedAt: now,
       });
 
-      Alert.alert('Success', 'Patient registered successfully!', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      showSuccess('Patient registered successfully!', 'Success', () => router.back());
     } catch (error: any) {
       console.error('[NewPatient] Error creating patient:', error);
-      Alert.alert('Error', 'Failed to register patient: ' + (error.message || 'Unknown error'));
+      showError('Failed to register patient: ' + (error.message || 'Unknown error'));
     } finally {
       setSubmitting(false);
     }

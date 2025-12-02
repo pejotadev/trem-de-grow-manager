@@ -5,7 +5,6 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Alert,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
@@ -27,6 +26,8 @@ import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
 import { Loading } from '../../../components/Loading';
 import { Ionicons } from '@expo/vector-icons';
+import { showSuccess, showError, showWarning } from '../../../utils/toast';
+import { useConfirm } from '../../../contexts/ConfirmContext';
 
 const GENETIC_GENERATIONS: GeneticGeneration[] = [
   'S1', 'F1', 'F2', 'F3', 'F4', 'F5', 'IBL', 'BX1', 'BX2', 'BX3', 'polyhybrid', 'unknown'
@@ -115,7 +116,7 @@ export default function GeneticDetailScreen() {
       }
     } catch (error: any) {
       console.error('[GeneticDetail] Error loading genetic:', error);
-      Alert.alert(t('common:error'), t('errors.failedToLoad'));
+      showError(t('errors.failedToLoad'), t('common:error'));
     } finally {
       setLoading(false);
     }
@@ -159,11 +160,13 @@ export default function GeneticDetailScreen() {
     }, [id])
   );
 
+  const { confirm } = useConfirm();
+
   const handleSave = async () => {
     if (!id || !genetic) return;
 
     if (!name.trim()) {
-      Alert.alert(t('common:error'), t('errors.nameRequired'));
+      showWarning(t('errors.nameRequired'), t('common:error'));
       return;
     }
 
@@ -192,39 +195,34 @@ export default function GeneticDetailScreen() {
         notes: notes.trim() || undefined,
       });
 
-      Alert.alert(t('common:success'), t('detail.updateSuccess'));
+      showSuccess(t('detail.updateSuccess'), t('common:success'));
       setEditing(false);
       loadGenetic();
     } catch (error: any) {
       console.error('[GeneticDetail] Error updating genetic:', error);
-      Alert.alert(t('common:error'), t('errors.failedToUpdate'));
+      showError(t('errors.failedToUpdate'), t('common:error'));
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = () => {
-    Alert.alert(
-      t('detail.deleteTitle'),
-      t('detail.deleteMessage'),
-      [
-        { text: t('common:cancel'), style: 'cancel' },
-        {
-          text: t('common:delete'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteSeedGenetic(id!);
-              Alert.alert(t('common:success'), t('detail.deleteSuccess'));
-              router.back();
-            } catch (error: any) {
-              console.error('[GeneticDetail] Error deleting genetic:', error);
-              Alert.alert(t('common:error'), t('errors.failedToDelete'));
-            }
-          },
-        },
-      ]
-    );
+    confirm({
+      title: t('detail.deleteTitle'),
+      message: t('detail.deleteMessage'),
+      confirmText: t('common:delete'),
+      cancelText: t('common:cancel'),
+      type: 'destructive',
+      onConfirm: async () => {
+        try {
+          await deleteSeedGenetic(id!);
+          showSuccess(t('detail.deleteSuccess'), t('common:success'), () => router.back());
+        } catch (error: any) {
+          console.error('[GeneticDetail] Error deleting genetic:', error);
+          showError(t('errors.failedToDelete'), t('common:error'));
+        }
+      },
+    });
   };
 
   const cancelEdit = () => {

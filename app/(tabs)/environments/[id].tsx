@@ -5,7 +5,6 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Alert,
   TouchableOpacity,
   Modal,
   KeyboardAvoidingView,
@@ -31,6 +30,8 @@ import { Input } from '../../../components/Input';
 import { Loading } from '../../../components/Loading';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
+import { showSuccess, showError, showWarning } from '../../../utils/toast';
+import { useConfirm } from '../../../contexts/ConfirmContext';
 
 const ENVIRONMENT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   indoor: 'home',
@@ -80,11 +81,8 @@ export default function EnvironmentDetailScreen() {
       // Verify the environment belongs to the current user
       if (envData && userData && envData.userId !== userData.uid) {
         console.warn('[EnvironmentDetail] Environment does not belong to current user');
-        Alert.alert(
-          t('common:error'),
-          t('environments:detail.accessDenied'),
-          [{ text: t('common:ok'), onPress: () => router.back() }]
-        );
+        showError(t('environments:detail.accessDenied'), t('common:error'));
+        router.back();
         setLoading(false);
         return;
       }
@@ -111,7 +109,7 @@ export default function EnvironmentDetailScreen() {
       }
     } catch (error: any) {
       console.error('[EnvironmentDetail] Error loading environment data:', error);
-      Alert.alert(t('common:error'), t('environments:detail.failedToLoad'));
+      showError(t('environments:detail.failedToLoad'), t('common:error'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -132,29 +130,25 @@ export default function EnvironmentDetailScreen() {
     }, [id])
   );
 
+  const { confirm } = useConfirm();
+
   const handleDelete = () => {
-    Alert.alert(
-      t('environments:detail.deleteEnvironment'),
-      t('environments:detail.deleteConfirm'),
-      [
-        { text: t('common:cancel'), style: 'cancel' },
-        {
-          text: t('common:delete'),
-          style: 'destructive',
-          onPress: async () => {
-            if (!id || typeof id !== 'string') return;
-            try {
-              await deleteEnvironment(id);
-              Alert.alert(t('common:success'), t('environments:detail.deleted'), [
-                { text: t('common:ok'), onPress: () => router.back() },
-              ]);
-            } catch (error) {
-              Alert.alert(t('common:error'), t('environments:detail.failedToDelete'));
-            }
-          },
-        },
-      ]
-    );
+    confirm({
+      title: t('environments:detail.deleteEnvironment'),
+      message: t('environments:detail.deleteConfirm'),
+      confirmText: t('common:delete'),
+      cancelText: t('common:cancel'),
+      type: 'destructive',
+      onConfirm: async () => {
+        if (!id || typeof id !== 'string') return;
+        try {
+          await deleteEnvironment(id);
+          showSuccess(t('environments:detail.deleted'), t('common:success'), () => router.back());
+        } catch (error) {
+          showError(t('environments:detail.failedToDelete'), t('common:error'));
+        }
+      },
+    });
   };
 
   const handleEditPress = () => {
@@ -170,7 +164,7 @@ export default function EnvironmentDetailScreen() {
 
   const handleEditSave = async () => {
     if (!editName) {
-      Alert.alert(t('common:error'), t('environments:errors.nameRequired'));
+      showWarning(t('environments:errors.nameRequired'), t('common:error'));
       return;
     }
 
@@ -201,10 +195,10 @@ export default function EnvironmentDetailScreen() {
       await updateEnvironment(id, updateData);
       setEditModalVisible(false);
       loadEnvironmentData();
-      Alert.alert(t('common:success'), t('environments:detail.updated'));
+      showSuccess(t('environments:detail.updated'), t('common:success'));
     } catch (error: any) {
       console.error('[EnvironmentDetail] Update error:', error);
-      Alert.alert(t('common:error'), t('environments:detail.failedToUpdate'));
+      showError(t('environments:detail.failedToUpdate'), t('common:error'));
     }
   };
 

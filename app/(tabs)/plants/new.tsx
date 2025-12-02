@@ -5,7 +5,6 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
@@ -22,6 +21,7 @@ import { DatePicker } from '../../../components/DatePicker';
 import { Button } from '../../../components/Button';
 import { Loading } from '../../../components/Loading';
 import { Ionicons } from '@expo/vector-icons';
+import { showSuccess, showError, showWarning } from '../../../utils/toast';
 
 const STAGES: StageName[] = ['Seedling', 'Veg', 'Flower', 'Drying', 'Curing'];
 
@@ -137,7 +137,7 @@ export default function NewPlantScreen() {
       }
     } catch (error) {
       console.error('[NewPlant] Error loading environments:', error);
-      Alert.alert(t('common:error'), t('plants:loadingEnvironments'));
+      showError(t('plants:loadingEnvironments'), t('common:error'));
     } finally {
       setLoadingEnvs(false);
     }
@@ -192,17 +192,17 @@ export default function NewPlantScreen() {
 
   const handleSubmit = async () => {
     if (!name || !strain) {
-      Alert.alert(t('common:error'), t('common:validation.fillAllFields'));
+      showWarning(t('common:validation.fillAllFields'), t('common:error'));
       return;
     }
 
     if (!selectedEnvironment) {
-      Alert.alert(t('common:error'), t('plants:form.selectEnvironment'));
+      showWarning(t('plants:form.selectEnvironment'), t('common:error'));
       return;
     }
 
     if (!userData || !userData.uid) {
-      Alert.alert(t('common:error'), t('common:validation.userNotAuthenticated'));
+      showWarning(t('common:validation.userNotAuthenticated'), t('common:error'));
       return;
     }
 
@@ -269,15 +269,10 @@ export default function NewPlantScreen() {
       });
       console.log('[NewPlant] Stage created successfully');
 
-      Alert.alert(t('common:success'), t('plants:form.createPlant') + '!', [
-        {
-          text: t('common:ok'),
-          onPress: () => router.back(),
-        },
-      ]);
+      showSuccess(t('plants:form.createPlant') + '!', t('common:success'), () => router.back());
     } catch (error: any) {
       console.error('[NewPlant] Error creating plant:', error);
-      Alert.alert(t('common:error'), error.message || 'Unknown error');
+      showError(error.message || 'Unknown error', t('common:error'));
     } finally {
       setLoading(false);
     }

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Alert,
   TouchableOpacity,
   Modal,
   KeyboardAvoidingView,
@@ -25,6 +24,7 @@ import { DatePicker } from '../../../components/DatePicker';
 import { Loading } from '../../../components/Loading';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
+import { showSuccess, showError, showWarning } from '../../../utils/toast';
 
 const EXTRACT_TYPES: { value: ExtractType; label: string; description: string }[] = [
   { value: 'oil', label: 'Oil', description: 'Cannabis-infused oil' },
@@ -137,7 +137,7 @@ export default function NewExtractScreen() {
       setHarvests(availableHarvests);
     } catch (error: any) {
       console.error('[NewExtract] Error loading data:', error);
-      Alert.alert('Error', 'Failed to load data');
+      showError('Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -194,25 +194,25 @@ export default function NewExtractScreen() {
 
     // Validation
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter a name for the extract');
+      showWarning('Please enter a name for the extract');
       return;
     }
 
     if (selectedHarvests.length === 0) {
-      Alert.alert('Error', 'Please select at least one source harvest');
+      showWarning('Please select at least one source harvest');
       return;
     }
 
     const inputWeightNum = parseFloat(inputWeight) || getTotalSelectedWeight();
     if (inputWeightNum <= 0) {
-      Alert.alert('Error', 'Please enter a valid input weight');
+      showWarning('Please enter a valid input weight');
       return;
     }
 
     // Validate input weight doesn't exceed available
     const totalAvailable = getTotalSelectedWeight();
     if (inputWeightNum > totalAvailable) {
-      Alert.alert('Error', `Input weight cannot exceed available weight (${totalAvailable}g)`);
+      showWarning(`Input weight cannot exceed available weight (${totalAvailable}g)`);
       return;
     }
 
@@ -220,13 +220,13 @@ export default function NewExtractScreen() {
     const outputWeightNum = outputWeight ? parseFloat(outputWeight) : undefined;
 
     if (!outputVolumeNum && !outputWeightNum) {
-      Alert.alert('Error', 'Please enter output volume or weight');
+      showWarning('Please enter output volume or weight');
       return;
     }
 
     // Validate dates
     if (!extractionDate) {
-      Alert.alert('Error', 'Please select an extraction date');
+      showWarning('Please select an extraction date');
       return;
     }
 
@@ -259,12 +259,10 @@ export default function NewExtractScreen() {
         createdAt: Date.now(),
       });
 
-      Alert.alert('Success', 'Extract created successfully!', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      showSuccess('Extract created successfully!', 'Success', () => router.back());
     } catch (error: any) {
       console.error('[NewExtract] Error creating extract:', error);
-      Alert.alert('Error', 'Failed to create extract: ' + (error.message || 'Unknown error'));
+      showError('Failed to create extract: ' + (error.message || 'Unknown error'));
     } finally {
       setSubmitting(false);
     }

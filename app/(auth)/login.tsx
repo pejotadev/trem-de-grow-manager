@@ -7,7 +7,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { StatusBar } from 'expo-status-bar';
+import { showError, showWarning } from '../../utils/toast';
 
 export default function LoginScreen() {
   const { t } = useTranslation(['auth', 'common']);
@@ -25,7 +25,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert(t('common:error'), t('common:validation.fillAllFields'));
+      showWarning(t('common:validation.fillAllFields'), t('common:error'));
       return;
     }
 
@@ -33,7 +33,7 @@ export default function LoginScreen() {
     try {
       await login(email, password);
     } catch (error: any) {
-      Alert.alert(t('auth:login.loginFailed'), error.message);
+      showError(error.message, t('auth:login.loginFailed'));
     } finally {
       setLoading(false);
     }

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Alert,
   TouchableOpacity,
   Modal,
   KeyboardAvoidingView,
@@ -31,6 +30,7 @@ import { DatePicker } from '../../../components/DatePicker';
 import { Loading } from '../../../components/Loading';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
+import { showSuccess, showError, showWarning } from '../../../utils/toast';
 
 const PRODUCT_TYPES: { value: ProductType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: 'flower', label: 'Flower', icon: 'leaf' },
@@ -177,7 +177,7 @@ export default function NewDistributionScreen() {
       }
     } catch (error: any) {
       console.error('[NewDistribution] Error loading data:', error);
-      Alert.alert('Error', 'Failed to load data');
+      showError('Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -235,22 +235,22 @@ export default function NewDistributionScreen() {
 
     // Validation
     if (!selectedPatient) {
-      Alert.alert('Error', 'Please select a patient');
+      showWarning('Please select a patient');
       return;
     }
 
     if (!receivedBy.trim()) {
-      Alert.alert('Error', 'Please enter who received the product');
+      showWarning('Please enter who received the product');
       return;
     }
 
     if (!productDescription.trim()) {
-      Alert.alert('Error', 'Please enter a product description');
+      showWarning('Please enter a product description');
       return;
     }
 
     if (!batchNumber.trim()) {
-      Alert.alert('Error', 'Please enter a batch number');
+      showWarning('Please enter a batch number');
       return;
     }
 
@@ -259,7 +259,7 @@ export default function NewDistributionScreen() {
     const qtyUnits = quantityUnits ? parseInt(quantityUnits, 10) : undefined;
 
     if (!qtyGrams && !qtyMl && !qtyUnits) {
-      Alert.alert('Error', 'Please enter at least one quantity');
+      showWarning('Please enter at least one quantity');
       return;
     }
 
@@ -267,14 +267,14 @@ export default function NewDistributionScreen() {
     if (selectedHarvest && qtyGrams) {
       const available = getAvailableWeight(selectedHarvest);
       if (qtyGrams > available) {
-        Alert.alert('Error', `Only ${available}g available from this harvest`);
+        showWarning(`Only ${available}g available from this harvest`);
         return;
       }
     }
 
     // Validate date
     if (!distributionDate) {
-      Alert.alert('Error', 'Please select a distribution date');
+      showWarning('Please select a distribution date');
       return;
     }
 
@@ -302,12 +302,10 @@ export default function NewDistributionScreen() {
         createdAt: Date.now(),
       });
 
-      Alert.alert('Success', 'Distribution recorded successfully!', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      showSuccess('Distribution recorded successfully!', 'Success', () => router.back());
     } catch (error: any) {
       console.error('[NewDistribution] Error creating distribution:', error);
-      Alert.alert('Error', 'Failed to create distribution: ' + (error.message || 'Unknown error'));
+      showError('Failed to create distribution: ' + (error.message || 'Unknown error'));
     } finally {
       setSubmitting(false);
     }

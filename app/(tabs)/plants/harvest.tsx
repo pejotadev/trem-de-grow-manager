@@ -5,7 +5,6 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Alert,
   TouchableOpacity,
   Modal,
   KeyboardAvoidingView,
@@ -30,6 +29,7 @@ import { DatePicker } from '../../../components/DatePicker';
 import { Loading } from '../../../components/Loading';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
+import { showSuccess, showError, showWarning } from '../../../utils/toast';
 
 const HARVEST_PURPOSES: { value: HarvestPurpose; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: 'patient', label: 'Patient', icon: 'medkit' },
@@ -94,7 +94,7 @@ export default function HarvestScreen() {
       }
     } catch (error: any) {
       console.error('[Harvest] Error loading data:', error);
-      Alert.alert('Error', 'Failed to load plant data: ' + (error.message || 'Unknown error'));
+      showError('Failed to load plant data: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -111,19 +111,19 @@ export default function HarvestScreen() {
 
     // Validation
     if (!wetWeight.trim()) {
-      Alert.alert('Error', 'Please enter the wet weight');
+      showWarning('Please enter the wet weight');
       return;
     }
 
     const wetWeightNum = parseFloat(wetWeight);
     if (isNaN(wetWeightNum) || wetWeightNum <= 0) {
-      Alert.alert('Error', 'Please enter a valid wet weight');
+      showWarning('Please enter a valid wet weight');
       return;
     }
 
     // Validate harvest date
     if (!harvestDate) {
-      Alert.alert('Error', 'Please select a harvest date');
+      showWarning('Please select a harvest date');
       return;
     }
 
@@ -163,20 +163,15 @@ export default function HarvestScreen() {
       const { getHarvest } = await import('../../../firebase/firestore');
       const createdHarvest = await getHarvest(harvestId);
 
-      const stageMessage = willUpdateToDrying ? '\nStage updated to Drying' : '';
-      Alert.alert(
+      const stageMessage = willUpdateToDrying ? ' Stage updated to Drying.' : '';
+      showSuccess(
+        `Control #${createdHarvest?.controlNumber || 'N/A'} - ${wetWeightNum}g (${purpose})${stageMessage}`,
         'Harvest Recorded! 🌿',
-        `Control Number: ${createdHarvest?.controlNumber || 'N/A'}\n\nWet Weight: ${wetWeightNum}g\nPurpose: ${purpose}${stageMessage}`,
-        [
-          {
-            text: 'OK',
-            onPress: () => router.back(),
-          },
-        ]
+        () => router.back()
       );
     } catch (error: any) {
       console.error('[Harvest] Error creating harvest:', error);
-      Alert.alert('Error', 'Failed to create harvest: ' + (error.message || 'Unknown error'));
+      showError('Failed to create harvest: ' + (error.message || 'Unknown error'));
     } finally {
       setSubmitting(false);
     }

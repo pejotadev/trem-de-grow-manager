@@ -2,67 +2,31 @@
 import { db } from './firebaseConfig';
 import firebase from 'firebase/compat/app';
 import { Plant, Stage, WaterRecord, EnvironmentRecord, Environment, StageName, User, FriendRequest, Friendship, FriendRequestStatus, GeneticInfo, Harvest, Patient, Distribution, Extract, Order, OrderStatus, PlantLog, BulkPlantLog, PlantLogType, SeedGenetic } from '../types';
+import { 
+  generateControlNumber, 
+  generateCloneControlNumber, 
+  generateHarvestControlNumber, 
+  generateExtractControlNumber 
+} from '../utils/controlNumber';
+
+// Re-export control number functions for backward compatibility
+export { 
+  generateControlNumber, 
+  generateCloneControlNumber, 
+  generateHarvestControlNumber, 
+  generateExtractControlNumber 
+} from '../utils/controlNumber';
 
 // ==================== UTILITIES ====================
 
 /**
- * Generates a control number in format: A-{ENV_INITIALS}-{YEAR}-{SEQUENCE}
- * Example: A-MT-2025-00001 for "Main Tent" environment
+ * Removes undefined values from an object.
+ * Firebase doesn't accept undefined values in update operations.
  */
-export const generateControlNumber = (environmentName: string, sequence: number): string => {
-  // Get initials from environment name (first letter of each word)
-  const initials = environmentName
-    .split(/\s+/)
-    .map(word => word.charAt(0).toUpperCase())
-    .join('');
-  
-  // Get current year
-  const year = new Date().getFullYear();
-  
-  // Format sequence with leading zeros (5 digits)
-  const sequenceStr = String(sequence).padStart(5, '0');
-  
-  return `A-${initials}-${year}-${sequenceStr}`;
-};
-
-/**
- * Generates a control number for clones in format: CL-{ENV_INITIALS}-{YEAR}-{SEQUENCE}
- * Example: CL-MT-2025-00001 for a clone in "Main Tent" environment
- */
-export const generateCloneControlNumber = (environmentName: string, sequence: number): string => {
-  // Get initials from environment name (first letter of each word)
-  const initials = environmentName
-    .split(/\s+/)
-    .map(word => word.charAt(0).toUpperCase())
-    .join('');
-  
-  // Get current year
-  const year = new Date().getFullYear();
-  
-  // Format sequence with leading zeros (5 digits)
-  const sequenceStr = String(sequence).padStart(5, '0');
-  
-  return `CL-${initials}-${year}-${sequenceStr}`;
-};
-
-/**
- * Generates a control number for harvests in format: H-{ENV_INITIALS}-{YEAR}-{SEQUENCE}
- * Example: H-MT-2025-00001 for a harvest in "Main Tent" environment
- */
-export const generateHarvestControlNumber = (environmentName: string, sequence: number): string => {
-  // Get initials from environment name (first letter of each word)
-  const initials = environmentName
-    .split(/\s+/)
-    .map(word => word.charAt(0).toUpperCase())
-    .join('');
-  
-  // Get current year
-  const year = new Date().getFullYear();
-  
-  // Format sequence with leading zeros (5 digits)
-  const sequenceStr = String(sequence).padStart(5, '0');
-  
-  return `H-${initials}-${year}-${sequenceStr}`;
+const removeUndefinedValues = <T extends Record<string, any>>(obj: T): Partial<T> => {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, value]) => value !== undefined)
+  ) as Partial<T>;
 };
 
 // ==================== ENVIRONMENTS ====================
@@ -115,7 +79,7 @@ export const getUserEnvironments = async (userId: string): Promise<Environment[]
 };
 
 export const updateEnvironment = async (environmentId: string, data: Partial<Environment>): Promise<void> => {
-  await db.collection('environments').doc(environmentId).update(data);
+  await db.collection('environments').doc(environmentId).update(removeUndefinedValues(data));
 };
 
 export const deleteEnvironment = async (environmentId: string): Promise<void> => {
@@ -249,7 +213,7 @@ export const getEnvironmentPlants = async (environmentId: string, userId: string
 };
 
 export const updatePlant = async (plantId: string, data: Partial<Plant>): Promise<void> => {
-  await db.collection('plants').doc(plantId).update(data);
+  await db.collection('plants').doc(plantId).update(removeUndefinedValues(data));
 };
 
 /**
@@ -380,7 +344,7 @@ export const getPlantStages = async (plantId: string): Promise<Stage[]> => {
 };
 
 export const updateStage = async (stageId: string, stageData: Partial<Omit<Stage, 'id'>>): Promise<void> => {
-  await db.collection('stages').doc(stageId).update(stageData);
+  await db.collection('stages').doc(stageId).update(removeUndefinedValues(stageData));
 };
 
 export const deleteStage = async (stageId: string): Promise<void> => {
@@ -447,7 +411,7 @@ export const getUser = async (userId: string): Promise<User | null> => {
 
 export const updateUser = async (userId: string, data: Partial<User>): Promise<void> => {
   // Use set with merge to create the document if it doesn't exist
-  await db.collection('users').doc(userId).set(data, { merge: true });
+  await db.collection('users').doc(userId).set(removeUndefinedValues(data), { merge: true });
 };
 
 export const searchUsersByEmail = async (emailQuery: string, currentUserId: string): Promise<User[]> => {
@@ -1039,7 +1003,7 @@ export const getUserHarvests = async (userId: string): Promise<Harvest[]> => {
 };
 
 export const updateHarvest = async (harvestId: string, data: Partial<Harvest>): Promise<void> => {
-  await db.collection('harvests').doc(harvestId).update(data);
+  await db.collection('harvests').doc(harvestId).update(removeUndefinedValues(data));
 };
 
 export const deleteHarvest = async (harvestId: string): Promise<void> => {
@@ -1110,7 +1074,7 @@ export const searchPatients = async (userId: string, query: string): Promise<Pat
 
 export const updatePatient = async (patientId: string, data: Partial<Patient>): Promise<void> => {
   await db.collection('patients').doc(patientId).update({
-    ...data,
+    ...removeUndefinedValues(data),
     updatedAt: Date.now(),
   });
 };
@@ -1241,7 +1205,7 @@ export const getHarvestDistributions = async (harvestId: string): Promise<Distri
 };
 
 export const updateDistribution = async (distributionId: string, data: Partial<Distribution>): Promise<void> => {
-  await db.collection('distributions').doc(distributionId).update(data);
+  await db.collection('distributions').doc(distributionId).update(removeUndefinedValues(data));
 };
 
 export const deleteDistribution = async (distributionId: string): Promise<void> => {
@@ -1275,16 +1239,6 @@ const getNextExtractNumber = async (userId: string): Promise<number> => {
     transaction.set(counterRef, { count: nextNumber }, { merge: true });
     return nextNumber;
   });
-};
-
-/**
- * Generates an extract control number in format: EX-YYYY-#####
- * Example: EX-2025-00001
- */
-export const generateExtractControlNumber = (sequence: number): string => {
-  const year = new Date().getFullYear();
-  const sequenceStr = String(sequence).padStart(5, '0');
-  return `EX-${year}-${sequenceStr}`;
 };
 
 export const createExtract = async (extractData: Omit<Extract, 'id' | 'controlNumber'>): Promise<string> => {
@@ -1365,7 +1319,7 @@ export const getHarvestExtracts = async (harvestId: string): Promise<Extract[]> 
 };
 
 export const updateExtract = async (extractId: string, data: Partial<Extract>): Promise<void> => {
-  await db.collection('extracts').doc(extractId).update(data);
+  await db.collection('extracts').doc(extractId).update(removeUndefinedValues(data));
 };
 
 export const deleteExtract = async (extractId: string): Promise<void> => {
@@ -1501,7 +1455,7 @@ export const getPendingOrders = async (userId: string): Promise<Order[]> => {
 };
 
 export const updateOrder = async (orderId: string, data: Partial<Order>): Promise<void> => {
-  await db.collection('orders').doc(orderId).update(data);
+  await db.collection('orders').doc(orderId).update(removeUndefinedValues(data));
 };
 
 export const approveOrder = async (orderId: string): Promise<void> => {
@@ -1670,7 +1624,7 @@ export const getUserPlantLogs = async (
  * Updates a plant log
  */
 export const updatePlantLog = async (logId: string, data: Partial<PlantLog>): Promise<void> => {
-  await db.collection('plantLogs').doc(logId).update(data);
+  await db.collection('plantLogs').doc(logId).update(removeUndefinedValues(data));
 };
 
 /**
@@ -1841,7 +1795,7 @@ export const getUserBulkPlantLogs = async (
  * Updates a bulk plant log
  */
 export const updateBulkPlantLog = async (logId: string, data: Partial<BulkPlantLog>): Promise<void> => {
-  await db.collection('bulkPlantLogs').doc(logId).update(data);
+  await db.collection('bulkPlantLogs').doc(logId).update(removeUndefinedValues(data));
 };
 
 /**
@@ -1965,7 +1919,7 @@ export const searchSeedGenetics = async (userId: string, query: string): Promise
  */
 export const updateSeedGenetic = async (geneticId: string, data: Partial<SeedGenetic>): Promise<void> => {
   await db.collection('seedGenetics').doc(geneticId).update({
-    ...data,
+    ...removeUndefinedValues(data),
     updatedAt: Date.now(),
   });
   console.log('[Firestore] Updated seed genetic:', geneticId);

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Alert,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
@@ -24,6 +23,7 @@ import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
 import { Ionicons } from '@expo/vector-icons';
+import { showSuccess, showError, showWarning } from '../../../utils/toast';
 
 const GENETIC_GENERATIONS: GeneticGeneration[] = [
   'S1', 'F1', 'F2', 'F3', 'F4', 'F5', 'IBL', 'BX1', 'BX2', 'BX3', 'polyhybrid', 'unknown'
@@ -109,7 +109,7 @@ export default function NewGeneticScreen() {
     if (!userData || !userData.uid) return;
 
     if (!name.trim()) {
-      Alert.alert(t('common:error'), t('errors.nameRequired'));
+      showWarning(t('errors.nameRequired'), t('common:error'));
       return;
     }
 
@@ -140,12 +140,10 @@ export default function NewGeneticScreen() {
         createdAt: Date.now(),
       });
 
-      Alert.alert(t('common:success'), t('form.createSuccess'), [
-        { text: t('common:ok'), onPress: () => router.back() },
-      ]);
+      showSuccess(t('form.createSuccess'), t('common:success'), () => router.back());
     } catch (error: any) {
       console.error('[NewGenetic] Error creating genetic:', error);
-      Alert.alert(t('common:error'), t('errors.failedToCreate'));
+      showError(t('errors.failedToCreate'), t('common:error'));
     } finally {
       setSubmitting(false);
     }

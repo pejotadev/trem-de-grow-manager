@@ -3,8 +3,11 @@ import { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { LanguageProvider } from '../contexts/LanguageContext';
+import { ConfirmProvider } from '../contexts/ConfirmContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { initI18n } from '../locales';
+import Toast from 'react-native-toast-message';
+import { toastConfig } from '../utils/toastConfig';
 
 function RootLayoutNav() {
   const { user, loading } = useAuth();
@@ -56,7 +59,10 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <LanguageProvider>
         <AuthProvider>
-          <RootLayoutNav />
+          <ConfirmProvider>
+            <RootLayoutNav />
+            <Toast config={toastConfig} />
+          </ConfirmProvider>
         </AuthProvider>
       </LanguageProvider>
     </GestureHandlerRootView>
