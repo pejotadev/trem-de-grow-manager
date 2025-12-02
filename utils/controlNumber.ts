@@ -4,23 +4,22 @@
  * This module contains all the logic for generating control numbers
  * for different entity types in the application.
  * 
- * Control Number Formats:
- * - Plants: A-{ENV_INITIALS}-{YEAR}-{SEQUENCE} (e.g., A-MT-2025-00001)
- * - Clones: CL-{ENV_INITIALS}-{YEAR}-{SEQUENCE} (e.g., CL-MT-2025-00001)
- * - Harvests: H-{ENV_INITIALS}-{YEAR}-{SEQUENCE} (e.g., H-MT-2025-00001)
- * - Extracts: EX-{YEAR}-{SEQUENCE} (e.g., EX-2025-00001)
+ * Control Number Formats (with random prefix letter and datetime):
+ * - Plants: {RANDOM_LETTER}A{YYYYMMDDHHMM}{SEQUENCE} (e.g., XA20251202143500001)
+ * - Clones: {RANDOM_LETTER}CL{YYYYMMDDHHMM}{SEQUENCE} (e.g., RCL20251202143500001)
+ * - Harvests: {RANDOM_LETTER}H{YYYYMMDDHHMM}{SEQUENCE} (e.g., BH20251202143500001)
+ * - Extracts: {RANDOM_LETTER}EX{YYYYMMDDHHMM}{SEQUENCE} (e.g., MEX20251202143500001)
+ * - Distributions: {RANDOM_LETTER}D{YYYYMMDDHHMM}{SEQUENCE} (e.g., KD20251202143500001)
+ * - Orders: {RANDOM_LETTER}O{YYYYMMDDHHMM}{SEQUENCE} (e.g., FO20251202143500001)
  */
 
 /**
- * Extracts initials from environment name (first letter of each word)
- * @param environmentName - The environment name (e.g., "Main Tent")
- * @returns The initials (e.g., "MT")
+ * Generates a random uppercase letter (A-Z)
+ * @returns A single random uppercase letter
  */
-export const getEnvironmentInitials = (environmentName: string): string => {
-  return environmentName
-    .split(/\s+/)
-    .map(word => word.charAt(0).toUpperCase())
-    .join('');
+export const getRandomLetter = (): string => {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  return letters.charAt(Math.floor(Math.random() * letters.length));
 };
 
 /**
@@ -41,69 +40,131 @@ export const getCurrentYear = (): number => {
 };
 
 /**
+ * Gets the current month (1-12)
+ * @returns The current month as a number
+ */
+export const getCurrentMonth = (): number => {
+  return new Date().getMonth() + 1;
+};
+
+/**
+ * Gets the current day of the month (1-31)
+ * @returns The current day as a number
+ */
+export const getCurrentDay = (): number => {
+  return new Date().getDate();
+};
+
+/**
+ * Gets the current datetime formatted for control numbers
+ * Format: YYYYMMDDHHMM
+ * @returns The formatted datetime string
+ */
+export const getFormattedDateTime = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  
+  return `${year}${month}${day}${hours}${minutes}`;
+};
+
+/**
  * Generates a control number for plants
- * Format: A-{ENV_INITIALS}-{YEAR}-{SEQUENCE}
- * Example: A-MT-2025-00001 for "Main Tent" environment
+ * Format: {RANDOM}A{YYYYMMDDHHMM}{SEQUENCE}
+ * Example: XA20251202143500001
  * 
- * @param environmentName - The name of the environment
  * @param sequence - The sequence number for this plant
  * @returns The generated control number
  */
-export const generateControlNumber = (environmentName: string, sequence: number): string => {
-  const initials = getEnvironmentInitials(environmentName);
-  const year = getCurrentYear();
+export const generateControlNumber = (sequence: number): string => {
+  const randomLetter = getRandomLetter();
+  const datetime = getFormattedDateTime();
   const sequenceStr = formatSequence(sequence);
   
-  return `A-${initials}-${year}-${sequenceStr}`;
+  return `${randomLetter}A${datetime}${sequenceStr}`;
 };
 
 /**
  * Generates a control number for clones
- * Format: CL-{ENV_INITIALS}-{YEAR}-{SEQUENCE}
- * Example: CL-MT-2025-00001 for a clone in "Main Tent" environment
+ * Format: {RANDOM}CL{YYYYMMDDHHMM}{SEQUENCE}
+ * Example: RCL20251202143500001
  * 
- * @param environmentName - The name of the environment
  * @param sequence - The sequence number for this clone
  * @returns The generated control number
  */
-export const generateCloneControlNumber = (environmentName: string, sequence: number): string => {
-  const initials = getEnvironmentInitials(environmentName);
-  const year = getCurrentYear();
+export const generateCloneControlNumber = (sequence: number): string => {
+  const randomLetter = getRandomLetter();
+  const datetime = getFormattedDateTime();
   const sequenceStr = formatSequence(sequence);
   
-  return `CL-${initials}-${year}-${sequenceStr}`;
+  return `${randomLetter}CL${datetime}${sequenceStr}`;
 };
 
 /**
  * Generates a control number for harvests
- * Format: H-{ENV_INITIALS}-{YEAR}-{SEQUENCE}
- * Example: H-MT-2025-00001 for a harvest in "Main Tent" environment
+ * Format: {RANDOM}H{YYYYMMDDHHMM}{SEQUENCE}
+ * Example: BH20251202143500001
  * 
- * @param environmentName - The name of the environment
  * @param sequence - The sequence number for this harvest
  * @returns The generated control number
  */
-export const generateHarvestControlNumber = (environmentName: string, sequence: number): string => {
-  const initials = getEnvironmentInitials(environmentName);
-  const year = getCurrentYear();
+export const generateHarvestControlNumber = (sequence: number): string => {
+  const randomLetter = getRandomLetter();
+  const datetime = getFormattedDateTime();
   const sequenceStr = formatSequence(sequence);
   
-  return `H-${initials}-${year}-${sequenceStr}`;
+  return `${randomLetter}H${datetime}${sequenceStr}`;
 };
 
 /**
  * Generates a control number for extracts
- * Format: EX-{YEAR}-{SEQUENCE}
- * Example: EX-2025-00001
+ * Format: {RANDOM}EX{YYYYMMDDHHMM}{SEQUENCE}
+ * Example: MEX20251202143500001
  * 
  * @param sequence - The sequence number for this extract
  * @returns The generated control number
  */
 export const generateExtractControlNumber = (sequence: number): string => {
-  const year = getCurrentYear();
+  const randomLetter = getRandomLetter();
+  const datetime = getFormattedDateTime();
   const sequenceStr = formatSequence(sequence);
   
-  return `EX-${year}-${sequenceStr}`;
+  return `${randomLetter}EX${datetime}${sequenceStr}`;
+};
+
+/**
+ * Generates a control number for distributions
+ * Format: {RANDOM}D{YYYYMMDDHHMM}{SEQUENCE}
+ * Example: KD20251202143500001
+ * 
+ * @param sequence - The sequence number for this distribution
+ * @returns The generated control number
+ */
+export const generateDistributionNumber = (sequence: number): string => {
+  const randomLetter = getRandomLetter();
+  const datetime = getFormattedDateTime();
+  const sequenceStr = formatSequence(sequence);
+  
+  return `${randomLetter}D${datetime}${sequenceStr}`;
+};
+
+/**
+ * Generates a control number for orders
+ * Format: {RANDOM}O{YYYYMMDDHHMM}{SEQUENCE}
+ * Example: FO20251202143500001
+ * 
+ * @param sequence - The sequence number for this order
+ * @returns The generated control number
+ */
+export const generateOrderNumber = (sequence: number): string => {
+  const randomLetter = getRandomLetter();
+  const datetime = getFormattedDateTime();
+  const sequenceStr = formatSequence(sequence);
+  
+  return `${randomLetter}O${datetime}${sequenceStr}`;
 };
 
 /**
@@ -114,6 +175,8 @@ export const CONTROL_NUMBER_PREFIXES = {
   CLONE: 'CL',
   HARVEST: 'H',
   EXTRACT: 'EX',
+  DISTRIBUTION: 'D',
+  ORDER: 'O',
 } as const;
 
 /**
@@ -122,35 +185,117 @@ export const CONTROL_NUMBER_PREFIXES = {
  * @returns The parsed components or null if invalid format
  */
 export const parseControlNumber = (controlNumber: string): {
-  type: 'plant' | 'clone' | 'harvest' | 'extract';
-  initials?: string;
+  type: 'plant' | 'clone' | 'harvest' | 'extract' | 'distribution' | 'order';
+  randomLetter: string;
+  datetime: string;
   year: number;
+  month: number;
+  day: number;
+  hours: number;
+  minutes: number;
   sequence: number;
 } | null => {
-  // Extract format: EX-YYYY-SEQUENCE
-  const extractMatch = controlNumber.match(/^EX-(\d{4})-(\d{5})$/);
-  if (extractMatch) {
+  // Distribution format: {RANDOM}D{YYYYMMDDHHMM}{SEQUENCE}
+  const distributionMatch = controlNumber.match(/^([A-Z])D(\d{12})(\d{5})$/);
+  if (distributionMatch) {
+    const datetime = distributionMatch[2];
     return {
-      type: 'extract',
-      year: parseInt(extractMatch[1], 10),
-      sequence: parseInt(extractMatch[2], 10),
+      type: 'distribution',
+      randomLetter: distributionMatch[1],
+      datetime,
+      year: parseInt(datetime.substring(0, 4), 10),
+      month: parseInt(datetime.substring(4, 6), 10),
+      day: parseInt(datetime.substring(6, 8), 10),
+      hours: parseInt(datetime.substring(8, 10), 10),
+      minutes: parseInt(datetime.substring(10, 12), 10),
+      sequence: parseInt(distributionMatch[3], 10),
     };
   }
 
-  // Other formats: PREFIX-INITIALS-YEAR-SEQUENCE
-  const match = controlNumber.match(/^(A|CL|H)-([A-Z]+)-(\d{4})-(\d{5})$/);
-  if (match) {
-    const prefix = match[1];
-    const type = prefix === 'A' ? 'plant' : prefix === 'CL' ? 'clone' : 'harvest';
-    
+  // Order format: {RANDOM}O{YYYYMMDDHHMM}{SEQUENCE}
+  const orderMatch = controlNumber.match(/^([A-Z])O(\d{12})(\d{5})$/);
+  if (orderMatch) {
+    const datetime = orderMatch[2];
     return {
-      type,
-      initials: match[2],
-      year: parseInt(match[3], 10),
-      sequence: parseInt(match[4], 10),
+      type: 'order',
+      randomLetter: orderMatch[1],
+      datetime,
+      year: parseInt(datetime.substring(0, 4), 10),
+      month: parseInt(datetime.substring(4, 6), 10),
+      day: parseInt(datetime.substring(6, 8), 10),
+      hours: parseInt(datetime.substring(8, 10), 10),
+      minutes: parseInt(datetime.substring(10, 12), 10),
+      sequence: parseInt(orderMatch[3], 10),
+    };
+  }
+
+  // Extract format: {RANDOM}EX{YYYYMMDDHHMM}{SEQUENCE}
+  const extractMatch = controlNumber.match(/^([A-Z])EX(\d{12})(\d{5})$/);
+  if (extractMatch) {
+    const datetime = extractMatch[2];
+    return {
+      type: 'extract',
+      randomLetter: extractMatch[1],
+      datetime,
+      year: parseInt(datetime.substring(0, 4), 10),
+      month: parseInt(datetime.substring(4, 6), 10),
+      day: parseInt(datetime.substring(6, 8), 10),
+      hours: parseInt(datetime.substring(8, 10), 10),
+      minutes: parseInt(datetime.substring(10, 12), 10),
+      sequence: parseInt(extractMatch[3], 10),
+    };
+  }
+
+  // Clone format: {RANDOM}CL{YYYYMMDDHHMM}{SEQUENCE}
+  const cloneMatch = controlNumber.match(/^([A-Z])CL(\d{12})(\d{5})$/);
+  if (cloneMatch) {
+    const datetime = cloneMatch[2];
+    return {
+      type: 'clone',
+      randomLetter: cloneMatch[1],
+      datetime,
+      year: parseInt(datetime.substring(0, 4), 10),
+      month: parseInt(datetime.substring(4, 6), 10),
+      day: parseInt(datetime.substring(6, 8), 10),
+      hours: parseInt(datetime.substring(8, 10), 10),
+      minutes: parseInt(datetime.substring(10, 12), 10),
+      sequence: parseInt(cloneMatch[3], 10),
+    };
+  }
+
+  // Plant format: {RANDOM}A{YYYYMMDDHHMM}{SEQUENCE}
+  const plantMatch = controlNumber.match(/^([A-Z])A(\d{12})(\d{5})$/);
+  if (plantMatch) {
+    const datetime = plantMatch[2];
+    return {
+      type: 'plant',
+      randomLetter: plantMatch[1],
+      datetime,
+      year: parseInt(datetime.substring(0, 4), 10),
+      month: parseInt(datetime.substring(4, 6), 10),
+      day: parseInt(datetime.substring(6, 8), 10),
+      hours: parseInt(datetime.substring(8, 10), 10),
+      minutes: parseInt(datetime.substring(10, 12), 10),
+      sequence: parseInt(plantMatch[3], 10),
+    };
+  }
+
+  // Harvest format: {RANDOM}H{YYYYMMDDHHMM}{SEQUENCE}
+  const harvestMatch = controlNumber.match(/^([A-Z])H(\d{12})(\d{5})$/);
+  if (harvestMatch) {
+    const datetime = harvestMatch[2];
+    return {
+      type: 'harvest',
+      randomLetter: harvestMatch[1],
+      datetime,
+      year: parseInt(datetime.substring(0, 4), 10),
+      month: parseInt(datetime.substring(4, 6), 10),
+      day: parseInt(datetime.substring(6, 8), 10),
+      hours: parseInt(datetime.substring(8, 10), 10),
+      minutes: parseInt(datetime.substring(10, 12), 10),
+      sequence: parseInt(harvestMatch[3], 10),
     };
   }
 
   return null;
 };
-

@@ -187,7 +187,7 @@ export default function NewPlantScreen() {
   const getNextControlNumberPreview = (): string => {
     if (!selectedEnvironment) return '---';
     const nextSequence = (selectedEnvironment.plantCounter || 0) + 1;
-    return generateControlNumber(selectedEnvironment.name, nextSequence);
+    return generateControlNumber(nextSequence);
   };
 
   const handleSubmit = async () => {

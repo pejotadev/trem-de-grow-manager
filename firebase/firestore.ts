@@ -6,7 +6,9 @@ import {
   generateControlNumber, 
   generateCloneControlNumber, 
   generateHarvestControlNumber, 
-  generateExtractControlNumber 
+  generateExtractControlNumber,
+  generateDistributionNumber,
+  generateOrderNumber 
 } from '../utils/controlNumber';
 
 // Re-export control number functions for backward compatibility
@@ -14,7 +16,9 @@ export {
   generateControlNumber, 
   generateCloneControlNumber, 
   generateHarvestControlNumber, 
-  generateExtractControlNumber 
+  generateExtractControlNumber,
+  generateDistributionNumber,
+  generateOrderNumber 
 } from '../utils/controlNumber';
 
 // ==================== UTILITIES ====================
@@ -132,7 +136,7 @@ export const createPlant = async (plantData: Omit<Plant, 'id' | 'controlNumber'>
   const nextSequence = (environment.plantCounter || 0) + 1;
   
   // Generate control number
-  const controlNumber = generateControlNumber(environment.name, nextSequence);
+  const controlNumber = generateControlNumber(nextSequence);
   
   // Create the plant with generated control number
   const docRef = await db.collection('plants').add({
@@ -283,7 +287,7 @@ export const clonePlants = async (params: ClonePlantParams): Promise<string[]> =
     const nextSequence = currentCounter + 1 + i;
     
     // Generate clone control number (CL prefix instead of A)
-    const controlNumber = generateCloneControlNumber(environment.name, nextSequence);
+    const controlNumber = generateCloneControlNumber(nextSequence);
     
     // Create clone with genetic info
     const docRef = await db.collection('plants').add({
@@ -940,7 +944,7 @@ export const createHarvest = async (harvestData: Omit<Harvest, 'id' | 'controlNu
   const nextSequence = (environment.harvestCounter || 0) + 1;
   
   // Generate harvest control number
-  const controlNumber = generateHarvestControlNumber(environment.name, nextSequence);
+  const controlNumber = generateHarvestControlNumber(nextSequence);
   
   // Create the harvest with generated control number
   const docRef = await db.collection('harvests').add({
@@ -1107,16 +1111,6 @@ const getNextDistributionNumber = async (userId: string): Promise<number> => {
     transaction.set(counterRef, { count: nextNumber }, { merge: true });
     return nextNumber;
   });
-};
-
-/**
- * Generates a distribution number in format: D-YYYY-#####
- * Example: D-2025-00001
- */
-export const generateDistributionNumber = (sequence: number): string => {
-  const year = new Date().getFullYear();
-  const sequenceStr = String(sequence).padStart(5, '0');
-  return `D-${year}-${sequenceStr}`;
 };
 
 export const createDistribution = async (distributionData: Omit<Distribution, 'id' | 'distributionNumber'>): Promise<string> => {
@@ -1358,16 +1352,6 @@ const getNextOrderNumber = async (userId: string): Promise<number> => {
     transaction.set(counterRef, { count: nextNumber }, { merge: true });
     return nextNumber;
   });
-};
-
-/**
- * Generates an order number in format: O-YYYY-#####
- * Example: O-2025-00001
- */
-export const generateOrderNumber = (sequence: number): string => {
-  const year = new Date().getFullYear();
-  const sequenceStr = String(sequence).padStart(5, '0');
-  return `O-${year}-${sequenceStr}`;
 };
 
 export const createOrder = async (orderData: Omit<Order, 'id' | 'orderNumber'>): Promise<string> => {
