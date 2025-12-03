@@ -130,6 +130,13 @@ export default function TabsLayout() {
           headerShown: false,
         }}
       />
+      <Tabs.Screen
+        name="association"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
     </Tabs>
   );
 

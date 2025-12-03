@@ -1,15 +1,14 @@
-import React from 'react';
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-export default function GeneticsLayout() {
-  const { t } = useTranslation('genetics');
+export default function AssociationLayout() {
+  const { t } = useTranslation('association');
 
   return (
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#8BC34A', // Light green for genetics
+          backgroundColor: '#4CAF50',
         },
         headerTintColor: '#fff',
         headerTitleStyle: {
@@ -26,19 +25,29 @@ export default function GeneticsLayout() {
       <Stack.Screen
         name="new"
         options={{
-          title: t('addGenetic'),
+          title: t('createAssociation'),
         }}
       />
       <Stack.Screen
         name="[id]"
         options={{
-          title: t('detail.title'),
+          title: t('details'),
+        }}
+      />
+      <Stack.Screen
+        name="members"
+        options={{
+          title: t('members.title'),
+        }}
+      />
+      <Stack.Screen
+        name="invite"
+        options={{
+          title: t('invite.title'),
         }}
       />
     </Stack>
   );
 }
-
-
 
 

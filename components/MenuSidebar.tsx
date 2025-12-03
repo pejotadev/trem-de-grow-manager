@@ -51,6 +51,12 @@ const MAIN_TABS: MenuItem[] = [
 // Secondary menu items
 const MENU_ITEMS: MenuItem[] = [
   {
+    id: 'association',
+    icon: 'business',
+    color: '#673AB7',
+    route: '/(tabs)/association',
+  },
+  {
     id: 'genetics',
     icon: 'leaf',
     color: '#8BC34A',

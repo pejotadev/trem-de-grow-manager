@@ -5,21 +5,21 @@
  * for different entity types in the application.
  * 
  * Control Number Formats (with random prefix letter and datetime):
- * - Plants: {RANDOM_LETTER}A{YYYYMMDDHHMM}{SEQUENCE} (e.g., XA20251202143500001)
- * - Clones: {RANDOM_LETTER}CL{YYYYMMDDHHMM}{SEQUENCE} (e.g., RCL20251202143500001)
- * - Harvests: {RANDOM_LETTER}H{YYYYMMDDHHMM}{SEQUENCE} (e.g., BH20251202143500001)
- * - Extracts: {RANDOM_LETTER}EX{YYYYMMDDHHMM}{SEQUENCE} (e.g., MEX20251202143500001)
- * - Distributions: {RANDOM_LETTER}D{YYYYMMDDHHMM}{SEQUENCE} (e.g., KD20251202143500001)
- * - Orders: {RANDOM_LETTER}O{YYYYMMDDHHMM}{SEQUENCE} (e.g., FO20251202143500001)
+ * - Plants: {RANDOM_LETTERS}A{YYYYMMDDHHMM}{SEQUENCE} (e.g., XA20251202143500001)
+ * - Clones: {RANDOM_LETTERS}CL{YYYYMMDDHHMM}{SEQUENCE} (e.g., RCL20251202143500001)
+ * - Harvests: {RANDOM_LETTERS}H{YYYYMMDDHHMM}{SEQUENCE} (e.g., BH20251202143500001)
+ * - Extracts: {RANDOM_LETTERS}EX{YYYYMMDDHHMM}{SEQUENCE} (e.g., MEX20251202143500001)
+ * - Distributions: {RANDOM_LETTERS}D{YYYYMMDDHHMM}{SEQUENCE} (e.g., KD20251202143500001)
+ * - Orders: {RANDOM_LETTERS}O{YYYYMMDDHHMM}{SEQUENCE} (e.g., FO20251202143500001)
  */
 
 /**
  * Generates a random uppercase letter (A-Z)
  * @returns A single random uppercase letter
  */
-export const getRandomLetter = (): string => {
+export const getRandomLetters = (): string => {
   const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  return letters.charAt(Math.floor(Math.random() * letters.length));
+  return Array.from({ length: 3 }, () => letters.charAt(Math.floor(Math.random() * letters.length))).join('');
 };
 
 /**
@@ -80,7 +80,7 @@ export const getFormattedDateTime = (): string => {
  * @returns The generated control number
  */
 export const generateControlNumber = (sequence: number): string => {
-  const randomLetter = getRandomLetter();
+  const randomLetter = getRandomLetters();
   const datetime = getFormattedDateTime();
   const sequenceStr = formatSequence(sequence);
   
@@ -96,7 +96,7 @@ export const generateControlNumber = (sequence: number): string => {
  * @returns The generated control number
  */
 export const generateCloneControlNumber = (sequence: number): string => {
-  const randomLetter = getRandomLetter();
+  const randomLetter = getRandomLetters();
   const datetime = getFormattedDateTime();
   const sequenceStr = formatSequence(sequence);
   
@@ -112,7 +112,7 @@ export const generateCloneControlNumber = (sequence: number): string => {
  * @returns The generated control number
  */
 export const generateHarvestControlNumber = (sequence: number): string => {
-  const randomLetter = getRandomLetter();
+  const randomLetter = getRandomLetters();
   const datetime = getFormattedDateTime();
   const sequenceStr = formatSequence(sequence);
   
@@ -128,7 +128,7 @@ export const generateHarvestControlNumber = (sequence: number): string => {
  * @returns The generated control number
  */
 export const generateExtractControlNumber = (sequence: number): string => {
-  const randomLetter = getRandomLetter();
+  const randomLetter = getRandomLetters();
   const datetime = getFormattedDateTime();
   const sequenceStr = formatSequence(sequence);
   
@@ -144,7 +144,7 @@ export const generateExtractControlNumber = (sequence: number): string => {
  * @returns The generated control number
  */
 export const generateDistributionNumber = (sequence: number): string => {
-  const randomLetter = getRandomLetter();
+  const randomLetter = getRandomLetters();
   const datetime = getFormattedDateTime();
   const sequenceStr = formatSequence(sequence);
   
@@ -160,7 +160,7 @@ export const generateDistributionNumber = (sequence: number): string => {
  * @returns The generated control number
  */
 export const generateOrderNumber = (sequence: number): string => {
-  const randomLetter = getRandomLetter();
+  const randomLetter = getRandomLetters();
   const datetime = getFormattedDateTime();
   const sequenceStr = formatSequence(sequence);
   

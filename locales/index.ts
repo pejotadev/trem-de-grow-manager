@@ -18,6 +18,7 @@ import enDistributions from './en/distributions.json';
 import enHarvests from './en/harvests.json';
 import enAdmin from './en/admin.json';
 import enGenetics from './en/genetics.json';
+import enAssociation from './en/association.json';
 
 // Portuguese translations
 import ptCommon from './pt/common.json';
@@ -34,6 +35,7 @@ import ptDistributions from './pt/distributions.json';
 import ptHarvests from './pt/harvests.json';
 import ptAdmin from './pt/admin.json';
 import ptGenetics from './pt/genetics.json';
+import ptAssociation from './pt/association.json';
 
 export const LANGUAGE_STORAGE_KEY = '@grow_manager_language';
 
@@ -53,6 +55,7 @@ export const resources = {
     harvests: enHarvests,
     admin: enAdmin,
     genetics: enGenetics,
+    association: enAssociation,
   },
   pt: {
     common: ptCommon,
@@ -69,6 +72,7 @@ export const resources = {
     harvests: ptHarvests,
     admin: ptAdmin,
     genetics: ptGenetics,
+    association: ptAssociation,
   },
 };
 
@@ -119,6 +123,7 @@ export const initI18n = async () => {
         'harvests',
         'admin',
         'genetics',
+        'association',
       ],
       defaultNS: 'common',
       interpolation: {

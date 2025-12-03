@@ -662,7 +662,7 @@ export default function EnvironmentLogsScreen() {
                     <Ionicons name="leaf" size={20} color="#4CAF50" />
                   </View>
                   <View style={styles.plantOptionInfo}>
-                    <Text style={styles.plantOptionName}>{plant.name}</Text>
+                    <Text style={styles.plantOptionName}>{plant.strain}</Text>
                     <Text style={styles.plantOptionControl}>#{plant.controlNumber}</Text>
                   </View>
                   <View style={[

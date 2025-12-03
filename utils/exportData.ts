@@ -291,7 +291,6 @@ export const generatePlantReport = async (
     
     return {
       controlNumber: plant.controlNumber,
-      name: plant.name,
       strain: plant.strain,
       startDate: format(new Date(plant.startDate), 'yyyy-MM-dd'),
       currentStage: stage,
@@ -684,6 +683,7 @@ export const flattenForCSV = (data: any[]): any[] => {
     return flattened;
   });
 };
+
 
 
 

@@ -24,6 +24,10 @@
       "title": "Amigos",
       "subtitle": "Gerencie seus amigos e conexões"
     },
+    "association": {
+      "title": "Associação",
+      "subtitle": "Gerencie sua associação médica"
+    },
     "genetics": {
       "title": "Biblioteca de Genéticas",
       "subtitle": "Gerencie cepas e genéticas de sementes"
