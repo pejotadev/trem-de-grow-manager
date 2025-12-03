@@ -157,7 +157,7 @@ export default function HarvestsScreen() {
             <View style={styles.harvestInfo}>
               <Text style={styles.controlNumber}>#{item.controlNumber}</Text>
               {item.plant && (
-                <Text style={styles.plantName}>{item.plant.name}</Text>
+                <Text style={styles.plantName}>{item.plant.strain}</Text>
               )}
             </View>
             <View style={[styles.statusBadge, { backgroundColor: statusInfo.color }]}>

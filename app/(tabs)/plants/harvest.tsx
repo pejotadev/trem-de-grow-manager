@@ -209,8 +209,7 @@ export default function HarvestScreen() {
                 <Ionicons name="leaf" size={28} color="#4CAF50" />
               </View>
               <View style={styles.plantInfo}>
-                <Text style={styles.plantName}>{plant.name}</Text>
-                <Text style={styles.plantStrain}>{plant.strain}</Text>
+                <Text style={styles.plantName}>{plant.strain}</Text>
                 <View style={styles.plantMeta}>
                   <View style={styles.controlBadge}>
                     <Text style={styles.controlText}>#{plant.controlNumber}</Text>

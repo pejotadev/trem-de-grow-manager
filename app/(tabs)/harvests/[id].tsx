@@ -297,8 +297,8 @@ export default function HarvestDetailScreen() {
                       </View>
                     )}
                   </View>
-                  <Text style={[styles.plantName, plant.deletedAt && styles.plantNameDeleted]}>{plant.name}</Text>
-                  <Text style={styles.plantStrain}>{plant.strain}</Text>
+                  <Text style={[styles.plantName, plant.deletedAt && styles.plantNameDeleted]}>{plant.strain}</Text>
+                  <Text style={styles.plantStrain}>#{plant.controlNumber}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#999" />
               </View>

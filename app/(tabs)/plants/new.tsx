@@ -56,7 +56,6 @@ const SEED_TYPE_COLORS: Record<SeedType, string> = {
 export default function NewPlantScreen() {
   const { t } = useTranslation(['plants', 'common', 'genetics']);
   // Basic plant info
-  const [name, setName] = useState('');
   const [strain, setStrain] = useState('');
   const [selectedStage, setSelectedStage] = useState<StageName>('Seedling');
   const [environments, setEnvironments] = useState<Environment[]>([]);
@@ -191,8 +190,8 @@ export default function NewPlantScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!name || !strain) {
-      showWarning(t('common:validation.fillAllFields'), t('common:error'));
+    if (!strain) {
+      showWarning(t('plants:form.strainRequired'), t('common:error'));
       return;
     }
 
@@ -249,7 +248,6 @@ export default function NewPlantScreen() {
       const plantId = await createPlant({
         userId: userData.uid,
         environmentId: selectedEnvironment.id,
-        name,
         strain,
         startDate: now,
         currentStage: selectedStage,
@@ -269,7 +267,7 @@ export default function NewPlantScreen() {
       });
       console.log('[NewPlant] Stage created successfully');
 
-      showSuccess(t('plants:form.createPlant') + '!', t('common:success'), () => router.back());
+      showSuccess(t('plants:form.createPlant') + '!', t('common:success'), () => router.replace(`/(tabs)/plants/${plantId}`));
     } catch (error: any) {
       console.error('[NewPlant] Error creating plant:', error);
       showError(error.message || 'Unknown error', t('common:error'));
@@ -360,13 +358,6 @@ export default function NewPlantScreen() {
                 {t('plants:form.controlNumberHint')}
               </Text>
             </View>
-
-            <Input
-              label={`${t('plants:form.plantNameLabel')} *`}
-              value={name}
-              onChangeText={setName}
-              placeholder={t('plants:form.plantNamePlaceholder')}
-            />
 
             {/* Genetics Library Selector */}
             {sourceType === 'seed' && seedGenetics.length > 0 && (

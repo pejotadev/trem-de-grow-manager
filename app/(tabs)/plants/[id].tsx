@@ -155,7 +155,6 @@ export default function PlantDetailScreen() {
   // Edit modal state
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [envModalVisible, setEnvModalVisible] = useState(false);
-  const [editName, setEditName] = useState('');
   const [editStrain, setEditStrain] = useState('');
   const [selectedEnvironment, setSelectedEnvironment] = useState<Environment | null>(null);
   
@@ -589,7 +588,6 @@ export default function PlantDetailScreen() {
 
   const handleEditPress = () => {
     if (plant) {
-      setEditName(plant.name);
       setEditStrain(plant.strain);
       setSelectedEnvironment(environment);
       
@@ -613,8 +611,8 @@ export default function PlantDetailScreen() {
   };
 
   const handleEditSave = async () => {
-    if (!editName || !editStrain) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    if (!editStrain) {
+      Alert.alert('Error', 'Please enter a strain');
       return;
     }
 
@@ -672,7 +670,6 @@ export default function PlantDetailScreen() {
 
       // Build update object
       const updateData: any = {
-        name: editName.trim(),
         strain: editStrain.trim(),
         environmentId: selectedEnvironment.id,
         genetics: updatedGenetics,
@@ -911,12 +908,11 @@ export default function PlantDetailScreen() {
           <View style={styles.plantHeader}>
             <View style={styles.plantHeaderContent}>
               <View style={styles.nameRow}>
-                <Text style={[styles.plantName, plant.deletedAt ? styles.plantNameArchived : undefined]}>{plant.name}</Text>
+                <Text style={[styles.plantStrain, plant.deletedAt ? styles.plantNameArchived : undefined]}>{plant.strain}</Text>
                 <View style={styles.controlBadge}>
                   <Text style={styles.controlText}>#{plant.controlNumber}</Text>
                 </View>
               </View>
-              <Text style={styles.plantStrain}>{plant.strain}</Text>
               <View style={styles.badgeRow}>
                 {plant.deletedAt && (
                   <View style={styles.archivedBadge}>
@@ -971,7 +967,7 @@ export default function PlantDetailScreen() {
               <TouchableOpacity style={styles.parentLink} onPress={navigateToParent}>
                 <Ionicons name="git-branch" size={18} color="#4CAF50" />
                 <Text style={styles.parentLinkText}>
-                  Cloned from: <Text style={styles.parentLinkName}>{parentPlant.name}</Text>
+                  Cloned from: <Text style={styles.parentLinkName}>{parentPlant.strain}</Text>
                 </Text>
                 <View style={styles.parentControlBadge}>
                   <Text style={styles.parentControlText}>#{parentPlant.controlNumber}</Text>
@@ -1120,7 +1116,7 @@ export default function PlantDetailScreen() {
                   <Ionicons name="leaf" size={18} color="#4CAF50" />
                 </View>
                 <View style={styles.cloneChildInfo}>
-                  <Text style={styles.cloneChildName}>{clone.name}</Text>
+                  <Text style={styles.cloneChildName}>{clone.strain}</Text>
                   <Text style={styles.cloneChildControl}>#{clone.controlNumber}</Text>
                 </View>
                 {clone.currentStage && (
@@ -1563,13 +1559,7 @@ export default function PlantDetailScreen() {
             )}
             <ScrollView showsVerticalScrollIndicator={false}>
               <Input
-                label="Plant Name"
-                value={editName}
-                onChangeText={setEditName}
-                placeholder="e.g., Northern Lights #1"
-              />
-              <Input
-                label="Strain"
+                label="Strain *"
                 value={editStrain}
                 onChangeText={setEditStrain}
                 placeholder="e.g., Northern Lights"
@@ -1768,7 +1758,7 @@ export default function PlantDetailScreen() {
             {/* Source plant info */}
             <View style={styles.cloneSourceInfo}>
               <Ionicons name="leaf" size={20} color="#4CAF50" />
-              <Text style={styles.cloneSourceText}>{plant?.name}</Text>
+              <Text style={styles.cloneSourceText}>{plant?.strain}</Text>
               <View style={styles.controlBadge}>
                 <Text style={styles.controlText}>#{plant?.controlNumber}</Text>
               </View>
@@ -1968,7 +1958,7 @@ export default function PlantDetailScreen() {
         onClose={() => setAuditHistoryVisible(false)}
         entityType="plant"
         entityId={id as string}
-        entityDisplayName={plant?.name}
+        entityDisplayName={plant ? `${plant.strain} #${plant.controlNumber}` : undefined}
       />
 
       {/* Curing Transition Modal - Collect Dry Weight */}

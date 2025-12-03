@@ -203,7 +203,7 @@ export default function WateringLogsScreen() {
               <Ionicons name="leaf" size={20} color="#4CAF50" />
             </View>
             <View style={styles.plantTextContainer}>
-              <Text style={styles.plantName}>{selectedPlant?.name}</Text>
+              <Text style={styles.plantName}>{selectedPlant?.strain}</Text>
               {selectedPlant?.controlNumber && (
                 <Text style={styles.controlNumber}>#{selectedPlant.controlNumber}</Text>
               )}

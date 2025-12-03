@@ -3,6 +3,107 @@ export interface User {
   email: string;
   displayName?: string;
   createdAt: number;
+  // Association membership (if user belongs to an association)
+  currentAssociationId?: string; // Currently active association
+  associationIds?: string[]; // All associations user belongs to (can be multiple)
+}
+
+// ==================== ASSOCIATION / ORGANIZATION TYPES ====================
+
+// Member roles within an association
+export type MemberRole = 'owner' | 'admin' | 'cultivator' | 'patient' | 'volunteer';
+
+// Association status
+export type AssociationStatus = 'active' | 'inactive' | 'pending_approval';
+
+// Medical Association / Organization
+export interface Association {
+  id: string;
+  name: string;
+  legalName: string; // Razão Social
+  cnpj?: string; // Brazilian company registration
+  anvisaAuthorization?: string; // ANVISA authorization number
+  address: string;
+  city: string;
+  state: string;
+  postalCode?: string;
+  country: string;
+  foundingDate: number;
+  statuteFileUrl?: string;
+  internalRegulationsUrl?: string;
+  responsiblePersonName: string;
+  responsiblePersonCpf: string;
+  responsiblePersonRole: string;
+  contactEmail: string;
+  contactPhone: string;
+  website?: string;
+  description?: string;
+  logoUrl?: string;
+  status: AssociationStatus;
+  // Counters for control numbers
+  plantCounter: number;
+  harvestCounter: number;
+  extractCounter: number;
+  distributionCounter: number;
+  orderCounter: number;
+  patientCounter: number;
+  createdAt: number;
+  updatedAt: number;
+  createdBy: string; // userId who created the association
+}
+
+// Member of an association
+export interface Member {
+  id: string;
+  associationId: string;
+  userId: string; // Link to Firebase Auth user
+  userEmail: string;
+  displayName?: string;
+  role: MemberRole;
+  // Personal info (may differ from user profile)
+  fullName: string;
+  documentType: 'cpf' | 'rg' | 'passport' | 'other';
+  documentNumber: string;
+  phone?: string;
+  address?: string;
+  // Membership info
+  joinDate: number;
+  invitedBy?: string; // userId who invited this member
+  consentFormSignedDate?: number;
+  consentFormUrl?: string;
+  // Status
+  isActive: boolean;
+  deactivatedAt?: number;
+  deactivatedReason?: string;
+  // Permissions (in addition to role)
+  canManagePatients?: boolean;
+  canManagePlants?: boolean;
+  canManageHarvests?: boolean;
+  canManageDistributions?: boolean;
+  canManageMembers?: boolean;
+  canViewReports?: boolean;
+  canExportData?: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+// Association invitation (for inviting new members)
+export type InvitationStatus = 'pending' | 'accepted' | 'rejected' | 'expired';
+
+export interface AssociationInvitation {
+  id: string;
+  associationId: string;
+  associationName: string; // Denormalized for display
+  invitedEmail: string;
+  invitedRole: MemberRole;
+  invitedBy: string; // userId
+  invitedByName: string; // Denormalized
+  message?: string;
+  status: InvitationStatus;
+  expiresAt: number;
+  acceptedAt?: number;
+  rejectedAt?: number;
+  createdAt: number;
 }
 
 // Audit Log Types
@@ -12,6 +113,7 @@ export interface AuditLog {
   id: string;
   userId: string;
   userEmail: string;
+  associationId?: string; // Association this audit log belongs to
   action: AuditAction;
   entityType: string; // e.g., 'plant', 'harvest', 'patient', 'distribution', 'extract'
   entityId: string;
@@ -59,6 +161,7 @@ export interface EnvironmentDimensions {
 export interface Environment {
   id: string;
   userId: string;
+  associationId?: string; // Association this environment belongs to
   name: string;
   type: EnvironmentType;
   dimensions?: EnvironmentDimensions;
@@ -119,6 +222,7 @@ export type FloweringType = 'photoperiod' | 'autoflower';
 export interface SeedGenetic {
   id: string;
   userId: string;
+  associationId?: string; // Association this genetic belongs to
   name: string;                          // Strain name, e.g., "Northern Lights"
   breeder?: string;                      // Breeder name, e.g., "Sensi Seeds"
   seedBank?: string;                     // Where acquired, e.g., "Seedsman"
@@ -147,10 +251,12 @@ export interface SeedGenetic {
 export interface Plant {
   id: string;
   userId: string;
+  associationId?: string; // Association this plant belongs to
   environmentId: string;
   controlNumber: string;
-  name: string;
   strain: string;
+  /** @deprecated Plant name is optional - use controlNumber + strain instead */
+  name?: string;
   startDate: number;
   stageId?: string;
   currentStage?: StageName;
@@ -229,6 +335,7 @@ export interface PlantLog {
   id: string;
   plantId: string;
   userId: string;
+  associationId?: string; // Association this log belongs to
   logType: PlantLogType;
   date: number;
   
@@ -287,6 +394,7 @@ export interface BulkPlantLog {
   id: string;
   environmentId: string;
   userId: string;
+  associationId?: string; // Association this log belongs to
   plantIds: string[];         // Plants this was applied to
   plantCount: number;         // Quick reference count
   logType: PlantLogType;
@@ -345,6 +453,7 @@ export interface Harvest {
   id: string;
   plantId: string;
   userId: string;
+  associationId?: string; // Association this harvest belongs to
   controlNumber: string; // Format: H-{ENV}-{YEAR}-{SEQUENCE}
   harvestDate: number;
   wetWeightGrams: number;
@@ -406,6 +515,7 @@ export type ExtractType = 'oil' | 'tincture' | 'concentrate' | 'isolate' | 'full
 export interface Extract {
   id: string;
   userId: string;
+  associationId?: string; // Association this extract belongs to
   controlNumber: string; // Format: EX-YYYY-#####
   name: string;
   extractType: ExtractType;
@@ -435,6 +545,7 @@ export interface Distribution {
   id: string;
   distributionNumber: string; // Format: D-YYYY-#####
   userId: string;
+  associationId?: string; // Association this distribution belongs to
   patientId: string;
   patientName: string; // Denormalized for display
   productType: ProductType;
@@ -461,6 +572,7 @@ export interface Order {
   id: string;
   orderNumber: string; // Format: O-YYYY-#####
   userId: string;
+  associationId?: string; // Association this order belongs to
   patientId: string;
   patientName: string; // Denormalized for display
   productType: ProductType;
@@ -489,6 +601,7 @@ export type DocumentStatus = 'draft' | 'active' | 'archived';
 export interface InstitutionalDocument {
   id: string;
   userId: string;
+  associationId?: string; // Association this document belongs to
   documentType: DocumentType;
   category?: ProtocolCategory;
   title: string;
@@ -513,6 +626,7 @@ export type WasteSourceEntityType = 'plant' | 'harvest' | 'extract';
 export interface WasteDisposal {
   id: string;
   userId: string;
+  associationId?: string; // Association this disposal belongs to
   disposalDate: number;
   materialType: WasteMaterialType;
   description: string;

@@ -187,7 +187,7 @@ export default function PlantLogScreen() {
               <Ionicons name="leaf" size={20} color="#4CAF50" />
             </View>
             <View style={styles.plantTextContainer}>
-              <Text style={styles.plantName}>{selectedPlant?.name}</Text>
+              <Text style={styles.plantName}>{selectedPlant?.strain}</Text>
               <View style={styles.plantMeta}>
                 {selectedPlant?.controlNumber && (
                   <Text style={styles.controlNumber}>#{selectedPlant.controlNumber}</Text>
@@ -300,7 +300,7 @@ export default function PlantLogScreen() {
             {selectedPlant && (
               <View style={styles.selectedPlantInfo}>
                 <Ionicons name="leaf" size={18} color="#4CAF50" />
-                <Text style={styles.selectedPlantName}>{selectedPlant.name}</Text>
+                <Text style={styles.selectedPlantName}>{selectedPlant.strain}</Text>
                 <View style={styles.controlBadge}>
                   <Text style={styles.controlBadgeText}>#{selectedPlant.controlNumber}</Text>
                 </View>

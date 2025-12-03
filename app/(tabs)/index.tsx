@@ -153,12 +153,11 @@ export default function HomeScreen() {
         <View style={styles.plantCard}>
           <View style={styles.plantInfo}>
             <View style={styles.plantHeader}>
-              <Text style={styles.plantName}>{item.name}</Text>
+              <Text style={styles.plantStrain}>{item.strain}</Text>
               <View style={styles.controlBadge}>
                 <Text style={styles.controlText}>#{item.controlNumber}</Text>
               </View>
             </View>
-            <Text style={styles.plantStrain}>{item.strain}</Text>
             {item.currentStage && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{t(`common:stages.${item.currentStage.toLowerCase()}`)}</Text>
@@ -396,11 +395,6 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 4,
   },
-  plantName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
   controlBadge: {
     backgroundColor: '#e0e0e0',
     paddingHorizontal: 8,
@@ -413,9 +407,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   plantStrain: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
   },
   badge: {
     alignSelf: 'flex-start',

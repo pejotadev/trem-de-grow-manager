@@ -120,7 +120,7 @@ export const deleteEnvironment = async (environmentId: string): Promise<void> =>
 
 // ==================== PLANTS ====================
 
-export const createPlant = async (plantData: Omit<Plant, 'id' | 'controlNumber'>): Promise<string> => {
+export const createPlant = async (plantData: Omit<Plant, 'id' | 'controlNumber' | 'name'>): Promise<string> => {
   if (!plantData.userId) {
     throw new Error('userId is required to create a plant');
   }
@@ -266,7 +266,7 @@ export const clonePlants = async (params: ClonePlantParams): Promise<string[]> =
   const now = Date.now();
   const currentCounter = environment.plantCounter || 0;
   
-  console.log('[Firestore] Cloning plant:', sourcePlant.name, 'to environment:', environment.name);
+  console.log('[Firestore] Cloning plant:', sourcePlant.controlNumber, 'to environment:', environment.name);
   console.log('[Firestore] Creating', numberOfClones, 'clones');
   
   // Build genetic info for clones - inherit from source plant
@@ -279,7 +279,7 @@ export const clonePlants = async (params: ClonePlantParams): Promise<string[]> =
     // Inherit breeder info if available
     breeder: sourcePlant.genetics?.breeder,
     acquisitionDate: now,
-    acquisitionSource: `Cloned from ${sourcePlant.name}`,
+    acquisitionSource: `Cloned from ${sourcePlant.controlNumber}`,
   };
   
   for (let i = 0; i < numberOfClones; i++) {
@@ -294,7 +294,6 @@ export const clonePlants = async (params: ClonePlantParams): Promise<string[]> =
       userId,
       environmentId: targetEnvironmentId,
       controlNumber,
-      name: `${sourcePlant.name} Clone ${i + 1}`,
       strain: sourcePlant.strain,
       startDate: now,
       currentStage: stage,
@@ -1966,4 +1965,266 @@ export const getSeedGeneticsByBreeder = async (
     id: doc.id,
     ...doc.data()
   } as SeedGenetic));
+};
+
+// ==================== ASSOCIATION-BASED QUERIES ====================
+// These functions query data by associationId instead of userId
+// Use these when working within an association context
+
+/**
+ * Gets all environments for an association
+ */
+export const getAssociationEnvironments = async (associationId: string): Promise<Environment[]> => {
+  if (!associationId) {
+    console.warn('[Firestore] getAssociationEnvironments called with undefined/null associationId');
+    return [];
+  }
+  
+  const querySnapshot = await db
+    .collection('environments')
+    .where('associationId', '==', associationId)
+    .orderBy('createdAt', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Environment));
+};
+
+/**
+ * Gets all plants for an association
+ */
+export const getAssociationPlants = async (associationId: string, includeDeleted: boolean = false): Promise<Plant[]> => {
+  if (!associationId) {
+    console.warn('[Firestore] getAssociationPlants called with undefined/null associationId');
+    return [];
+  }
+  
+  const querySnapshot = await db
+    .collection('plants')
+    .where('associationId', '==', associationId)
+    .orderBy('startDate', 'desc')
+    .get();
+  
+  const plants = querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Plant));
+  
+  if (includeDeleted) {
+    return plants;
+  }
+  return plants.filter(plant => !plant.deletedAt);
+};
+
+/**
+ * Gets all harvests for an association
+ */
+export const getAssociationHarvests = async (associationId: string): Promise<Harvest[]> => {
+  if (!associationId) {
+    console.warn('[Firestore] getAssociationHarvests called with undefined/null associationId');
+    return [];
+  }
+  
+  const querySnapshot = await db
+    .collection('harvests')
+    .where('associationId', '==', associationId)
+    .orderBy('harvestDate', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Harvest));
+};
+
+/**
+ * Gets all patients for an association
+ */
+export const getAssociationPatients = async (associationId: string): Promise<Patient[]> => {
+  if (!associationId) {
+    console.warn('[Firestore] getAssociationPatients called with undefined/null associationId');
+    return [];
+  }
+  
+  const querySnapshot = await db
+    .collection('patients')
+    .where('associationId', '==', associationId)
+    .orderBy('name', 'asc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Patient));
+};
+
+/**
+ * Gets all distributions for an association
+ */
+export const getAssociationDistributions = async (associationId: string): Promise<Distribution[]> => {
+  if (!associationId) {
+    console.warn('[Firestore] getAssociationDistributions called with undefined/null associationId');
+    return [];
+  }
+  
+  const querySnapshot = await db
+    .collection('distributions')
+    .where('associationId', '==', associationId)
+    .orderBy('distributionDate', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Distribution));
+};
+
+/**
+ * Gets all extracts for an association
+ */
+export const getAssociationExtracts = async (associationId: string): Promise<Extract[]> => {
+  if (!associationId) {
+    console.warn('[Firestore] getAssociationExtracts called with undefined/null associationId');
+    return [];
+  }
+  
+  const querySnapshot = await db
+    .collection('extracts')
+    .where('associationId', '==', associationId)
+    .orderBy('extractionDate', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Extract));
+};
+
+/**
+ * Gets all orders for an association
+ */
+export const getAssociationOrders = async (associationId: string): Promise<Order[]> => {
+  if (!associationId) {
+    console.warn('[Firestore] getAssociationOrders called with undefined/null associationId');
+    return [];
+  }
+  
+  const querySnapshot = await db
+    .collection('orders')
+    .where('associationId', '==', associationId)
+    .orderBy('requestedAt', 'desc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Order));
+};
+
+/**
+ * Gets all seed genetics for an association
+ */
+export const getAssociationSeedGenetics = async (associationId: string): Promise<SeedGenetic[]> => {
+  if (!associationId) {
+    console.warn('[Firestore] getAssociationSeedGenetics called with undefined/null associationId');
+    return [];
+  }
+  
+  const querySnapshot = await db
+    .collection('seedGenetics')
+    .where('associationId', '==', associationId)
+    .orderBy('name', 'asc')
+    .get();
+  
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as SeedGenetic));
+};
+
+/**
+ * Helper function to get data by userId OR associationId
+ * Useful for backwards compatibility - tries association first, falls back to user
+ */
+export const getEnvironmentsForContext = async (
+  userId: string,
+  associationId?: string
+): Promise<Environment[]> => {
+  if (associationId) {
+    return getAssociationEnvironments(associationId);
+  }
+  return getUserEnvironments(userId);
+};
+
+export const getPlantsForContext = async (
+  userId: string,
+  associationId?: string,
+  includeDeleted: boolean = false
+): Promise<Plant[]> => {
+  if (associationId) {
+    return getAssociationPlants(associationId, includeDeleted);
+  }
+  return getUserPlants(userId, includeDeleted);
+};
+
+export const getHarvestsForContext = async (
+  userId: string,
+  associationId?: string
+): Promise<Harvest[]> => {
+  if (associationId) {
+    return getAssociationHarvests(associationId);
+  }
+  return getUserHarvests(userId);
+};
+
+export const getPatientsForContext = async (
+  userId: string,
+  associationId?: string
+): Promise<Patient[]> => {
+  if (associationId) {
+    return getAssociationPatients(associationId);
+  }
+  return getUserPatients(userId);
+};
+
+export const getDistributionsForContext = async (
+  userId: string,
+  associationId?: string
+): Promise<Distribution[]> => {
+  if (associationId) {
+    return getAssociationDistributions(associationId);
+  }
+  return getUserDistributions(userId);
+};
+
+export const getExtractsForContext = async (
+  userId: string,
+  associationId?: string
+): Promise<Extract[]> => {
+  if (associationId) {
+    return getAssociationExtracts(associationId);
+  }
+  return getUserExtracts(userId);
+};
+
+export const getOrdersForContext = async (
+  userId: string,
+  associationId?: string
+): Promise<Order[]> => {
+  if (associationId) {
+    return getAssociationOrders(associationId);
+  }
+  return getUserOrders(userId);
+};
+
+export const getSeedGeneticsForContext = async (
+  userId: string,
+  associationId?: string
+): Promise<SeedGenetic[]> => {
+  if (associationId) {
+    return getAssociationSeedGenetics(associationId);
+  }
+  return getUserSeedGenetics(userId);
 };
