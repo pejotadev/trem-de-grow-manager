@@ -17,7 +17,7 @@
 ### Current Features ✅
 
 1. **Plant Management**
-   - Auto-generated unique control numbers (format: `A-{ENV_INITIALS}-{YEAR}-{SEQUENCE}`)
+   - Auto-generated unique control numbers
    - Stage tracking with history (Seedling → Veg → Flower → Drying → Curing)
    - Environment association
 

@@ -287,6 +287,10 @@ export const clonePlants = async (params: ClonePlantParams): Promise<string[]> =
     acquisitionSource: `Cloned from ${sourcePlant.controlNumber}`,
   };
   
+  // Inherit associationId from source plant or target environment
+  // Prefer source plant's associationId, but fallback to environment's
+  const associationId = sourcePlant.associationId || environment.associationId;
+  
   for (let i = 0; i < numberOfClones; i++) {
     // Get next sequence number
     const nextSequence = currentCounter + 1 + i;
@@ -307,6 +311,8 @@ export const clonePlants = async (params: ClonePlantParams): Promise<string[]> =
       motherPlantId: sourcePlant.id,
       // Inherit chemotype if source has it (clones should have same genetics)
       ...(sourcePlant.chemotype && { chemotype: sourcePlant.chemotype }),
+      // Include associationId if available (critical for association context queries)
+      ...(associationId && { associationId }),
     });
     
     createdPlantIds.push(docRef.id);
@@ -705,7 +711,10 @@ export const getFriends = async (userId: string): Promise<{ friendship: Friendsh
     })
   );
 
-  return friendsWithDetails;
+  return friendsWithDetails.map(({ friendship, friend }) => ({
+    friendship,
+    friend: friend as User,
+  }));
 };
 
 export const removeFriend = async (friendshipId: string, userId: string): Promise<void> => {
@@ -2297,3 +2306,4 @@ export const getSeedGeneticsForContext = async (
   // If no association, just get user's personal genetics
   return getUserSeedGenetics(userId);
 };
+
