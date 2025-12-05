@@ -15,6 +15,9 @@ import { useAuth } from '../../../contexts/AuthContext';
 import {
   getPlantsForContext,
   createPlantLog,
+  updatePlantLog,
+  deletePlantLog,
+  getPlantLog,
   getPlantLogs,
 } from '../../../firebase/firestore';
 import { Plant, PlantLog, PlantLogType } from '../../../types';
@@ -34,6 +37,8 @@ export default function PlantLogScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [plantSelectModal, setPlantSelectModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editingLog, setEditingLog] = useState<PlantLog | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
   const { userData, currentAssociation } = useAuth();
 
   const loadPlants = async () => {
@@ -106,6 +111,57 @@ export default function PlantLogScreen() {
     }
   };
 
+  const handleEditLog = async (log: PlantLog) => {
+    // Load the full log to get all details
+    const fullLog = await getPlantLog(log.id);
+    if (!fullLog) {
+      Alert.alert('Error', 'Failed to load log details');
+      return;
+    }
+    setEditingLog(fullLog);
+    setEditModalVisible(true);
+  };
+
+  const handleSaveEditLog = async (formData: any) => {
+    if (!editingLog) return;
+
+    setSubmitting(true);
+    try {
+      await updatePlantLog(editingLog.id, formData);
+      setEditModalVisible(false);
+      setEditingLog(null);
+      loadRecentLogs();
+      Alert.alert('Success', 'Log updated successfully!');
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to update log: ' + (error.message || 'Unknown error'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteLog = (logId: string) => {
+    Alert.alert(
+      'Delete Log',
+      'Are you sure you want to delete this log?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deletePlantLog(logId);
+              loadRecentLogs();
+              Alert.alert('Success', 'Log deleted');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete log');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return <Loading message="Loading plants..." />;
   }
@@ -141,9 +197,19 @@ export default function PlantLogScreen() {
                 </View>
               )}
             </View>
-            <Text style={styles.logDate}>
-              {format(new Date(log.date), 'MMM dd, HH:mm')}
-            </Text>
+            <View style={styles.logHeaderRight}>
+              <Text style={styles.logDate}>
+                {format(new Date(log.date), 'MMM dd, HH:mm')}
+              </Text>
+              <View style={styles.logActions}>
+                <TouchableOpacity onPress={() => handleEditLog(log)} style={styles.editButton}>
+                  <Ionicons name="pencil-outline" size={18} color="#2196F3" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDeleteLog(log.id)}>
+                  <Ionicons name="trash-outline" size={18} color="#f44336" />
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
           
           {/* Show relevant details based on log type */}
@@ -284,9 +350,61 @@ export default function PlantLogScreen() {
         </View>
       </Modal>
 
+      {/* Edit Log Modal */}
+      <Modal
+        visible={editModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => {
+          setEditModalVisible(false);
+          setEditingLog(null);
+        }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.formModalContent}>
+            <View style={styles.formModalHeader}>
+              <Text style={styles.modalTitle}>Edit Activity Log</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setEditModalVisible(false);
+                  setEditingLog(null);
+                }}
+              >
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Plant info */}
+            {selectedPlant && (
+              <View style={styles.selectedPlantInfo}>
+                <Ionicons name="leaf" size={18} color="#4CAF50" />
+                <Text style={styles.selectedPlantName}>{selectedPlant.strain}</Text>
+                <View style={styles.controlBadge}>
+                  <Text style={styles.controlBadgeText}>#{selectedPlant.controlNumber}</Text>
+                </View>
+              </View>
+            )}
+            
+            <PlantLogForm
+              onSubmit={handleSaveEditLog}
+              onCancel={() => {
+                setEditModalVisible(false);
+                setEditingLog(null);
+              }}
+              submitLabel="Save Changes"
+              isLoading={submitting}
+              initialData={editingLog}
+            />
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       {/* Add Log Modal */}
       <Modal
-        visible={modalVisible}
+        visible={modalVisible && !editModalVisible}
         animationType="slide"
         transparent
         onRequestClose={() => setModalVisible(false)}
@@ -434,6 +552,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
+  },
+  logHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editButton: {
+    padding: 4,
   },
   logTypeRow: {
     flexDirection: 'row',

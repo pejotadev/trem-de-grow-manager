@@ -409,8 +409,27 @@ export const getEnvironmentRecords = async (environmentId: string): Promise<Envi
   } as EnvironmentRecord));
 };
 
+export const updateEnvironmentRecord = async (recordId: string, data: Partial<EnvironmentRecord>): Promise<void> => {
+  await db.collection('environmentLogs').doc(recordId).update(removeUndefinedValues(data));
+};
+
 export const deleteEnvironmentRecord = async (recordId: string): Promise<void> => {
   await db.collection('environmentLogs').doc(recordId).delete();
+};
+
+/**
+ * Deletes multiple environment records in bulk
+ */
+export const deleteBulkEnvironmentRecords = async (recordIds: string[]): Promise<void> => {
+  if (recordIds.length === 0) {
+    return;
+  }
+  
+  const deletePromises = recordIds.map(recordId => 
+    db.collection('environmentLogs').doc(recordId).delete()
+  );
+  
+  await Promise.all(deletePromises);
 };
 
 // ==================== USER MANAGEMENT ====================
@@ -1631,6 +1650,21 @@ export const deletePlantLog = async (logId: string): Promise<void> => {
   await db.collection('plantLogs').doc(logId).delete();
 };
 
+/**
+ * Deletes multiple plant logs in bulk
+ */
+export const deleteBulkPlantLogs = async (logIds: string[]): Promise<void> => {
+  if (logIds.length === 0) {
+    return;
+  }
+  
+  const deletePromises = logIds.map(logId => 
+    db.collection('plantLogs').doc(logId).delete()
+  );
+  
+  await Promise.all(deletePromises);
+};
+
 // ==================== BULK PLANT LOGS ====================
 
 /**
@@ -1796,10 +1830,50 @@ export const updateBulkPlantLog = async (logId: string, data: Partial<BulkPlantL
 };
 
 /**
- * Deletes a bulk plant log
+ * Deletes a bulk plant log and all associated individual plant logs
  */
 export const deleteBulkPlantLog = async (logId: string): Promise<void> => {
-  await db.collection('bulkPlantLogs').doc(logId).delete();
+  // First, find and delete all individual plant logs that reference this bulk log
+  const individualLogsSnapshot = await db
+    .collection('plantLogs')
+    .where('bulkLogId', '==', logId)
+    .get();
+  
+  const individualLogDeletes = individualLogsSnapshot.docs.map(doc => doc.ref.delete());
+  
+  // Delete the bulk log itself
+  const bulkLogDelete = db.collection('bulkPlantLogs').doc(logId).delete();
+  
+  // Execute all deletes in parallel
+  await Promise.all([...individualLogDeletes, bulkLogDelete]);
+};
+
+/**
+ * Deletes multiple bulk plant logs and their associated individual plant logs
+ */
+export const deleteBulkPlantLogsMultiple = async (logIds: string[]): Promise<void> => {
+  if (logIds.length === 0) {
+    return;
+  }
+  
+  // Find all individual plant logs that reference any of these bulk logs
+  const individualLogsPromises = logIds.map(async (logId) => {
+    const snapshot = await db
+      .collection('plantLogs')
+      .where('bulkLogId', '==', logId)
+      .get();
+    return snapshot.docs.map(doc => doc.ref.delete());
+  });
+  
+  const allIndividualLogDeletes = (await Promise.all(individualLogsPromises)).flat();
+  
+  // Delete all bulk logs
+  const bulkLogDeletes = logIds.map(logId => 
+    db.collection('bulkPlantLogs').doc(logId).delete()
+  );
+  
+  // Execute all deletes in parallel
+  await Promise.all([...allIndividualLogDeletes, ...bulkLogDeletes]);
 };
 
 /**
@@ -1815,10 +1889,23 @@ export const getAllLogsForPlant = async (
     getPlantBulkLogs(plantId, limit),
   ]);
   
+  // Get set of bulkLogIds that already have individual logs
+  // This prevents showing both the bulk log and individual log for the same bulk operation
+  const bulkLogIdsWithIndividualLogs = new Set(
+    individualLogs
+      .filter(log => log.fromBulkUpdate && log.bulkLogId)
+      .map(log => log.bulkLogId!)
+  );
+  
+  // Filter out bulk logs that already have individual logs
+  const filteredBulkLogs = bulkLogs.filter(
+    bulkLog => !bulkLogIdsWithIndividualLogs.has(bulkLog.id)
+  );
+  
   // Combine and sort by date
   const combined: { type: 'individual' | 'bulk'; log: PlantLog | BulkPlantLog }[] = [
     ...individualLogs.map(log => ({ type: 'individual' as const, log })),
-    ...bulkLogs.map(log => ({ type: 'bulk' as const, log })),
+    ...filteredBulkLogs.map(log => ({ type: 'bulk' as const, log })),
   ];
   
   combined.sort((a, b) => b.log.date - a.log.date);

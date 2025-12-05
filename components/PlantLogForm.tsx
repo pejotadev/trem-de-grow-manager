@@ -46,6 +46,7 @@ interface PlantLogFormData {
 
 interface PlantLogFormProps {
   initialLogType?: PlantLogType;
+  initialData?: Partial<PlantLogFormData> | any; // Accept PlantLog or BulkPlantLog for editing
   onSubmit: (data: PlantLogFormData) => void;
   onCancel: () => void;
   submitLabel?: string;
@@ -75,59 +76,87 @@ const APPLICATION_METHODS = [
 
 export const PlantLogForm: React.FC<PlantLogFormProps> = ({
   initialLogType = 'watering',
+  initialData,
   onSubmit,
   onCancel,
   submitLabel = 'Save Log',
   isLoading = false,
 }) => {
-  const [logType, setLogType] = useState<PlantLogType>(initialLogType);
+  // Initialize from initialData if provided, otherwise use defaults
+  const getInitialValue = (field: string, defaultValue: any) => {
+    if (initialData && initialData[field] !== undefined) {
+      if (typeof initialData[field] === 'number') {
+        return initialData[field].toString();
+      }
+      if (typeof initialData[field] === 'boolean') {
+        return initialData[field];
+      }
+      if (Array.isArray(initialData[field])) {
+        return initialData[field];
+      }
+      return initialData[field] || defaultValue;
+    }
+    return defaultValue;
+  };
+
+  const [logType, setLogType] = useState<PlantLogType>(
+    initialData?.logType || initialLogType
+  );
   const [typeModalVisible, setTypeModalVisible] = useState(false);
 
   // Feeding fields
-  const [waterAmountMl, setWaterAmountMl] = useState('');
-  const [phLevel, setPhLevel] = useState('');
-  const [ecPpm, setEcPpm] = useState('');
-  const [runoffPh, setRunoffPh] = useState('');
-  const [runoffEc, setRunoffEc] = useState('');
-  const [nutrients, setNutrients] = useState<NutrientEntry[]>([]);
+  const [waterAmountMl, setWaterAmountMl] = useState(getInitialValue('waterAmountMl', ''));
+  const [phLevel, setPhLevel] = useState(getInitialValue('phLevel', ''));
+  const [ecPpm, setEcPpm] = useState(getInitialValue('ecPpm', ''));
+  const [runoffPh, setRunoffPh] = useState(getInitialValue('runoffPh', ''));
+  const [runoffEc, setRunoffEc] = useState(getInitialValue('runoffEc', ''));
+  const [nutrients, setNutrients] = useState<NutrientEntry[]>(
+    getInitialValue('nutrients', [])
+  );
   const [newNutrientName, setNewNutrientName] = useState('');
   const [newNutrientAmount, setNewNutrientAmount] = useState('');
   const [newNutrientBrand, setNewNutrientBrand] = useState('');
 
   // Medium fields
-  const [mediumType, setMediumType] = useState<MediumType | undefined>();
-  const [mediumBrand, setMediumBrand] = useState('');
-  const [mediumAmount, setMediumAmount] = useState('');
-  const [amendments, setAmendments] = useState('');
+  const [mediumType, setMediumType] = useState<MediumType | undefined>(
+    getInitialValue('mediumType', undefined)
+  );
+  const [mediumBrand, setMediumBrand] = useState(getInitialValue('mediumBrand', ''));
+  const [mediumAmount, setMediumAmount] = useState(getInitialValue('mediumAmount', ''));
+  const [amendments, setAmendments] = useState(
+    getInitialValue('amendmentsAdded', []).join(', ')
+  );
 
   // Training fields
-  const [trainingMethod, setTrainingMethod] = useState('');
-  const [branchesAffected, setBranchesAffected] = useState('');
-  const [trainingNotes, setTrainingNotes] = useState('');
+  const [trainingMethod, setTrainingMethod] = useState(getInitialValue('trainingMethod', ''));
+  const [branchesAffected, setBranchesAffected] = useState(
+    getInitialValue('branchesAffected', '')
+  );
+  const [trainingNotes, setTrainingNotes] = useState(getInitialValue('trainingNotes', ''));
 
   // Defoliation fields
-  const [leavesRemoved, setLeavesRemoved] = useState('');
-  const [fanLeaves, setFanLeaves] = useState(true);
-  const [sugarLeaves, setSugarLeaves] = useState(false);
+  const [leavesRemoved, setLeavesRemoved] = useState(getInitialValue('leavesRemoved', ''));
+  const [fanLeaves, setFanLeaves] = useState(getInitialValue('fanLeaves', true));
+  const [sugarLeaves, setSugarLeaves] = useState(getInitialValue('sugarLeaves', false));
 
   // Transplant fields
-  const [fromPotSize, setFromPotSize] = useState('');
-  const [toPotSize, setToPotSize] = useState('');
-  const [rootBound, setRootBound] = useState(false);
+  const [fromPotSize, setFromPotSize] = useState(getInitialValue('fromPotSize', ''));
+  const [toPotSize, setToPotSize] = useState(getInitialValue('toPotSize', ''));
+  const [rootBound, setRootBound] = useState(getInitialValue('rootBound', false));
 
   // Treatment fields
-  const [pestType, setPestType] = useState('');
-  const [diseaseType, setDiseaseType] = useState('');
-  const [treatmentProduct, setTreatmentProduct] = useState('');
-  const [treatmentBrand, setTreatmentBrand] = useState('');
-  const [applicationMethod, setApplicationMethod] = useState('');
+  const [pestType, setPestType] = useState(getInitialValue('pestType', ''));
+  const [diseaseType, setDiseaseType] = useState(getInitialValue('diseaseType', ''));
+  const [treatmentProduct, setTreatmentProduct] = useState(getInitialValue('treatmentProduct', ''));
+  const [treatmentBrand, setTreatmentBrand] = useState(getInitialValue('treatmentBrand', ''));
+  const [applicationMethod, setApplicationMethod] = useState(getInitialValue('applicationMethod', ''));
 
   // Foliar fields
-  const [foliarProduct, setFoliarProduct] = useState('');
-  const [foliarDilution, setFoliarDilution] = useState('');
+  const [foliarProduct, setFoliarProduct] = useState(getInitialValue('foliarProduct', ''));
+  const [foliarDilution, setFoliarDilution] = useState(getInitialValue('foliarDilution', ''));
 
   // Common fields
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(getInitialValue('notes', ''));
 
   const addNutrient = () => {
     if (!newNutrientName.trim()) return;
