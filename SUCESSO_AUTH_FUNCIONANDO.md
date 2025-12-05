@@ -111,3 +111,4 @@ Após criar o índice do Firestore, o app estará completamente operacional.
 
 
 
+

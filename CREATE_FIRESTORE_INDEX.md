@@ -39,3 +39,4 @@ Depois que o índice for criado, o erro desaparecerá e você poderá ver suas p
 
 
 
+

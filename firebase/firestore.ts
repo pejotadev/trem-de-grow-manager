@@ -1011,13 +1011,17 @@ export const getPlantHarvests = async (plantId: string): Promise<Harvest[]> => {
   const querySnapshot = await db
     .collection('harvests')
     .where('plantId', '==', plantId)
-    .orderBy('harvestDate', 'desc')
     .get();
   
-  return querySnapshot.docs.map(doc => ({
+  const harvests = querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
   } as Harvest));
+  
+  // Sort in memory to avoid index requirements
+  harvests.sort((a, b) => (b.harvestDate || 0) - (a.harvestDate || 0));
+  
+  return harvests;
 };
 
 export const getUserHarvests = async (userId: string): Promise<Harvest[]> => {
@@ -1029,13 +1033,17 @@ export const getUserHarvests = async (userId: string): Promise<Harvest[]> => {
   const querySnapshot = await db
     .collection('harvests')
     .where('userId', '==', userId)
-    .orderBy('harvestDate', 'desc')
     .get();
   
-  return querySnapshot.docs.map(doc => ({
+  const harvests = querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
   } as Harvest));
+  
+  // Sort in memory to avoid index requirements
+  harvests.sort((a, b) => (b.harvestDate || 0) - (a.harvestDate || 0));
+  
+  return harvests;
 };
 
 export const updateHarvest = async (harvestId: string, data: Partial<Harvest>): Promise<void> => {
@@ -2356,9 +2364,37 @@ export const getPatientsForContext = async (
   userId: string,
   associationId?: string
 ): Promise<Patient[]> => {
+  // If user has an association, get both association patients AND personal patients
+  // This ensures users can access their personal patients even when in association context
   if (associationId) {
-    return getAssociationPatients(associationId);
+    const [associationPatients, userPatients] = await Promise.all([
+      getAssociationPatients(associationId),
+      getUserPatients(userId)
+    ]);
+    
+    // Combine and deduplicate by ID (in case a patient exists in both)
+    const patientsMap = new Map<string, Patient>();
+    
+    // Add association patients first
+    associationPatients.forEach(patient => {
+      patientsMap.set(patient.id, patient);
+    });
+    
+    // Add user patients (won't overwrite if already exists)
+    userPatients.forEach(patient => {
+      if (!patientsMap.has(patient.id)) {
+        patientsMap.set(patient.id, patient);
+      }
+    });
+    
+    // Convert back to array and sort
+    const combinedPatients = Array.from(patientsMap.values());
+    combinedPatients.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    
+    return combinedPatients;
   }
+  
+  // If no association, just get user's personal patients
   return getUserPatients(userId);
 };
 
