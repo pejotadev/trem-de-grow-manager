@@ -33,7 +33,7 @@ export default function NewEnvironmentScreen() {
   const [notes, setNotes] = useState('');
   const [isPublic, setIsPublic] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
   const router = useRouter();
 
   const ENVIRONMENT_TYPES: { type: EnvironmentType; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
@@ -55,7 +55,7 @@ export default function NewEnvironmentScreen() {
 
     setLoading(true);
     try {
-      console.log('[NewEnvironment] Creating environment for user:', userData.uid);
+      console.log('[NewEnvironment] Creating environment for user:', userData.uid, 'associationId:', currentAssociation?.id);
       
       const environmentData: any = {
         userId: userData.uid,
@@ -64,6 +64,11 @@ export default function NewEnvironmentScreen() {
         isPublic,
         createdAt: Date.now(),
       };
+      
+      // Only add associationId if it exists
+      if (currentAssociation?.id) {
+        environmentData.associationId = currentAssociation.id;
+      }
 
       // Add dimensions if provided
       if (width && length && height) {

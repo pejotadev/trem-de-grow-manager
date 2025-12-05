@@ -68,7 +68,7 @@ export default function HarvestScreen() {
   const [purposeModalVisible, setPurposeModalVisible] = useState(false);
   const [gradeModalVisible, setGradeModalVisible] = useState(false);
 
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
   const router = useRouter();
 
   const loadData = async () => {
@@ -135,7 +135,7 @@ export default function HarvestScreen() {
       const initialStatus: HarvestStatus = willUpdateToDrying ? 'drying' : 'fresh';
       
       // Create harvest record
-      const harvestId = await createHarvest({
+      const harvestData: any = {
         plantId: plant.id,
         userId: userData.uid,
         harvestDate: harvestDate.getTime(),
@@ -146,7 +146,14 @@ export default function HarvestScreen() {
         ...(storageLocation.trim() && { storageLocation: storageLocation.trim() }),
         ...(notes.trim() && { notes: notes.trim() }),
         createdAt: Date.now(),
-      });
+      };
+      
+      // Only add associationId if it exists
+      if (currentAssociation?.id) {
+        harvestData.associationId = currentAssociation.id;
+      }
+      
+      const harvestId = await createHarvest(harvestData);
 
       // Update plant stage to Drying if selected
       if (willUpdateToDrying) {

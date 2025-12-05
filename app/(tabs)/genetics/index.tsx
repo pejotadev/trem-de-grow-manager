@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getUserSeedGenetics } from '../../../firebase/firestore';
+import { getSeedGeneticsForContext } from '../../../firebase/firestore';
 import { SeedGenetic, SeedType, PlantDominance } from '../../../types';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
@@ -57,7 +57,7 @@ export default function GeneticsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
   const router = useRouter();
 
   const loadData = async () => {
@@ -67,7 +67,7 @@ export default function GeneticsScreen() {
     }
 
     try {
-      const geneticsData = await getUserSeedGenetics(userData.uid);
+      const geneticsData = await getSeedGeneticsForContext(userData.uid, currentAssociation?.id);
       setGenetics(geneticsData);
       applyFilters(geneticsData, searchQuery, activeFilter);
     } catch (error: any) {
@@ -102,7 +102,7 @@ export default function GeneticsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [userData])
+    }, [userData, currentAssociation])
   );
 
   const handleRefresh = () => {

@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -16,18 +17,27 @@ import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { StatusBar } from 'expo-status-bar';
 import { showError, showWarning } from '../../utils/toast';
+import { AccountType } from '../../types';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function RegisterScreen() {
   const { t } = useTranslation(['auth', 'common']);
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [accountType, setAccountType] = useState<AccountType | null>(null);
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
 
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword) {
       showWarning(t('common:validation.fillAllFields'), t('common:error'));
+      return;
+    }
+
+    if (!accountType) {
+      showWarning(t('auth:register.accountTypeRequired'), t('common:error'));
       return;
     }
 
@@ -43,7 +53,13 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      await register(email, password);
+      await register(email, password, accountType);
+      
+      // For association accounts, redirect to association creation screen
+      // For personal accounts, the default redirect in _layout.tsx will handle it
+      if (accountType === 'association') {
+        router.replace('/(tabs)/association/new');
+      }
     } catch (error: any) {
       showError(error.message, t('auth:register.registrationFailed'));
     } finally {
@@ -87,6 +103,66 @@ export default function RegisterScreen() {
               secureTextEntry
               placeholder={t('auth:register.confirmPasswordPlaceholder')}
             />
+
+            {/* Account Type Selection */}
+            <View style={styles.accountTypeContainer}>
+              <Text style={styles.accountTypeLabel}>{t('auth:register.accountTypeLabel')}</Text>
+              <View style={styles.accountTypeOptions}>
+                <TouchableOpacity
+                  style={[
+                    styles.accountTypeOption,
+                    accountType === 'personal' && styles.accountTypeOptionSelected,
+                  ]}
+                  onPress={() => setAccountType('personal')}
+                >
+                  <Ionicons
+                    name={accountType === 'personal' ? 'radio-button-on' : 'radio-button-off'}
+                    size={24}
+                    color={accountType === 'personal' ? '#4CAF50' : '#666'}
+                  />
+                  <View style={styles.accountTypeContent}>
+                    <Text
+                      style={[
+                        styles.accountTypeTitle,
+                        accountType === 'personal' && styles.accountTypeTitleSelected,
+                      ]}
+                    >
+                      {t('auth:register.personalAccount')}
+                    </Text>
+                    <Text style={styles.accountTypeDescription}>
+                      {t('auth:register.personalAccountDesc')}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.accountTypeOption,
+                    accountType === 'association' && styles.accountTypeOptionSelected,
+                  ]}
+                  onPress={() => setAccountType('association')}
+                >
+                  <Ionicons
+                    name={accountType === 'association' ? 'radio-button-on' : 'radio-button-off'}
+                    size={24}
+                    color={accountType === 'association' ? '#4CAF50' : '#666'}
+                  />
+                  <View style={styles.accountTypeContent}>
+                    <Text
+                      style={[
+                        styles.accountTypeTitle,
+                        accountType === 'association' && styles.accountTypeTitleSelected,
+                      ]}
+                    >
+                      {t('auth:register.associationAccount')}
+                    </Text>
+                    <Text style={styles.accountTypeDescription}>
+                      {t('auth:register.associationAccountDesc')}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
 
             <Button title={t('auth:register.signUpButton')} onPress={handleRegister} disabled={loading} />
 
@@ -146,5 +222,49 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#4CAF50',
     fontWeight: '600',
+  },
+  accountTypeContainer: {
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  accountTypeLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  accountTypeOptions: {
+    gap: 12,
+  },
+  accountTypeOption: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    gap: 12,
+  },
+  accountTypeOptionSelected: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#F1F8F4',
+  },
+  accountTypeContent: {
+    flex: 1,
+  },
+  accountTypeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  accountTypeTitleSelected: {
+    color: '#4CAF50',
+  },
+  accountTypeDescription: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
   },
 });

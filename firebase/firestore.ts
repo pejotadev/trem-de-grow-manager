@@ -40,6 +40,8 @@ export const createEnvironment = async (envData: Omit<Environment, 'id'>): Promi
     throw new Error('userId is required to create an environment');
   }
   
+  console.log('[Firestore] createEnvironment called with associationId:', envData.associationId);
+  
   // Ensure plantCounter and harvestCounter are initialized to 0 and isPublic defaults to false
   const dataWithDefaults = {
     ...envData,
@@ -48,6 +50,7 @@ export const createEnvironment = async (envData: Omit<Environment, 'id'>): Promi
     isPublic: envData.isPublic ?? false,
   };
   const docRef = await db.collection('environments').add(dataWithDefaults);
+  console.log('[Firestore] Created environment with ID:', docRef.id, 'associationId:', dataWithDefaults.associationId);
   return docRef.id;
 };
 
@@ -138,18 +141,20 @@ export const createPlant = async (plantData: Omit<Plant, 'id' | 'controlNumber' 
   // Generate control number
   const controlNumber = generateControlNumber(nextSequence);
   
+  console.log('[Firestore] createPlant called with associationId:', plantData.associationId);
+  
   // Create the plant with generated control number
   const docRef = await db.collection('plants').add({
     ...plantData,
     controlNumber,
   });
   
+  console.log('[Firestore] Created plant with ID:', docRef.id, 'controlNumber:', controlNumber, 'associationId:', plantData.associationId);
+  
   // Increment the environment's plant counter
   await db.collection('environments').doc(plantData.environmentId).update({
     plantCounter: firebase.firestore.FieldValue.increment(1),
   });
-  
-  console.log('[Firestore] Created plant with control number:', controlNumber);
   
   return docRef.id;
 };
@@ -1980,16 +1985,24 @@ export const getAssociationEnvironments = async (associationId: string): Promise
     return [];
   }
   
+  console.log('[Firestore] getAssociationEnvironments querying for associationId:', associationId);
+  
   const querySnapshot = await db
     .collection('environments')
     .where('associationId', '==', associationId)
-    .orderBy('createdAt', 'desc')
     .get();
   
-  return querySnapshot.docs.map(doc => ({
+  const environments = querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
   } as Environment));
+  
+  // Sort in memory to avoid index requirements
+  environments.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  
+  console.log('[Firestore] getAssociationEnvironments found', environments.length, 'environments');
+  
+  return environments;
 };
 
 /**
@@ -2001,16 +2014,22 @@ export const getAssociationPlants = async (associationId: string, includeDeleted
     return [];
   }
   
+  console.log('[Firestore] getAssociationPlants querying for associationId:', associationId);
+  
   const querySnapshot = await db
     .collection('plants')
     .where('associationId', '==', associationId)
-    .orderBy('startDate', 'desc')
     .get();
   
   const plants = querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
   } as Plant));
+  
+  // Sort in memory to avoid index requirements
+  plants.sort((a, b) => (b.startDate || 0) - (a.startDate || 0));
+  
+  console.log('[Firestore] getAssociationPlants found', plants.length, 'plants');
   
   if (includeDeleted) {
     return plants;
@@ -2030,13 +2049,17 @@ export const getAssociationHarvests = async (associationId: string): Promise<Har
   const querySnapshot = await db
     .collection('harvests')
     .where('associationId', '==', associationId)
-    .orderBy('harvestDate', 'desc')
     .get();
   
-  return querySnapshot.docs.map(doc => ({
+  const harvests = querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
   } as Harvest));
+  
+  // Sort in memory to avoid index requirements
+  harvests.sort((a, b) => (b.harvestDate || 0) - (a.harvestDate || 0));
+  
+  return harvests;
 };
 
 /**
@@ -2051,13 +2074,17 @@ export const getAssociationPatients = async (associationId: string): Promise<Pat
   const querySnapshot = await db
     .collection('patients')
     .where('associationId', '==', associationId)
-    .orderBy('name', 'asc')
     .get();
   
-  return querySnapshot.docs.map(doc => ({
+  const patients = querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
   } as Patient));
+  
+  // Sort in memory to avoid index requirements
+  patients.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  
+  return patients;
 };
 
 /**
@@ -2072,13 +2099,17 @@ export const getAssociationDistributions = async (associationId: string): Promis
   const querySnapshot = await db
     .collection('distributions')
     .where('associationId', '==', associationId)
-    .orderBy('distributionDate', 'desc')
     .get();
   
-  return querySnapshot.docs.map(doc => ({
+  const distributions = querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
   } as Distribution));
+  
+  // Sort in memory to avoid index requirements
+  distributions.sort((a, b) => (b.distributionDate || 0) - (a.distributionDate || 0));
+  
+  return distributions;
 };
 
 /**
@@ -2093,13 +2124,17 @@ export const getAssociationExtracts = async (associationId: string): Promise<Ext
   const querySnapshot = await db
     .collection('extracts')
     .where('associationId', '==', associationId)
-    .orderBy('extractionDate', 'desc')
     .get();
   
-  return querySnapshot.docs.map(doc => ({
+  const extracts = querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
   } as Extract));
+  
+  // Sort in memory to avoid index requirements
+  extracts.sort((a, b) => (b.extractionDate || 0) - (a.extractionDate || 0));
+  
+  return extracts;
 };
 
 /**
@@ -2135,13 +2170,17 @@ export const getAssociationSeedGenetics = async (associationId: string): Promise
   const querySnapshot = await db
     .collection('seedGenetics')
     .where('associationId', '==', associationId)
-    .orderBy('name', 'asc')
     .get();
   
-  return querySnapshot.docs.map(doc => ({
+  const genetics = querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
   } as SeedGenetic));
+  
+  // Sort in memory to avoid index requirements
+  genetics.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  
+  return genetics;
 };
 
 /**
@@ -2152,6 +2191,7 @@ export const getEnvironmentsForContext = async (
   userId: string,
   associationId?: string
 ): Promise<Environment[]> => {
+  console.log('[Firestore] getEnvironmentsForContext called with userId:', userId, 'associationId:', associationId);
   if (associationId) {
     return getAssociationEnvironments(associationId);
   }
@@ -2163,6 +2203,7 @@ export const getPlantsForContext = async (
   associationId?: string,
   includeDeleted: boolean = false
 ): Promise<Plant[]> => {
+  console.log('[Firestore] getPlantsForContext called with userId:', userId, 'associationId:', associationId);
   if (associationId) {
     return getAssociationPlants(associationId, includeDeleted);
   }
@@ -2223,8 +2264,36 @@ export const getSeedGeneticsForContext = async (
   userId: string,
   associationId?: string
 ): Promise<SeedGenetic[]> => {
+  // If user has an association, get both association genetics AND personal genetics
+  // This ensures users can access their personal genetics even when in association context
   if (associationId) {
-    return getAssociationSeedGenetics(associationId);
+    const [associationGenetics, userGenetics] = await Promise.all([
+      getAssociationSeedGenetics(associationId),
+      getUserSeedGenetics(userId)
+    ]);
+    
+    // Combine and deduplicate by ID (in case a genetic exists in both)
+    const geneticsMap = new Map<string, SeedGenetic>();
+    
+    // Add association genetics first
+    associationGenetics.forEach(genetic => {
+      geneticsMap.set(genetic.id, genetic);
+    });
+    
+    // Add user genetics (won't overwrite if already exists)
+    userGenetics.forEach(genetic => {
+      if (!geneticsMap.has(genetic.id)) {
+        geneticsMap.set(genetic.id, genetic);
+      }
+    });
+    
+    // Convert back to array and sort
+    const combinedGenetics = Array.from(geneticsMap.values());
+    combinedGenetics.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    
+    return combinedGenetics;
   }
+  
+  // If no association, just get user's personal genetics
   return getUserSeedGenetics(userId);
 };

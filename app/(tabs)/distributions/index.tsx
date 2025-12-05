@@ -13,7 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getUserDistributions, getUserPatients } from '../../../firebase/firestore';
+import { getDistributionsForContext, getPatientsForContext } from '../../../firebase/firestore';
 import { Distribution, ProductType, Patient } from '../../../types';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
@@ -41,7 +41,7 @@ export default function DistributionsScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [patientModalVisible, setPatientModalVisible] = useState(false);
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
   const router = useRouter();
 
   const loadData = async () => {
@@ -52,8 +52,8 @@ export default function DistributionsScreen() {
 
     try {
       const [distributionsData, patientsData] = await Promise.all([
-        getUserDistributions(userData.uid),
-        getUserPatients(userData.uid),
+        getDistributionsForContext(userData.uid, currentAssociation?.id),
+        getPatientsForContext(userData.uid, currentAssociation?.id),
       ]);
       setDistributions(distributionsData);
       setPatients(patientsData);
@@ -86,7 +86,7 @@ export default function DistributionsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [userData])
+    }, [userData, currentAssociation])
   );
 
   const handleRefresh = () => {

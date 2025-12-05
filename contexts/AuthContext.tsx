@@ -13,7 +13,7 @@ import {
   getMemberByUserId,
   setCurrentAssociation as setCurrentAssociationDb,
 } from "../firebase/associations";
-import { User, Association, Member } from "../types";
+import { User, Association, Member, AccountType } from "../types";
 
 interface AuthContextType {
   // User data
@@ -29,7 +29,7 @@ interface AuthContextType {
   
   // Auth functions
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, accountType: AccountType) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   
@@ -125,6 +125,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
         const basicUser: User = {
           uid: firebaseUser.uid,
           email: firebaseUser.email!,
+          accountType: 'personal', // Default to personal for legacy users
           createdAt: Date.now(),
         };
         setUserData(basicUser);
@@ -139,6 +140,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       setUserData({
         uid: firebaseUser.uid,
         email: firebaseUser.email!,
+        accountType: 'personal', // Default to personal for legacy users
         createdAt: Date.now(),
       });
       setUserAssociations([]);
@@ -169,9 +171,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     setUserData(data);
   };
 
-  const register = async (email: string, password: string) => {
-    const data = await registerUser(email, password);
+  const register = async (email: string, password: string, accountType: AccountType) => {
+    const data = await registerUser(email, password, accountType);
     setUserData(data);
+    
+    // For association accounts, we don't create the association here
+    // Instead, redirect to association creation screen (handled in register.tsx)
+    // The association will be created when they complete the form
   };
 
   const logout = async () => {

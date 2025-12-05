@@ -13,7 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getUserAssociations, getPendingInvitationsForUser } from '../../../firebase/associations';
+import { getUserAssociations, getPendingInvitationsForUser, rejectInvitation } from '../../../firebase/associations';
 import { Association, AssociationInvitation } from '../../../types';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
@@ -38,19 +38,43 @@ export default function AssociationsScreen() {
 
   const loadData = async () => {
     if (!userData) {
+      console.log('[AssociationsScreen] No userData, skipping load');
       setLoading(false);
       return;
     }
+
+    console.log('[AssociationsScreen] Loading data for user:', userData.email);
 
     try {
       const [assocs, invitations] = await Promise.all([
         getUserAssociations(userData.uid),
         getPendingInvitationsForUser(userData.email),
       ]);
-      setAssociations(assocs);
+      
+      console.log('[AssociationsScreen] Loaded associations:', assocs.length);
+      console.log('[AssociationsScreen] Loaded pending invitations:', invitations.length, invitations);
+      
+      // If no associations found but currentAssociation exists, add it to the list
+      // This handles cases where the user document wasn't properly updated
+      let finalAssocs = assocs;
+      if (assocs.length === 0 && currentAssociation) {
+        finalAssocs = [currentAssociation];
+      } else if (assocs.length > 0 && currentAssociation) {
+        // Make sure currentAssociation is in the list
+        const hasCurrentAssociation = assocs.some(a => a.id === currentAssociation.id);
+        if (!hasCurrentAssociation) {
+          finalAssocs = [currentAssociation, ...assocs];
+        }
+      }
+      
+      setAssociations(finalAssocs);
       setPendingInvitations(invitations);
     } catch (error: any) {
       console.error('[AssociationsScreen] Error loading data:', error);
+      // If there's an error but we have currentAssociation, show it
+      if (currentAssociation) {
+        setAssociations([currentAssociation]);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -60,7 +84,7 @@ export default function AssociationsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [userData])
+    }, [userData, currentAssociation])
   );
 
   const handleRefresh = () => {
@@ -83,6 +107,48 @@ export default function AssociationsScreen() {
         window.alert(alertMessage);
       } else {
         Alert.alert(t('error'), alertMessage);
+      }
+    }
+  };
+
+  const handleDeclineInvitation = async (invitationId: string) => {
+    const confirmDecline = () => {
+      return new Promise<boolean>((resolve) => {
+        if (Platform.OS === 'web') {
+          resolve(window.confirm(t('declineConfirm')));
+        } else {
+          Alert.alert(
+            t('declineTitle'),
+            t('declineConfirm'),
+            [
+              { text: t('cancel'), style: 'cancel', onPress: () => resolve(false) },
+              { text: t('decline'), style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        }
+      });
+    };
+
+    const confirmed = await confirmDecline();
+    if (!confirmed) return;
+
+    try {
+      await rejectInvitation(invitationId);
+      // Refresh the list
+      await loadData();
+      
+      const successMessage = t('declineSuccess');
+      if (Platform.OS === 'web') {
+        window.alert(successMessage);
+      } else {
+        Alert.alert(t('success'), successMessage);
+      }
+    } catch (error: any) {
+      const errorMessage = error.message || t('declineError');
+      if (Platform.OS === 'web') {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert(t('error'), errorMessage);
       }
     }
   };
@@ -169,7 +235,7 @@ export default function AssociationsScreen() {
         <Button
           title={t('decline')}
           variant="secondary"
-          onPress={() => {/* Handle decline */}}
+          onPress={() => handleDeclineInvitation(item.id)}
           style={styles.declineButton}
         />
       </View>

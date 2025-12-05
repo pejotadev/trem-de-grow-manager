@@ -34,6 +34,11 @@
   "role": "Role",
   "accept": "Accept",
   "decline": "Decline",
+  "declineTitle": "Decline Invitation",
+  "declineConfirm": "Are you sure you want to decline this invitation?",
+  "declineSuccess": "Invitation declined",
+  "declineError": "Failed to decline invitation",
+  "back": "Go Back",
   "yourRole": "Your role:",
   "authorization": "Authorization",
   "status": {
@@ -117,7 +122,7 @@
   "invite": {
     "title": "Invite Member",
     "howItWorks": "How it works",
-    "howItWorksDesc": "Send an invitation to someone's email. They will receive a link to join this association with the role you select.",
+    "howItWorksDesc": "Send an invitation to someone's email. They will see the invitation when they log in to the app.",
     "emailTitle": "Email Address",
     "email": "Email",
     "emailPlaceholder": "member@example.com",
@@ -132,7 +137,17 @@
     "send": "Send Invitation",
     "sending": "Sending...",
     "success": "Invitation sent to {{email}}",
+    "successWithLogout": "Invitation sent to {{email}}. A new account was created. You will need to log in again.",
     "error": "Failed to send invitation",
+    "checkingEmail": "Checking if user exists...",
+    "userExists": "User has an account - they will see the invitation when they log in",
+    "userNotExists": "This email is not registered in the app",
+    "createAccount": "Create an account for this user",
+    "createAccountDesc": "A temporary account will be created with the password: {{password}}",
+    "logoutWarning": "Important: Creating a new account will log you out. You will need to log back in after sending the invitation.",
+    "userCreatedTitle": "Account Created",
+    "userCreated": "Account created for {{email}}. Temporary password: {{password}} - Please share this with the invited user.",
+    "createUserError": "Failed to create user account",
     "errors": {
       "emailRequired": "Email is required",
       "emailInvalid": "Please enter a valid email"
@@ -142,6 +157,39 @@
       "cultivator": "Manage plants, harvests, and grow operations",
       "patient": "View own records and distributions",
       "volunteer": "Help with cultivation tasks"
+    }
+  },
+  "acceptInvite": {
+    "title": "Accept Invitation",
+    "errorTitle": "Invitation Error",
+    "notFound": "Invitation not found",
+    "alreadyProcessed": "This invitation has already been processed",
+    "expired": "This invitation has expired",
+    "wrongEmail": "This invitation was sent to a different email address",
+    "loadError": "Failed to load invitation",
+    "association": "Association",
+    "invitedBy": "Invited by",
+    "role": "Role",
+    "message": "Personal message",
+    "yourInfo": "Your Information",
+    "yourInfoDesc": "Please provide your information to complete the registration",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "Enter your full name",
+    "documentType": "Document Type",
+    "documentNumber": "Document Number",
+    "documentPlaceholder": "Enter your document number",
+    "acceptButton": "Accept & Join",
+    "accepting": "Accepting...",
+    "declineButton": "Decline Invitation",
+    "declineTitle": "Decline Invitation",
+    "confirmDecline": "Are you sure you want to decline this invitation?",
+    "success": "You are now a member of {{name}}!",
+    "acceptError": "Failed to accept invitation",
+    "declineSuccess": "Invitation declined",
+    "declineError": "Failed to decline invitation",
+    "errors": {
+      "fullNameRequired": "Full name is required",
+      "documentRequired": "Document number is required"
     }
   }
 }

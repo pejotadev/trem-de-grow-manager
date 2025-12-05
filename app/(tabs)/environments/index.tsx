@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getUserEnvironments, getEnvironmentPlants } from '../../../firebase/firestore';
+import { getEnvironmentsForContext, getEnvironmentPlants } from '../../../firebase/firestore';
 import { Environment, Plant } from '../../../types';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
@@ -42,7 +42,7 @@ export default function EnvironmentsScreen() {
   const [environments, setEnvironments] = useState<EnvironmentWithPlantCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
   const router = useRouter();
 
   const loadEnvironments = async () => {
@@ -53,8 +53,8 @@ export default function EnvironmentsScreen() {
     }
     
     try {
-      console.log('[EnvironmentsScreen] Loading environments for user:', userData.uid);
-      const userEnvironments = await getUserEnvironments(userData.uid);
+      console.log('[EnvironmentsScreen] Loading environments for user:', userData.uid, 'association:', currentAssociation?.id);
+      const userEnvironments = await getEnvironmentsForContext(userData.uid, currentAssociation?.id);
       console.log('[EnvironmentsScreen] Got environments:', userEnvironments.length);
       
       // Get plant counts for each environment (with error handling per environment)
@@ -87,7 +87,7 @@ export default function EnvironmentsScreen() {
       if (userData) {
         loadEnvironments();
       }
-    }, [userData])
+    }, [userData, currentAssociation])
   );
 
   const handleRefresh = () => {

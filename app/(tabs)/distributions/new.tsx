@@ -16,11 +16,11 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   createDistribution,
-  getUserPatients,
+  getPatientsForContext,
   getHarvest,
-  getUserHarvests,
+  getHarvestsForContext,
   getExtract,
-  getUserExtracts,
+  getExtractsForContext,
 } from '../../../firebase/firestore';
 import { Patient, Harvest, ProductType, Extract } from '../../../types';
 import { Card } from '../../../components/Card';
@@ -71,7 +71,7 @@ export default function NewDistributionScreen() {
   const [harvestModalVisible, setHarvestModalVisible] = useState(false);
   const [extractModalVisible, setExtractModalVisible] = useState(false);
 
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
   const router = useRouter();
 
   const loadData = async () => {
@@ -87,9 +87,9 @@ export default function NewDistributionScreen() {
 
     try {
       const [patientsData, harvestsData, extractsData] = await Promise.all([
-        getUserPatients(userData.uid),
-        getUserHarvests(userData.uid),
-        getUserExtracts(userData.uid),
+        getPatientsForContext(userData.uid, currentAssociation?.id),
+        getHarvestsForContext(userData.uid, currentAssociation?.id),
+        getExtractsForContext(userData.uid, currentAssociation?.id),
       ]);
       
       console.log('[NewDistribution] Data fetched - patients:', patientsData.length, 'harvests:', harvestsData.length, 'extracts:', extractsData.length);
@@ -187,7 +187,7 @@ export default function NewDistributionScreen() {
     useCallback(() => {
       console.log('[NewDistribution] Screen focused, loading data. userData:', userData?.uid);
       loadData();
-    }, [userData])
+    }, [userData, currentAssociation])
   );
 
   const getHarvestTotalWeight = (harvest: Harvest): number => {
@@ -281,7 +281,7 @@ export default function NewDistributionScreen() {
     setSubmitting(true);
 
     try {
-      await createDistribution({
+      const distributionData: any = {
         userId: userData.uid,
         patientId: selectedPatient.id,
         patientName: selectedPatient.name,
@@ -300,7 +300,14 @@ export default function NewDistributionScreen() {
         signatureConfirmation,
         ...(notes.trim() && { notes: notes.trim() }),
         createdAt: Date.now(),
-      });
+      };
+      
+      // Only add associationId if it exists
+      if (currentAssociation?.id) {
+        distributionData.associationId = currentAssociation.id;
+      }
+      
+      await createDistribution(distributionData);
 
       showSuccess('Distribution recorded successfully!', 'Success', () => router.back());
     } catch (error: any) {

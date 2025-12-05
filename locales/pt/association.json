@@ -34,6 +34,11 @@
   "role": "Cargo",
   "accept": "Aceitar",
   "decline": "Recusar",
+  "declineTitle": "Recusar Convite",
+  "declineConfirm": "Tem certeza que deseja recusar este convite?",
+  "declineSuccess": "Convite recusado",
+  "declineError": "Falha ao recusar convite",
+  "back": "Voltar",
   "yourRole": "Seu cargo:",
   "authorization": "Autorização",
   "status": {
@@ -117,7 +122,7 @@
   "invite": {
     "title": "Convidar Membro",
     "howItWorks": "Como funciona",
-    "howItWorksDesc": "Envie um convite para o e-mail de alguém. A pessoa receberá um link para entrar nesta associação com o cargo que você selecionar.",
+    "howItWorksDesc": "Envie um convite para o e-mail de alguém. A pessoa verá o convite quando fizer login no app.",
     "emailTitle": "Endereço de E-mail",
     "email": "E-mail",
     "emailPlaceholder": "membro@exemplo.com",
@@ -132,7 +137,17 @@
     "send": "Enviar Convite",
     "sending": "Enviando...",
     "success": "Convite enviado para {{email}}",
+    "successWithLogout": "Convite enviado para {{email}}. Uma nova conta foi criada. Você precisará fazer login novamente.",
     "error": "Falha ao enviar convite",
+    "checkingEmail": "Verificando se o usuário existe...",
+    "userExists": "Usuário tem uma conta - verá o convite quando fizer login",
+    "userNotExists": "Este e-mail não está cadastrado no app",
+    "createAccount": "Criar uma conta para este usuário",
+    "createAccountDesc": "Uma conta temporária será criada com a senha: {{password}}",
+    "logoutWarning": "Importante: Criar uma nova conta irá deslogar você. Você precisará fazer login novamente após enviar o convite.",
+    "userCreatedTitle": "Conta Criada",
+    "userCreated": "Conta criada para {{email}}. Senha temporária: {{password}} - Por favor, compartilhe isso com o usuário convidado.",
+    "createUserError": "Falha ao criar conta de usuário",
     "errors": {
       "emailRequired": "E-mail é obrigatório",
       "emailInvalid": "Por favor, insira um e-mail válido"
@@ -142,6 +157,39 @@
       "cultivator": "Gerenciar plantas, colheitas e operações de cultivo",
       "patient": "Visualizar próprios registros e distribuições",
       "volunteer": "Ajudar com tarefas de cultivo"
+    }
+  },
+  "acceptInvite": {
+    "title": "Aceitar Convite",
+    "errorTitle": "Erro no Convite",
+    "notFound": "Convite não encontrado",
+    "alreadyProcessed": "Este convite já foi processado",
+    "expired": "Este convite expirou",
+    "wrongEmail": "Este convite foi enviado para um e-mail diferente",
+    "loadError": "Falha ao carregar convite",
+    "association": "Associação",
+    "invitedBy": "Convidado por",
+    "role": "Cargo",
+    "message": "Mensagem pessoal",
+    "yourInfo": "Suas Informações",
+    "yourInfoDesc": "Por favor, forneça suas informações para completar o cadastro",
+    "fullName": "Nome Completo",
+    "fullNamePlaceholder": "Digite seu nome completo",
+    "documentType": "Tipo de Documento",
+    "documentNumber": "Número do Documento",
+    "documentPlaceholder": "Digite o número do documento",
+    "acceptButton": "Aceitar e Entrar",
+    "accepting": "Aceitando...",
+    "declineButton": "Recusar Convite",
+    "declineTitle": "Recusar Convite",
+    "confirmDecline": "Tem certeza que deseja recusar este convite?",
+    "success": "Você agora é membro de {{name}}!",
+    "acceptError": "Falha ao aceitar convite",
+    "declineSuccess": "Convite recusado",
+    "declineError": "Falha ao recusar convite",
+    "errors": {
+      "fullNameRequired": "Nome completo é obrigatório",
+      "documentRequired": "Número do documento é obrigatório"
     }
   }
 }

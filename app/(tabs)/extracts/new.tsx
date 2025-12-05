@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   createExtract,
-  getUserHarvests,
+  getHarvestsForContext,
 } from '../../../firebase/firestore';
 import { Harvest, ExtractType, ExtractionMethod } from '../../../types';
 import { Card } from '../../../components/Card';
@@ -74,7 +74,7 @@ export default function NewExtractScreen() {
   const [typeModalVisible, setTypeModalVisible] = useState(false);
   const [methodModalVisible, setMethodModalVisible] = useState(false);
 
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
   const router = useRouter();
 
   const loadData = async () => {
@@ -84,7 +84,7 @@ export default function NewExtractScreen() {
     }
 
     try {
-      const harvestsData = await getUserHarvests(userData.uid);
+      const harvestsData = await getHarvestsForContext(userData.uid, currentAssociation?.id);
       
       console.log('[NewExtract] All harvests received:', harvestsData.length, harvestsData.map(h => ({
         id: h.id,
@@ -145,7 +145,7 @@ export default function NewExtractScreen() {
 
   useEffect(() => {
     loadData();
-  }, [userData]);
+  }, [userData, currentAssociation]);
 
   const getHarvestTotalWeight = (harvest: Harvest): number => {
     // Use the best available weight (only positive values)
@@ -238,7 +238,7 @@ export default function NewExtractScreen() {
       // Generate batch number from first harvest control number
       const batchNumber = selectedHarvests[0].controlNumber;
 
-      await createExtract({
+      const extractData: any = {
         userId: userData.uid,
         name: name.trim(),
         extractType,
@@ -257,7 +257,14 @@ export default function NewExtractScreen() {
         ...(storageLocation.trim() && { storageLocation: storageLocation.trim() }),
         ...(notes.trim() && { notes: notes.trim() }),
         createdAt: Date.now(),
-      });
+      };
+      
+      // Only add associationId if it exists
+      if (currentAssociation?.id) {
+        extractData.associationId = currentAssociation.id;
+      }
+      
+      await createExtract(extractData);
 
       showSuccess('Extract created successfully!', 'Success', () => router.back());
     } catch (error: any) {

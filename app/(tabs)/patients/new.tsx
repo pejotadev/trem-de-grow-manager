@@ -61,7 +61,7 @@ export default function NewPatientScreen() {
   // Notes
   const [notes, setNotes] = useState('');
 
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async () => {
@@ -88,7 +88,7 @@ export default function NewPatientScreen() {
       const prescriptionExpirationNum = prescriptionExpiration?.getTime();
       const consentDateNum = consentDate?.getTime();
 
-      await createPatient({
+      const patientData: any = {
         userId: userData.uid,
         name: name.trim(),
         documentType,
@@ -113,7 +113,14 @@ export default function NewPatientScreen() {
         ...(notes.trim() && { notes: notes.trim() }),
         createdAt: now,
         updatedAt: now,
-      });
+      };
+      
+      // Only add associationId if it exists
+      if (currentAssociation?.id) {
+        patientData.associationId = currentAssociation.id;
+      }
+      
+      await createPatient(patientData);
 
       showSuccess('Patient registered successfully!', 'Success', () => router.back());
     } catch (error: any) {

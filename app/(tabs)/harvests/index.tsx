@@ -12,7 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getUserHarvests, getPlant } from '../../../firebase/firestore';
+import { getHarvestsForContext, getPlant } from '../../../firebase/firestore';
 import { Harvest, HarvestStatus, HarvestPurpose, Plant } from '../../../types';
 import { Card } from '../../../components/Card';
 import { Loading } from '../../../components/Loading';
@@ -48,7 +48,7 @@ export default function HarvestsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
   const router = useRouter();
 
   const loadData = async () => {
@@ -58,7 +58,7 @@ export default function HarvestsScreen() {
     }
 
     try {
-      const harvestsData = await getUserHarvests(userData.uid);
+      const harvestsData = await getHarvestsForContext(userData.uid, currentAssociation?.id);
       
       // Load plant info for each harvest
       const harvestsWithPlants = await Promise.all(
@@ -93,7 +93,7 @@ export default function HarvestsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [userData])
+    }, [userData, currentAssociation])
   );
 
   const handleRefresh = () => {

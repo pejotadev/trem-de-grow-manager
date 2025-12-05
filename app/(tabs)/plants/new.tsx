@@ -14,7 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
-import { createPlant, createStage, getUserEnvironments, getUserPlants, generateControlNumber, getUserSeedGenetics } from '../../../firebase/firestore';
+import { createPlant, createStage, getEnvironmentsForContext, getPlantsForContext, generateControlNumber, getSeedGeneticsForContext } from '../../../firebase/firestore';
 import { StageName, Environment, Plant, PlantSourceType, GeneticInfo, Chemotype, SeedGenetic, SeedType } from '../../../types';
 import { Input } from '../../../components/Input';
 import { DatePicker } from '../../../components/DatePicker';
@@ -90,7 +90,7 @@ export default function NewPlantScreen() {
   // Loading states
   const [loading, setLoading] = useState(false);
   const [loadingEnvs, setLoadingEnvs] = useState(true);
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
   const router = useRouter();
 
   const SOURCE_TYPES: PlantSourceType[] = ['seed', 'clone', 'cutting', 'tissue_culture'];
@@ -99,7 +99,7 @@ export default function NewPlantScreen() {
     loadEnvironments();
     loadPlants();
     loadSeedGenetics();
-  }, [userData]);
+  }, [userData, currentAssociation]);
 
   // Auto-fill genetic lineage when parent plant is selected
   useEffect(() => {
@@ -129,7 +129,7 @@ export default function NewPlantScreen() {
     if (!userData) return;
     
     try {
-      const userEnvs = await getUserEnvironments(userData.uid);
+      const userEnvs = await getEnvironmentsForContext(userData.uid, currentAssociation?.id);
       setEnvironments(userEnvs);
       if (userEnvs.length > 0) {
         setSelectedEnvironment(userEnvs[0]);
@@ -146,7 +146,7 @@ export default function NewPlantScreen() {
     if (!userData) return;
     
     try {
-      const userPlants = await getUserPlants(userData.uid);
+      const userPlants = await getPlantsForContext(userData.uid, currentAssociation?.id);
       setAllPlants(userPlants);
     } catch (error) {
       console.error('[NewPlant] Error loading plants:', error);
@@ -157,7 +157,7 @@ export default function NewPlantScreen() {
     if (!userData) return;
     
     try {
-      const genetics = await getUserSeedGenetics(userData.uid);
+      const genetics = await getSeedGeneticsForContext(userData.uid, currentAssociation?.id);
       setSeedGenetics(genetics);
     } catch (error) {
       console.error('[NewPlant] Error loading seed genetics:', error);
@@ -245,7 +245,9 @@ export default function NewPlantScreen() {
         if (analysisDate) chemotype.analysisDate = analysisDate.getTime();
       }
 
-      const plantId = await createPlant({
+      console.log('[NewPlant] Creating plant for user:', userData.uid, 'associationId:', currentAssociation?.id);
+      
+      const plantData: any = {
         userId: userData.uid,
         environmentId: selectedEnvironment.id,
         strain,
@@ -255,7 +257,14 @@ export default function NewPlantScreen() {
         ...(chemotype && { chemotype }),
         ...(isMotherPlant && { isMotherPlant: true }),
         ...(selectedParentPlant && { motherPlantId: selectedParentPlant.id }),
-      });
+      };
+      
+      // Only add associationId if it exists
+      if (currentAssociation?.id) {
+        plantData.associationId = currentAssociation.id;
+      }
+      
+      const plantId = await createPlant(plantData);
       console.log('[NewPlant] Plant created with ID:', plantId);
 
       // Create initial stage

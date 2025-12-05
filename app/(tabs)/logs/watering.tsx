@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
-  getUserPlants,
+  getPlantsForContext,
   getPlantLogs,
   createPlantLog,
   deletePlantLog,
@@ -37,13 +37,13 @@ export default function WateringLogsScreen() {
   const [plantSelectModal, setPlantSelectModal] = useState(false);
   const [ingredients, setIngredients] = useState('');
   const [notes, setNotes] = useState('');
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
 
   const loadPlants = async () => {
     if (!userData) return;
     
     try {
-      const userPlants = await getUserPlants(userData.uid);
+      const userPlants = await getPlantsForContext(userData.uid, currentAssociation?.id);
       setPlants(userPlants);
       if (userPlants.length > 0 && !selectedPlant) {
         setSelectedPlant(userPlants[0]);
@@ -69,7 +69,7 @@ export default function WateringLogsScreen() {
 
   useEffect(() => {
     loadPlants();
-  }, [userData]);
+  }, [userData, currentAssociation]);
 
   useEffect(() => {
     if (selectedPlant) {
@@ -95,14 +95,21 @@ export default function WateringLogsScreen() {
         name: ingredient,
       }));
 
-      await createPlantLog({
+      const logData: any = {
         plantId: selectedPlant.id,
         userId: userData.uid,
         logType: 'watering',
         date: Date.now(),
         nutrients,
         notes: notes || undefined,
-      });
+      };
+      
+      // Only add associationId if it exists
+      if (currentAssociation?.id) {
+        logData.associationId = currentAssociation.id;
+      }
+      
+      await createPlantLog(logData);
 
       setModalVisible(false);
       setIngredients('');

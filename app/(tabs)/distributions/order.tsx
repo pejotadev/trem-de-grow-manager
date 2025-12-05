@@ -15,9 +15,9 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   createOrder,
-  getUserPatients,
-  getUserHarvests,
-  getUserExtracts,
+  getPatientsForContext,
+  getHarvestsForContext,
+  getExtractsForContext,
 } from '../../../firebase/firestore';
 import { Patient, Harvest, ProductType, Extract, OrderStatus } from '../../../types';
 import { Card } from '../../../components/Card';
@@ -56,7 +56,7 @@ export default function NewOrderScreen() {
   const [harvestModalVisible, setHarvestModalVisible] = useState(false);
   const [extractModalVisible, setExtractModalVisible] = useState(false);
 
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
   const router = useRouter();
 
   const loadData = async () => {
@@ -67,9 +67,9 @@ export default function NewOrderScreen() {
 
     try {
       const [patientsData, harvestsData, extractsData] = await Promise.all([
-        getUserPatients(userData.uid),
-        getUserHarvests(userData.uid),
-        getUserExtracts(userData.uid),
+        getPatientsForContext(userData.uid, currentAssociation?.id),
+        getHarvestsForContext(userData.uid, currentAssociation?.id),
+        getExtractsForContext(userData.uid, currentAssociation?.id),
       ]);
 
       // Filter to only active patients
@@ -99,7 +99,7 @@ export default function NewOrderScreen() {
 
   useEffect(() => {
     loadData();
-  }, [userData]);
+  }, [userData, currentAssociation]);
 
   const getAvailableWeight = (harvest: Harvest): number => {
     const totalWeight = harvest.finalWeightGrams || harvest.dryWeightGrams || harvest.wetWeightGrams;
@@ -156,7 +156,7 @@ export default function NewOrderScreen() {
     setSubmitting(true);
 
     try {
-      await createOrder({
+      const orderData: any = {
         userId: userData!.uid,
         patientId: selectedPatient!.id,
         patientName: selectedPatient!.name,
@@ -171,7 +171,14 @@ export default function NewOrderScreen() {
         ...(notes.trim() && { notes: notes.trim() }),
         requestedAt: Date.now(),
         createdAt: Date.now(),
-      });
+      };
+      
+      // Only add associationId if it exists
+      if (currentAssociation?.id) {
+        orderData.associationId = currentAssociation.id;
+      }
+      
+      await createOrder(orderData);
 
       Alert.alert('Success', 'Order created successfully!', [
         { text: 'OK', onPress: () => router.back() },

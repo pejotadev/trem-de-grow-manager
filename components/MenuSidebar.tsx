@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,12 +12,15 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import { MemberRole } from '../types';
 
 interface MenuItem {
   id: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
   route: string;
+  // Roles that can access this item. Empty array means all roles can access.
+  allowedRoles?: MemberRole[];
 }
 
 // Main navigation tabs
@@ -27,24 +30,28 @@ const MAIN_TABS: MenuItem[] = [
     icon: 'leaf',
     color: '#4CAF50',
     route: '/(tabs)',
+    allowedRoles: ['owner', 'admin', 'cultivator'], // Not for patient, volunteer
   },
   {
     id: 'environments',
     icon: 'cube',
     color: '#2E7D32',
     route: '/(tabs)/environments',
+    allowedRoles: ['owner', 'admin', 'cultivator'], // Not for patient, volunteer
   },
   {
     id: 'logs',
     icon: 'clipboard',
     color: '#1976D2',
     route: '/(tabs)/logs',
+    allowedRoles: ['owner', 'admin', 'cultivator'], // Not for patient, volunteer
   },
   {
     id: 'friends',
     icon: 'people',
     color: '#7B1FA2',
     route: '/(tabs)/friends',
+    allowedRoles: ['owner', 'admin', 'cultivator', 'patient'], // Not for volunteer
   },
 ];
 
@@ -55,62 +62,119 @@ const MENU_ITEMS: MenuItem[] = [
     icon: 'business',
     color: '#673AB7',
     route: '/(tabs)/association',
+    allowedRoles: ['owner', 'admin', 'cultivator', 'patient'], // Not for volunteer
   },
   {
     id: 'genetics',
     icon: 'leaf',
     color: '#8BC34A',
     route: '/(tabs)/genetics',
+    allowedRoles: ['owner', 'admin', 'cultivator'], // Not for patient, volunteer
   },
   {
     id: 'inventory',
     icon: 'cube',
     color: '#388E3C',
     route: '/(tabs)/harvests',
+    allowedRoles: ['owner', 'admin', 'cultivator'], // Not for patient, volunteer
   },
   {
     id: 'extracts',
     icon: 'flask',
     color: '#FF5722',
     route: '/(tabs)/extracts',
+    allowedRoles: ['owner', 'admin', 'cultivator'], // Not for patient, volunteer
   },
   {
     id: 'patients',
     icon: 'medkit',
     color: '#0288D1',
     route: '/(tabs)/patients',
+    allowedRoles: ['owner', 'admin', 'volunteer'], // Volunteer can see patients
   },
   {
     id: 'distributions',
     icon: 'gift',
     color: '#7B1FA2',
     route: '/(tabs)/distributions',
+    allowedRoles: ['owner', 'admin'], // Only owner and admin
   },
   {
     id: 'protocols',
     icon: 'document-text',
     color: '#009688',
     route: '/(tabs)/admin/documents',
+    allowedRoles: ['owner', 'admin'], // Only owner and admin
   },
   {
     id: 'reports',
     icon: 'bar-chart',
     color: '#E91E63',
     route: '/(tabs)/admin/reports',
+    allowedRoles: ['owner', 'admin', 'cultivator'], // Not for patient, volunteer
   },
   {
     id: 'auditLog',
     icon: 'time',
     color: '#607D8B',
     route: '/(tabs)/admin/audit-log',
+    allowedRoles: ['owner', 'admin'], // Only owner and admin
   },
   {
     id: 'profile',
     icon: 'person-circle',
     color: '#4CAF50',
     route: '/(tabs)/profile',
+    // All roles can access profile - no allowedRoles means everyone
   },
 ];
+
+/**
+ * Filters menu items based on user role and account type
+ * - If user has a role (in association), filter based on allowedRoles
+ * - If personal account without association, treat as cultivator
+ * - Legacy users without accountType get all items (backward compatibility)
+ */
+const filterMenuItemsByRole = (
+  items: MenuItem[], 
+  role: MemberRole | undefined,
+  accountType?: string,
+  hasAssociation?: boolean
+): MenuItem[] => {
+  // If user has a role (is in an association), filter based on role
+  if (role) {
+    return items.filter(item => {
+      // If no allowedRoles specified, all roles can access
+      if (!item.allowedRoles || item.allowedRoles.length === 0) {
+        return true;
+      }
+      // Check if user's role is in the allowed list
+      return item.allowedRoles.includes(role);
+    });
+  }
+  
+  // If no role but has association (shouldn't happen, but handle gracefully)
+  if (hasAssociation) {
+    return []; // Should have a role if in association
+  }
+  
+  // Personal account without association: treat as cultivator
+  // Cultivators can access: plants, environments, logs, friends, genetics, harvests, extracts, reports, profile
+  // But NOT: patients, distributions, protocols, audit log
+  if (accountType === 'personal') {
+    return items.filter(item => {
+      // If no allowedRoles specified, allow (like profile)
+      if (!item.allowedRoles || item.allowedRoles.length === 0) {
+        return true;
+      }
+      // Check if cultivator is in the allowed list
+      return item.allowedRoles.includes('cultivator');
+    });
+  }
+  
+  // Legacy users or unknown account type: show all items (backward compatibility)
+  return items;
+};
 
 interface MenuSidebarProps {
   compact?: boolean;
@@ -118,8 +182,24 @@ interface MenuSidebarProps {
 
 export function MenuSidebar({ compact = false }: MenuSidebarProps) {
   const { t } = useTranslation(['menu', 'auth', 'common']);
-  const { userData, logout } = useAuth();
+  const { userData, currentMember, logout } = useAuth();
   const router = useRouter();
+
+  // Get the user's role from current association membership
+  const userRole = currentMember?.role;
+  const accountType = userData?.accountType;
+  const hasAssociation = !!currentMember;
+
+  // Filter menu items based on role and account type
+  const filteredMainTabs = useMemo(() => 
+    filterMenuItemsByRole(MAIN_TABS, userRole, accountType, hasAssociation), 
+    [userRole, accountType, hasAssociation]
+  );
+  
+  const filteredMenuItems = useMemo(() => 
+    filterMenuItemsByRole(MENU_ITEMS, userRole, accountType, hasAssociation), 
+    [userRole, accountType, hasAssociation]
+  );
 
   const handleLogout = async () => {
     console.log('[MenuSidebar] Logout button clicked');
@@ -212,7 +292,7 @@ export function MenuSidebar({ compact = false }: MenuSidebarProps) {
 
           {/* Main Tabs - Icons Only */}
           <View style={styles.menuSectionCompact}>
-            {MAIN_TABS.map((item) => (
+            {filteredMainTabs.map((item) => (
               <TouchableOpacity
                 key={item.id}
                 style={styles.menuItemCompact}
@@ -222,7 +302,7 @@ export function MenuSidebar({ compact = false }: MenuSidebarProps) {
               </TouchableOpacity>
             ))}
             {/* Secondary Menu Items */}
-            {MENU_ITEMS.map((item) => (
+            {filteredMenuItems.map((item) => (
               <TouchableOpacity
                 key={item.id}
                 style={styles.menuItemCompact}
@@ -275,46 +355,50 @@ export function MenuSidebar({ compact = false }: MenuSidebarProps) {
         </View>
 
         {/* Main Navigation Tabs */}
-        <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>{t('menu:mainNavigation')}</Text>
-          {MAIN_TABS.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.menuItem}
-              onPress={() => router.push(item.route as any)}
-            >
-              <View style={[styles.menuIconContainer, { backgroundColor: item.color + '15' }]}>
-                <Ionicons name={item.icon} size={24} color={item.color} />
-              </View>
-              <View style={styles.menuItemContent}>
-                <Text style={styles.menuItemTitle}>{getMenuItemTitle(item.id)}</Text>
-                <Text style={styles.menuItemSubtitle}>{getMenuItemSubtitle(item.id)}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#ccc" />
-            </TouchableOpacity>
-          ))}
-        </View>
+        {filteredMainTabs.length > 0 && (
+          <View style={styles.menuSection}>
+            <Text style={styles.sectionTitle}>{t('menu:mainNavigation')}</Text>
+            {filteredMainTabs.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.menuItem}
+                onPress={() => router.push(item.route as any)}
+              >
+                <View style={[styles.menuIconContainer, { backgroundColor: item.color + '15' }]}>
+                  <Ionicons name={item.icon} size={24} color={item.color} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>{getMenuItemTitle(item.id)}</Text>
+                  <Text style={styles.menuItemSubtitle}>{getMenuItemSubtitle(item.id)}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#ccc" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {/* Secondary Menu Items */}
-        <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>{t('menu:features')}</Text>
-          {MENU_ITEMS.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.menuItem}
-              onPress={() => router.push(item.route as any)}
-            >
-              <View style={[styles.menuIconContainer, { backgroundColor: item.color + '15' }]}>
-                <Ionicons name={item.icon} size={24} color={item.color} />
-              </View>
-              <View style={styles.menuItemContent}>
-                <Text style={styles.menuItemTitle}>{getMenuItemTitle(item.id)}</Text>
-                <Text style={styles.menuItemSubtitle}>{getMenuItemSubtitle(item.id)}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#ccc" />
-            </TouchableOpacity>
-          ))}
-        </View>
+        {filteredMenuItems.length > 0 && (
+          <View style={styles.menuSection}>
+            <Text style={styles.sectionTitle}>{t('menu:features')}</Text>
+            {filteredMenuItems.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.menuItem}
+                onPress={() => router.push(item.route as any)}
+              >
+                <View style={[styles.menuIconContainer, { backgroundColor: item.color + '15' }]}>
+                  <Ionicons name={item.icon} size={24} color={item.color} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={styles.menuItemTitle}>{getMenuItemTitle(item.id)}</Text>
+                  <Text style={styles.menuItemSubtitle}>{getMenuItemSubtitle(item.id)}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#ccc" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {/* App Info */}
         <View style={styles.appInfo}>

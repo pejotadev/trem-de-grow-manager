@@ -46,6 +46,12 @@ export default function AssociationLayout() {
           title: t('invite.title'),
         }}
       />
+      <Stack.Screen
+        name="accept-invite"
+        options={{
+          title: t('acceptInvite.title'),
+        }}
+      />
     </Stack>
   );
 }

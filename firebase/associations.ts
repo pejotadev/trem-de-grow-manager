@@ -58,7 +58,9 @@ export const createAssociation = async (
     createdBy: creatorUserId,
   };
 
-  const associationRef = await db.collection(ASSOCIATIONS_COLLECTION).add(associationDoc);
+  // Remove undefined values before saving (Firestore doesn't accept undefined)
+  const cleanAssociationDoc = removeUndefinedValues(associationDoc);
+  const associationRef = await db.collection(ASSOCIATIONS_COLLECTION).add(cleanAssociationDoc);
   const associationId = associationRef.id;
 
   console.log('[Associations] Created association with ID:', associationId);
@@ -125,37 +127,86 @@ export const getUserAssociations = async (userId: string): Promise<Association[]
     return [];
   }
 
-  // First get the user's association IDs
-  const userDoc = await db.collection('users').doc(userId).get();
-  
-  if (!userDoc.exists) {
-    return [];
-  }
-
-  const userData = userDoc.data();
-  const associationIds = userData?.associationIds || [];
-
-  if (associationIds.length === 0) {
-    return [];
-  }
-
-  // Fetch all associations (Firestore limits 'in' queries to 10 items)
-  const associations: Association[] = [];
-  
-  // Split into batches of 10
-  for (let i = 0; i < associationIds.length; i += 10) {
-    const batch = associationIds.slice(i, i + 10);
-    const querySnapshot = await db
-      .collection(ASSOCIATIONS_COLLECTION)
-      .where(firebase.firestore.FieldPath.documentId(), 'in', batch)
-      .get();
+  try {
+    // First get the user's association IDs
+    const userDoc = await db.collection('users').doc(userId).get();
     
-    querySnapshot.docs.forEach(doc => {
-      associations.push({ id: doc.id, ...doc.data() } as Association);
-    });
-  }
+    if (!userDoc.exists) {
+      console.log('[Associations] User document does not exist:', userId);
+      return [];
+    }
 
-  return associations.sort((a, b) => b.createdAt - a.createdAt);
+    const userData = userDoc.data();
+    let associationIds: string[] = userData?.associationIds || [];
+    const currentAssociationId = userData?.currentAssociationId;
+
+    // If no associationIds but has currentAssociationId, use that
+    if (associationIds.length === 0 && currentAssociationId) {
+      associationIds = [currentAssociationId];
+    }
+
+    // If still no associations, check members collection as fallback
+    if (associationIds.length === 0) {
+      const membersSnapshot = await db
+        .collection(MEMBERS_COLLECTION)
+        .where('userId', '==', userId)
+        .where('isActive', '==', true)
+        .get();
+      
+      if (!membersSnapshot.empty) {
+        const memberAssociationIds = membersSnapshot.docs.map(doc => doc.data().associationId);
+        
+        // Update user document with missing association IDs
+        if (memberAssociationIds.length > 0) {
+          await db.collection('users').doc(userId).update({
+            associationIds: firebase.firestore.FieldValue.arrayUnion(...memberAssociationIds),
+          });
+          associationIds = memberAssociationIds;
+        }
+      }
+    }
+
+    if (associationIds.length === 0) {
+      return [];
+    }
+
+    // Fetch all associations (Firestore limits 'in' queries to 10 items)
+    const associations: Association[] = [];
+    
+    // Split into batches of 10
+    for (let i = 0; i < associationIds.length; i += 10) {
+      const batch = associationIds.slice(i, i + 10);
+      try {
+        const querySnapshot = await db
+          .collection(ASSOCIATIONS_COLLECTION)
+          .where(firebase.firestore.FieldPath.documentId(), 'in', batch)
+          .get();
+        
+        querySnapshot.docs.forEach(doc => {
+          associations.push({ id: doc.id, ...doc.data() } as Association);
+        });
+      } catch (error: any) {
+        console.error('[Associations] Error fetching association batch:', error);
+        // If query fails, try fetching individually
+        for (const assocId of batch) {
+          try {
+            const doc = await db.collection(ASSOCIATIONS_COLLECTION).doc(assocId).get();
+            if (doc.exists) {
+              associations.push({ id: doc.id, ...doc.data() } as Association);
+            }
+          } catch (err) {
+            console.error('[Associations] Error fetching individual association:', assocId, err);
+          }
+        }
+      }
+    }
+
+    return associations.sort((a, b) => b.createdAt - a.createdAt);
+  } catch (error: any) {
+    console.error('[Associations] Error in getUserAssociations:', error);
+    // Return empty array instead of throwing to prevent UI crashes
+    return [];
+  }
 };
 
 /**
@@ -499,9 +550,10 @@ export const getDefaultPermissionsForRole = (role: MemberRole): Partial<Member> 
         canExportData: false,
       };
     case 'volunteer':
+      // Volunteer only has access to Profile (own) and Patients (view association patients)
       return {
-        canManagePatients: false,
-        canManagePlants: true,
+        canManagePatients: true, // Can view/manage patients
+        canManagePlants: false,
         canManageHarvests: false,
         canManageDistributions: false,
         canManageMembers: false,
@@ -552,13 +604,16 @@ export const createInvitation = async (
   const now = Date.now();
   const expiresAt = now + (7 * 24 * 60 * 60 * 1000); // 7 days from now
 
-  const docRef = await db.collection(INVITATIONS_COLLECTION).add({
+  // Remove undefined values before saving (Firestore doesn't accept undefined)
+  const cleanInvitationData = removeUndefinedValues({
     ...invitationData,
     invitedEmail: invitationData.invitedEmail.toLowerCase(),
     status: 'pending' as InvitationStatus,
     expiresAt,
     createdAt: now,
   });
+
+  const docRef = await db.collection(INVITATIONS_COLLECTION).add(cleanInvitationData);
 
   console.log('[Associations] Created invitation:', docRef.id);
   return docRef.id;
@@ -580,20 +635,55 @@ export const getInvitation = async (invitationId: string): Promise<AssociationIn
  * Gets pending invitations for a user (by email)
  */
 export const getPendingInvitationsForUser = async (email: string): Promise<AssociationInvitation[]> => {
+  if (!email) {
+    console.warn('[Associations] getPendingInvitationsForUser called with undefined/null email');
+    return [];
+  }
+
+  const normalizedEmail = email.toLowerCase();
   const now = Date.now();
   
-  const querySnapshot = await db
-    .collection(INVITATIONS_COLLECTION)
-    .where('invitedEmail', '==', email.toLowerCase())
-    .where('status', '==', 'pending')
-    .where('expiresAt', '>', now)
-    .orderBy('expiresAt', 'asc')
-    .get();
+  console.log('[Associations] Getting pending invitations for:', normalizedEmail);
   
-  return querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  } as AssociationInvitation));
+  try {
+    // Simple query - just by email, then filter in memory
+    // This avoids needing a composite index
+    const querySnapshot = await db
+      .collection(INVITATIONS_COLLECTION)
+      .where('invitedEmail', '==', normalizedEmail)
+      .get();
+    
+    console.log('[Associations] All invitations for this email:', querySnapshot.docs.length);
+    
+    // Filter and map in memory
+    const invitations = querySnapshot.docs
+      .map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as AssociationInvitation))
+      .filter(inv => {
+        const isPending = inv.status === 'pending';
+        const notExpired = inv.expiresAt > now;
+        console.log('[Associations] Invitation check:', {
+          id: inv.id,
+          associationName: inv.associationName,
+          status: inv.status,
+          isPending,
+          expiresAt: inv.expiresAt,
+          now,
+          notExpired
+        });
+        return isPending && notExpired;
+      })
+      .sort((a, b) => (a.expiresAt || 0) - (b.expiresAt || 0));
+    
+    console.log('[Associations] Pending invitations found:', invitations.length);
+    
+    return invitations;
+  } catch (error: any) {
+    console.error('[Associations] Error fetching invitations:', error.code, error.message);
+    throw error;
+  }
 };
 
 /**

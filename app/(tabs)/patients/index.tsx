@@ -12,7 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getUserPatients } from '../../../firebase/firestore';
+import { getPatientsForContext } from '../../../firebase/firestore';
 import { Patient, PatientStatus } from '../../../types';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
@@ -77,7 +77,7 @@ export default function PatientsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
   const router = useRouter();
 
   const loadData = async () => {
@@ -87,7 +87,7 @@ export default function PatientsScreen() {
     }
 
     try {
-      const patientsData = await getUserPatients(userData.uid);
+      const patientsData = await getPatientsForContext(userData.uid, currentAssociation?.id);
       setPatients(patientsData);
       applyFilters(patientsData, searchQuery, activeFilter);
     } catch (error: any) {
@@ -121,7 +121,7 @@ export default function PatientsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [userData])
+    }, [userData, currentAssociation])
   );
 
   const handleRefresh = () => {

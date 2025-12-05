@@ -1,8 +1,11 @@
+export type AccountType = 'personal' | 'association';
+
 export interface User {
   uid: string;
   email: string;
   displayName?: string;
   createdAt: number;
+  accountType: AccountType; // 'personal' or 'association' - determines initial account setup
   // Association membership (if user belongs to an association)
   currentAssociationId?: string; // Currently active association
   associationIds?: string[]; // All associations user belongs to (can be multiple)

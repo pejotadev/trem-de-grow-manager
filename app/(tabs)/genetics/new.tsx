@@ -102,7 +102,7 @@ export default function NewGeneticScreen() {
     );
   };
 
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async () => {
@@ -116,7 +116,7 @@ export default function NewGeneticScreen() {
     setSubmitting(true);
 
     try {
-      await createSeedGenetic({
+      const geneticData: any = {
         userId: userData.uid,
         name: name.trim(),
         ...(breeder.trim() && { breeder: breeder.trim() }),
@@ -138,7 +138,14 @@ export default function NewGeneticScreen() {
         ...(description.trim() && { description: description.trim() }),
         ...(notes.trim() && { notes: notes.trim() }),
         createdAt: Date.now(),
-      });
+      };
+      
+      // Only add associationId if it exists
+      if (currentAssociation?.id) {
+        geneticData.associationId = currentAssociation.id;
+      }
+      
+      await createSeedGenetic(geneticData);
 
       showSuccess(t('form.createSuccess'), t('common:success'), () => router.back());
     } catch (error: any) {

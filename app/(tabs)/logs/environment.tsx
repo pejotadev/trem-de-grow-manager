@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
-  getUserEnvironments,
+  getEnvironmentsForContext,
   getEnvironmentRecords,
   createEnvironmentRecord,
   deleteEnvironmentRecord,
@@ -71,13 +71,13 @@ export default function EnvironmentLogsScreen() {
   // Bulk log state
   const [submitting, setSubmitting] = useState(false);
   
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
 
   const loadEnvironments = async () => {
     if (!userData) return;
     
     try {
-      const userEnvironments = await getUserEnvironments(userData.uid);
+      const userEnvironments = await getEnvironmentsForContext(userData.uid, currentAssociation?.id);
       setEnvironments(userEnvironments);
       if (userEnvironments.length > 0 && !selectedEnvironment) {
         setSelectedEnvironment(userEnvironments[0]);
@@ -126,7 +126,7 @@ export default function EnvironmentLogsScreen() {
 
   useEffect(() => {
     loadEnvironments();
-  }, [userData]);
+  }, [userData, currentAssociation]);
 
   useEffect(() => {
     if (selectedEnvironment) {
@@ -156,14 +156,21 @@ export default function EnvironmentLogsScreen() {
     }
 
     try {
-      await createEnvironmentRecord({
+      const envRecordData: any = {
         environmentId: selectedEnvironment.id,
         date: Date.now(),
         temp: tempNum,
         humidity: humidityNum,
         lightHours: lightHoursNum,
         notes,
-      });
+      };
+      
+      // Only add associationId if it exists
+      if (currentAssociation?.id) {
+        envRecordData.associationId = currentAssociation.id;
+      }
+      
+      await createEnvironmentRecord(envRecordData);
 
       setModalVisible(false);
       setTemp('');
@@ -190,13 +197,20 @@ export default function EnvironmentLogsScreen() {
 
     setSubmitting(true);
     try {
-      await createBulkPlantLog({
+      const bulkLogData: any = {
         ...formData,
         environmentId: selectedEnvironment.id,
         userId: userData.uid,
         plantIds: selectedPlants,
         date: Date.now(),
-      });
+      };
+      
+      // Only add associationId if it exists
+      if (currentAssociation?.id) {
+        bulkLogData.associationId = currentAssociation.id;
+      }
+      
+      await createBulkPlantLog(bulkLogData);
 
       setModalVisible(false);
       loadEnvRecords();

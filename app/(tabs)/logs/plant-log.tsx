@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
-  getUserPlants,
+  getPlantsForContext,
   createPlantLog,
   getPlantLogs,
 } from '../../../firebase/firestore';
@@ -34,13 +34,13 @@ export default function PlantLogScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [plantSelectModal, setPlantSelectModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
 
   const loadPlants = async () => {
     if (!userData) return;
 
     try {
-      const userPlants = await getUserPlants(userData.uid);
+      const userPlants = await getPlantsForContext(userData.uid, currentAssociation?.id);
       setPlants(userPlants);
       if (userPlants.length > 0 && !selectedPlant) {
         setSelectedPlant(userPlants[0]);
@@ -66,7 +66,7 @@ export default function PlantLogScreen() {
 
   useEffect(() => {
     loadPlants();
-  }, [userData]);
+  }, [userData, currentAssociation]);
 
   useEffect(() => {
     if (selectedPlant) {
@@ -82,12 +82,19 @@ export default function PlantLogScreen() {
 
     setSubmitting(true);
     try {
-      await createPlantLog({
+      const logData: any = {
         ...formData,
         plantId: selectedPlant.id,
         userId: userData.uid,
         date: Date.now(),
-      });
+      };
+      
+      // Only add associationId if it exists
+      if (currentAssociation?.id) {
+        logData.associationId = currentAssociation.id;
+      }
+      
+      await createPlantLog(logData);
 
       setModalVisible(false);
       loadRecentLogs();

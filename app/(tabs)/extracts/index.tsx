@@ -12,7 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getUserExtracts } from '../../../firebase/firestore';
+import { getExtractsForContext } from '../../../firebase/firestore';
 import { Extract, ExtractType, ExtractionMethod } from '../../../types';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
@@ -48,7 +48,7 @@ export default function ExtractsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
-  const { userData } = useAuth();
+  const { userData, currentAssociation } = useAuth();
   const router = useRouter();
 
   const loadData = async () => {
@@ -58,7 +58,7 @@ export default function ExtractsScreen() {
     }
 
     try {
-      const extractsData = await getUserExtracts(userData.uid);
+      const extractsData = await getExtractsForContext(userData.uid, currentAssociation?.id);
       setExtracts(extractsData);
       applyFilter(extractsData, activeFilter);
     } catch (error: any) {
@@ -80,7 +80,7 @@ export default function ExtractsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [userData])
+    }, [userData, currentAssociation])
   );
 
   const handleRefresh = () => {

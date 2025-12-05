@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { getUserPlants, getUserEnvironments } from '../../firebase/firestore';
+import { getPlantsForContext, getEnvironmentsForContext } from '../../firebase/firestore';
 import { Plant, Environment } from '../../types';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
@@ -47,7 +47,7 @@ export default function HomeScreen() {
   const [sections, setSections] = useState<PlantSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const { userData, logout } = useAuth();
+  const { userData, currentAssociation, logout } = useAuth();
   const router = useRouter();
 
   const loadData = async () => {
@@ -58,10 +58,10 @@ export default function HomeScreen() {
     }
     
     try {
-      console.log('[HomeScreen] Loading data for user:', userData.uid);
+      console.log('[HomeScreen] Loading data for user:', userData.uid, 'association:', currentAssociation?.id);
       const [userPlants, userEnvironments] = await Promise.all([
-        getUserPlants(userData.uid),
-        getUserEnvironments(userData.uid),
+        getPlantsForContext(userData.uid, currentAssociation?.id),
+        getEnvironmentsForContext(userData.uid, currentAssociation?.id),
       ]);
       
       console.log('[HomeScreen] Loaded plants:', userPlants.length);
@@ -122,7 +122,7 @@ export default function HomeScreen() {
       if (userData) {
         loadData();
       }
-    }, [userData])
+    }, [userData, currentAssociation])
   );
 
   const handleRefresh = () => {
