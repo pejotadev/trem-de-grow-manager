@@ -1060,6 +1060,19 @@ export const createPatient = async (patientData: Omit<Patient, 'id'>): Promise<s
     updatedAt: now,
   });
   console.log('[Firestore] Created patient with ID:', docRef.id);
+  
+  // Increment association patient counter if patient belongs to an association
+  if (patientData.associationId) {
+    try {
+      const { incrementAssociationCounter } = await import('./associations');
+      await incrementAssociationCounter(patientData.associationId, 'patientCounter');
+      console.log('[Firestore] Incremented patientCounter for association:', patientData.associationId);
+    } catch (error) {
+      console.error('[Firestore] Error incrementing patientCounter:', error);
+      // Don't throw - patient was created successfully, counter increment is non-critical
+    }
+  }
+  
   return docRef.id;
 };
 
@@ -1082,16 +1095,39 @@ export const getUserPatients = async (userId: string): Promise<Patient[]> => {
     return [];
   }
   
-  const querySnapshot = await db
-    .collection('patients')
-    .where('userId', '==', userId)
-    .orderBy('name', 'asc')
-    .get();
+  let querySnapshot;
+  let needsSorting = false;
+  try {
+    querySnapshot = await db
+      .collection('patients')
+      .where('userId', '==', userId)
+      .orderBy('name', 'asc')
+      .get();
+  } catch (error: any) {
+    // If index not ready, query without orderBy and sort in memory
+    if (error.code === 'failed-precondition' && error.message?.includes('index')) {
+      console.log('[Firestore] Index not ready, querying without orderBy');
+      querySnapshot = await db
+        .collection('patients')
+        .where('userId', '==', userId)
+        .get();
+      needsSorting = true;
+    } else {
+      throw error;
+    }
+  }
   
-  return querySnapshot.docs.map(doc => ({
+  let patients = querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
   } as Patient));
+  
+  // Sort in memory only if we didn't use orderBy
+  if (needsSorting && patients.length > 0 && patients[0].name) {
+    patients = patients.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  }
+  
+  return patients;
 };
 
 export const searchPatients = async (userId: string, query: string): Promise<Patient[]> => {
